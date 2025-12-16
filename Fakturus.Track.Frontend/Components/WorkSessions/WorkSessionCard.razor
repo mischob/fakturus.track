@@ -22,62 +22,122 @@
             }
         </div>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <div class="flex items-center gap-2">
-                    <input type="datetime-local" 
-                           value="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")" 
-                           @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "start"))"
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                    <button @onclick="() => OnStart.InvokeAsync(WorkSession)" 
-                            class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
-                        Set Now
-                    </button>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Stop Time</label>
-                <div class="flex items-center gap-2">
-                    <input type="datetime-local" 
-                           value="@(WorkSession.StopTime.HasValue ? FormatDateTimeLocal(WorkSession.StopTime.Value) : "")" 
-                           @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "stop"))"
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                    <button @onclick="() => OnStop.InvokeAsync(WorkSession)" 
-                            class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
-                        Set Now
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
+        @if (IsHistory && !isEditing)
         {
-            <div class="pt-2 border-t border-gray-200">
-                <p class="text-sm text-gray-600">
-                    Duration: <span class="font-semibold">@CalculateDuration(WorkSession.StartTime, WorkSession.StopTime.Value)</span>
-                </p>
+            <!-- Simple read-only view for history -->
+            <div class="space-y-2">
+                <div>
+                    <span class="text-sm font-medium text-gray-700">Start Time: </span>
+                    <span class="text-sm text-gray-900">
+                        @(WorkSession.StartTime != default ? WorkSession.StartTime.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "Not set")
+                    </span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-700">Stop Time: </span>
+                    <span class="text-sm text-gray-900">
+                        @(WorkSession.StopTime.HasValue ? WorkSession.StopTime.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "Not set")
+                    </span>
+                </div>
+                @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
+                {
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Duration: </span>
+                        <span class="text-sm font-semibold text-gray-900">@CalculateDuration(WorkSession.StartTime, WorkSession.StopTime.Value)</span>
+                    </div>
+                }
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button @onclick="() => { isEditing = true; }" 
+                        class="flex-1 btn-outline text-sm">
+                    Edit
+                </button>
+                <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
+                        class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
+                    Delete
+                </button>
             </div>
         }
+        else
+        {
+            <!-- Editable view for active sessions or when editing history -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                    <div class="flex items-center gap-2">
+                        <input type="datetime-local" 
+                               value="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")" 
+                               @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "start"))"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                        <button @onclick="() => OnStart.InvokeAsync(WorkSession)" 
+                                class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
+                            Set Now
+                        </button>
+                    </div>
+                </div>
 
-        <div class="flex gap-2 pt-2">
-            @if (!IsHistory)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stop Time</label>
+                    <div class="flex items-center gap-2">
+                        <input type="datetime-local" 
+                               value="@(WorkSession.StopTime.HasValue ? FormatDateTimeLocal(WorkSession.StopTime.Value) : "")" 
+                               @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "stop"))"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                        <button @onclick="() => OnStop.InvokeAsync(WorkSession)" 
+                                class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
+                            Set Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
             {
-                <button @onclick="() => OnNew.InvokeAsync()" 
-                        class="flex-1 btn-outline text-sm">
-                    New Session
-                </button>
+                <div class="pt-2 border-t border-gray-200">
+                    <p class="text-sm text-gray-600">
+                        Duration: <span class="font-semibold">@CalculateDuration(WorkSession.StartTime, WorkSession.StopTime.Value)</span>
+                    </p>
+                </div>
             }
-            <button @onclick="() => OnEdit.InvokeAsync(WorkSession)" 
-                    class="flex-1 btn-outline text-sm">
-                Edit
-            </button>
-            <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
-                    class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
-                Delete
-            </button>
-        </div>
+
+            <div class="flex gap-2 pt-2">
+                @if (!IsHistory)
+                {
+                    <button @onclick="() => OnNew.InvokeAsync()" 
+                            class="flex-1 btn-outline text-sm">
+                        New Session
+                    </button>
+                    @if (WorkSession.StopTime.HasValue)
+                    {
+                        <button @onclick="() => OnFinish.InvokeAsync(WorkSession)" 
+                                class="flex-1 btn-primary text-sm">
+                            Finish
+                        </button>
+                    }
+                    else
+                    {
+                        <button @onclick="() => OnEdit.InvokeAsync(WorkSession)" 
+                                class="flex-1 btn-outline text-sm">
+                            Edit
+                        </button>
+                    }
+                }
+                else
+                {
+                    <button @onclick="() => { isEditing = false; OnSave.InvokeAsync(WorkSession); }" 
+                            class="flex-1 btn-primary text-sm">
+                        Save
+                    </button>
+                    <button @onclick="() => { isEditing = false; }" 
+                            class="flex-1 btn-outline text-sm">
+                        Cancel
+                    </button>
+                }
+                <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
+                        class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
+                    Delete
+                </button>
+            </div>
+        }
     </div>
 </div>
 
@@ -86,10 +146,13 @@
     [Parameter] public EventCallback<WorkSessionModel> OnStart { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnEdit { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
     [Parameter] public EventCallback OnNew { get; set; }
     [Parameter] public bool IsHistory { get; set; } = false;
+
+    private bool isEditing = false;
 
     private string FormatDateTimeLocal(DateTime dateTime)
     {

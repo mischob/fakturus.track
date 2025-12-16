@@ -37,6 +37,7 @@
                          OnStart="HandleStart" 
                          OnStop="HandleStop" 
                          OnEdit="HandleEdit"
+                         OnFinish="HandleFinish"
                          OnSave="HandleSave"
                          OnDelete="HandleDelete"
                          OnNew="HandleNew"/>
@@ -71,6 +72,7 @@
                                  OnStart="HandleStart" 
                                  OnStop="HandleStop" 
                                  OnEdit="HandleEdit"
+                                 OnFinish="HandleFinish"
                                  OnSave="HandleSave"
                                  OnDelete="HandleDelete"
                                  OnNew="HandleNew"
@@ -120,14 +122,25 @@
 
     private async Task HandleStop(WorkSessionModel session)
     {
+        // Set stop time but don't close the session
+        session.StopTime = DateTime.UtcNow;
+        session.IsPendingSync = true;
+        await LocalStorageService.SaveWorkSessionAsync(session);
+        await LoadWorkSessionsAsync();
+        ToastService.ShowSuccess("Stop time recorded");
+    }
+
+    private async Task HandleFinish(WorkSessionModel session)
+    {
+        // Finish closes the session and moves it to history
         if (session.StopTime == null)
         {
             session.StopTime = DateTime.UtcNow;
-            session.IsPendingSync = true;
-            await LocalStorageService.SaveWorkSessionAsync(session);
-            await LoadWorkSessionsAsync();
-            ToastService.ShowSuccess("Stop time recorded");
         }
+        session.IsPendingSync = true;
+        await LocalStorageService.SaveWorkSessionAsync(session);
+        await LoadWorkSessionsAsync();
+        ToastService.ShowSuccess("Session finished");
     }
 
     private async Task HandleNew()

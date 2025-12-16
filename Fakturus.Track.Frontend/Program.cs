@@ -19,9 +19,12 @@ builder.Services.AddMsalAuthentication(options =>
     options.ProviderOptions.Authentication.RedirectUri = $"{baseUri}authentication/login-callback";
     options.ProviderOptions.Authentication.PostLogoutRedirectUri = $"{baseUri}authentication/logout-callback";
 
-    // Add the required scope for your API
-    options.ProviderOptions.DefaultAccessTokenScopes.Add(
-        "https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access");
+    // Add the required scope for your API from configuration
+    var apiScope = builder.Configuration["AzureAdB2C:ApiScope"];
+    if (!string.IsNullOrEmpty(apiScope))
+    {
+        options.ProviderOptions.DefaultAccessTokenScopes.Add(apiScope);
+    }
 
     options.ProviderOptions.LoginMode = "redirect";
 });
