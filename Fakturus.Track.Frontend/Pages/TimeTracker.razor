@@ -96,6 +96,17 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadWorkSessionsAsync();
+        // Fetch from backend on initialization
+        try
+        {
+            await SyncService.SyncAsync();
+            await LoadWorkSessionsAsync();
+        }
+        catch (Exception ex)
+        {
+            // Silently fail on initialization - user can manually sync
+            Console.WriteLine($"Initial sync failed: {ex.Message}");
+        }
     }
 
     private async Task LoadWorkSessionsAsync()
@@ -177,8 +188,8 @@
     {
         try
         {
-            // If session is synced, delete from backend first
-            if (session.IsSynced && session.SyncedAt.HasValue)
+            // Always try to delete from backend if session exists there (synced or has SyncedAt)
+            if (session.IsSynced || session.SyncedAt.HasValue)
             {
                 try
                 {
@@ -191,15 +202,15 @@
                     ToastService.ShowWarning($"Session deleted locally, but server deletion failed: {ex.Message}");
                 }
             }
+            else
+            {
+                // Session was never synced, just delete locally
+                ToastService.ShowSuccess("Session deleted");
+            }
             
             // Delete from local storage
             await LocalStorageService.DeleteWorkSessionAsync(session.Id);
             await LoadWorkSessionsAsync();
-            
-            if (!session.IsSynced)
-            {
-                ToastService.ShowSuccess("Session deleted");
-            }
         }
         catch (Exception ex)
         {

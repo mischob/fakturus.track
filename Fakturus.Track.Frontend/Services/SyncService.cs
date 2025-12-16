@@ -1,52 +1,151 @@
 using Fakturus.Track.Frontend.Models;
-using System.Timers;
 using Timer = System.Timers.Timer;
 
 namespace Fakturus.Track.Frontend.Services;
 
-public class SyncService : ISyncService, IDisposable
+public class SyncService(ILocalStorageService localStorageService, IWorkSessionsApiClient apiClient)
+    : ISyncService, IDisposable
 {
-    private readonly ILocalStorageService _localStorageService;
-    private readonly IWorkSessionsApiClient _apiClient;
     private Timer? _syncTimer;
     private const int SyncIntervalMinutes = 5;
-
-    public SyncService(ILocalStorageService localStorageService, IWorkSessionsApiClient apiClient)
-    {
-        _localStorageService = localStorageService;
-        _apiClient = apiClient;
-    }
 
     public async Task SyncAsync()
     {
         try
         {
-            var pendingSessions = await _localStorageService.GetPendingSyncWorkSessionsAsync();
-            if (!pendingSessions.Any())
-                return;
-
-            var syncRequest = new SyncWorkSessionsRequest
+            // Step 1: Fetch all sessions from backend
+            var backendSessions = await apiClient.GetWorkSessionsAsync();
+            
+            // Step 2: Get local sessions
+            var localSessions = await localStorageService.GetWorkSessionsAsync();
+            
+            // Step 3: Convert backend DTOs to Models
+            var backendModels = backendSessions.Select(bs => new WorkSessionModel
             {
-                WorkSessions = pendingSessions.Select(s => new CreateWorkSessionRequest
+                Id = bs.Id,
+                UserId = bs.UserId,
+                Date = bs.Date,
+                StartTime = bs.StartTime,
+                StopTime = bs.StopTime,
+                CreatedAt = bs.CreatedAt,
+                UpdatedAt = bs.UpdatedAt,
+                SyncedAt = bs.SyncedAt,
+                IsSynced = true,
+                IsPendingSync = false
+            }).ToList();
+            
+            // Step 4: Merge backend and local sessions
+            var mergedSessions = new Dictionary<Guid, WorkSessionModel>();
+            
+            // Add all backend sessions first (they are the source of truth for synced data)
+            foreach (var backendModel in backendModels)
+            {
+                mergedSessions[backendModel.Id] = backendModel;
+            }
+            
+            // Add/update with local sessions
+            foreach (var localSession in localSessions)
+            {
+                if (localSession.IsPendingSync && !localSession.IsSynced)
                 {
-                    Date = s.Date,
-                    StartTime = s.StartTime,
-                    StopTime = s.StopTime
-                }).ToList()
-            };
-
-            var syncedSessions = await _apiClient.SyncWorkSessionsAsync(syncRequest);
-
-            // Mark local sessions as synced
-            foreach (var session in pendingSessions)
+                    // Local pending changes - keep them to push to backend
+                    // If backend already has this ID, we'll update it after sync
+                    mergedSessions[localSession.Id] = localSession;
+                }
+                else if (!mergedSessions.ContainsKey(localSession.Id))
+                {
+                    // Local-only session (not synced yet) - add it
+                    mergedSessions[localSession.Id] = localSession;
+                }
+                // If session exists in both and local is synced, backend version already added above wins
+            }
+            
+            // Step 5: Push pending local sessions to backend
+            var pendingSessions = mergedSessions.Values
+                .Where(s => s.IsPendingSync && !s.IsSynced)
+                .ToList();
+            
+            if (pendingSessions.Any())
             {
-                await _localStorageService.MarkAsSyncedAsync(session.Id);
+                var syncRequest = new SyncWorkSessionsRequest
+                {
+                    WorkSessions = pendingSessions.Select(s => new CreateWorkSessionRequest
+                    {
+                        Date = s.Date,
+                        StartTime = s.StartTime,
+                        StopTime = s.StopTime
+                    }).ToList()
+                };
+
+                var syncedSessions = await apiClient.SyncWorkSessionsAsync(syncRequest);
+                
+                // Update merged sessions with synced data
+                foreach (var syncedSession in syncedSessions)
+                {
+                    // Find the matching pending session by comparing data (since ID might change)
+                    var matchingPending = pendingSessions.FirstOrDefault(s => 
+                        s.Date == syncedSession.Date &&
+                        Math.Abs((s.StartTime - syncedSession.StartTime).TotalSeconds) < 1 &&
+                        ((s.StopTime == null && syncedSession.StopTime == null) ||
+                         (s.StopTime.HasValue && syncedSession.StopTime.HasValue && 
+                          Math.Abs((s.StopTime.Value - syncedSession.StopTime.Value).TotalSeconds) < 1)));
+                    
+                    if (matchingPending != null)
+                    {
+                        // Remove old entry if ID changed
+                        if (matchingPending.Id != syncedSession.Id)
+                        {
+                            mergedSessions.Remove(matchingPending.Id);
+                        }
+                        
+                        // Add/update with synced data
+                        var syncedModel = new WorkSessionModel
+                        {
+                            Id = syncedSession.Id,
+                            UserId = syncedSession.UserId,
+                            Date = syncedSession.Date,
+                            StartTime = syncedSession.StartTime,
+                            StopTime = syncedSession.StopTime,
+                            CreatedAt = syncedSession.CreatedAt,
+                            UpdatedAt = syncedSession.UpdatedAt,
+                            SyncedAt = syncedSession.SyncedAt,
+                            IsSynced = true,
+                            IsPendingSync = false
+                        };
+                        mergedSessions[syncedModel.Id] = syncedModel;
+                    }
+                    else
+                    {
+                        // New session from backend (shouldn't happen, but handle it)
+                        var syncedModel = new WorkSessionModel
+                        {
+                            Id = syncedSession.Id,
+                            UserId = syncedSession.UserId,
+                            Date = syncedSession.Date,
+                            StartTime = syncedSession.StartTime,
+                            StopTime = syncedSession.StopTime,
+                            CreatedAt = syncedSession.CreatedAt,
+                            UpdatedAt = syncedSession.UpdatedAt,
+                            SyncedAt = syncedSession.SyncedAt,
+                            IsSynced = true,
+                            IsPendingSync = false
+                        };
+                        mergedSessions[syncedModel.Id] = syncedModel;
+                    }
+                }
+            }
+            
+            // Step 6: Save merged sessions to local storage
+            foreach (var session in mergedSessions.Values)
+            {
+                await localStorageService.SaveWorkSessionAsync(session);
             }
         }
         catch (Exception ex)
         {
-            // Log error but don't throw - sync will retry later
+            // Log error and re-throw so UI can show error
             Console.WriteLine($"Sync error: {ex.Message}");
+            throw;
         }
     }
 
