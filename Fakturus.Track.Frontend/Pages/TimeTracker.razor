@@ -94,6 +94,7 @@
     private List<WorkSessionModel> workSessions = new();
     private WorkSessionModel? currentSession;
     private bool isSyncing = false;
+    private bool isFinishing = false; // Flag to prevent re-loading finished session
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,6 +116,15 @@
     {
         workSessions = await LocalStorageService.GetWorkSessionsAsync();
         var today = DateOnly.FromDateTime(DateTime.Now);
+        
+        // If we're finishing a session, don't reload it as current
+        if (isFinishing)
+        {
+            isFinishing = false;
+            currentSession = null;
+            StateHasChanged();
+            return;
+        }
         
         // If we already have a currentSession, try to keep it (by ID) to prevent auto-finishing
         // This ensures that manually entering times doesn't move the session to history
@@ -189,8 +199,8 @@
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
         
-        // Clear current session so "Start New Session" card appears
-        currentSession = null;
+        // Set flag to prevent re-loading the finished session
+        isFinishing = true;
         
         // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
