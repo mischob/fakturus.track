@@ -22,21 +22,18 @@
             }
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                 <div class="flex items-center gap-2">
                     <input type="datetime-local" 
-                           value="@FormatDateTimeLocal(WorkSession.StartTime)" 
+                           value="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")" 
                            @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "start"))"
                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                    @if (WorkSession.StartTime == default)
-                    {
-                        <button @onclick="() => OnStart.InvokeAsync(WorkSession)" 
-                                class="btn-secondary text-sm px-4 py-2">
-                            Set Now
-                        </button>
-                    }
+                    <button @onclick="() => OnStart.InvokeAsync(WorkSession)" 
+                            class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
+                        Set Now
+                    </button>
                 </div>
             </div>
 
@@ -47,18 +44,15 @@
                            value="@(WorkSession.StopTime.HasValue ? FormatDateTimeLocal(WorkSession.StopTime.Value) : "")" 
                            @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "stop"))"
                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                    @if (WorkSession.StopTime == null)
-                    {
-                        <button @onclick="() => OnStop.InvokeAsync(WorkSession)" 
-                                class="btn-secondary text-sm px-4 py-2">
-                            Set Now
-                        </button>
-                    }
+                    <button @onclick="() => OnStop.InvokeAsync(WorkSession)" 
+                            class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
+                        Set Now
+                    </button>
                 </div>
             </div>
         </div>
 
-        @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue)
+        @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
         {
             <div class="pt-2 border-t border-gray-200">
                 <p class="text-sm text-gray-600">
@@ -79,6 +73,10 @@
                     class="flex-1 btn-outline text-sm">
                 Edit
             </button>
+            <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
+                    class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
+                Delete
+            </button>
         </div>
     </div>
 </div>
@@ -89,11 +87,16 @@
     [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnEdit { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
     [Parameter] public EventCallback OnNew { get; set; }
     [Parameter] public bool IsHistory { get; set; } = false;
 
     private string FormatDateTimeLocal(DateTime dateTime)
     {
+        // Handle default/empty DateTime
+        if (dateTime == default || dateTime == DateTime.MinValue)
+            return "";
+        
         // Convert UTC to local time for display
         var localTime = dateTime.ToLocalTime();
         return localTime.ToString("yyyy-MM-ddTHH:mm");
