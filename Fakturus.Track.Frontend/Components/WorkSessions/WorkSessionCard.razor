@@ -7,11 +7,20 @@
                 <h3 class="text-lg font-semibold text-gray-900">
                     @WorkSession.Date.ToString("dd.MM.yyyy")
                 </h3>
-                @if (!IsHistory && WorkSession.StopTime == null)
+                @if (!IsHistory)
                 {
-                    <span class="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                        Active
-                    </span>
+                    @if (WorkSession.StopTime == null)
+                    {
+                        <span class="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                            Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-block mt-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                            Ready to Finish
+                        </span>
+                    }
                 }
             </div>
             @if (WorkSession.IsPendingSync && !WorkSession.IsSynced)
@@ -102,6 +111,7 @@
             <div class="flex gap-2 pt-2">
                 @if (!IsHistory)
                 {
+                    <!-- Current session: Show New Session and Finish buttons, no Delete -->
                     <button @onclick="() => OnNew.InvokeAsync()" 
                             class="flex-1 btn-outline text-sm">
                         New Session
@@ -113,16 +123,10 @@
                             Finish
                         </button>
                     }
-                    else
-                    {
-                        <button @onclick="() => OnEdit.InvokeAsync(WorkSession)" 
-                                class="flex-1 btn-outline text-sm">
-                            Edit
-                        </button>
-                    }
                 }
                 else
                 {
+                    <!-- History session in edit mode: Show Save and Cancel buttons -->
                     <button @onclick="() => { isEditing = false; OnSave.InvokeAsync(WorkSession); }" 
                             class="flex-1 btn-primary text-sm">
                         Save
@@ -131,11 +135,12 @@
                             class="flex-1 btn-outline text-sm">
                         Cancel
                     </button>
+                    <!-- Delete button only for history sessions -->
+                    <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
+                            class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
+                        Delete
+                    </button>
                 }
-                <button @onclick="() => OnDelete.InvokeAsync(WorkSession)" 
-                        class="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border-2 border-red-500 hover:bg-red-50 rounded-lg transition-all duration-200">
-                    Delete
-                </button>
             </div>
         }
     </div>
@@ -184,6 +189,8 @@
                 WorkSession.StopTime = utcTime;
             }
 
+            // Save the changes when times are manually entered
+            // But the session should remain current until Finish is explicitly clicked
             WorkSession.IsPendingSync = true;
             await OnSave.InvokeAsync(WorkSession);
         }

@@ -58,6 +58,8 @@
     <div class="space-y-4">
         <h2 class="text-2xl font-semibold text-gray-900">History</h2>
         @{
+            // History: all sessions except the current one
+            // Current session is today's session (may have StopTime set but not finished)
             var historySessions = workSessions
                 .Where(s => currentSession == null || s.Id != currentSession.Id)
                 .OrderByDescending(s => s.Date)
@@ -112,11 +114,46 @@
     private async Task LoadWorkSessionsAsync()
     {
         workSessions = await LocalStorageService.GetWorkSessionsAsync();
-        // Find current session: today's date, no stop time, or no start time (new session)
-        currentSession = workSessions
-            .Where(s => s.Date == DateOnly.FromDateTime(DateTime.Now) && s.StopTime == null)
-            .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
-            .FirstOrDefault();
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        
+        // If we already have a currentSession, try to keep it (by ID) to prevent auto-finishing
+        // This ensures that manually entering times doesn't move the session to history
+        if (currentSession != null)
+        {
+            // Try to find the same session by ID first
+            var existingCurrent = workSessions.FirstOrDefault(s => s.Id == currentSession.Id);
+            if (existingCurrent != null)
+            {
+                // Keep the session as current if it's from today
+                // This allows setting both times without auto-finishing
+                if (existingCurrent.Date == today)
+                {
+                    currentSession = existingCurrent;
+                }
+                else
+                {
+                    // Date changed to not today, clear current session
+                    currentSession = null;
+                }
+            }
+            else
+            {
+                // Session not found (maybe deleted), find a new current session
+                currentSession = workSessions
+                    .Where(s => s.Date == today)
+                    .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
+                    .FirstOrDefault();
+            }
+        }
+        else
+        {
+            // No current session, find today's session
+            // Only find sessions without StopTime set, or the most recent one if all have StopTime
+            currentSession = workSessions
+                .Where(s => s.Date == today)
+                .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
+                .FirstOrDefault();
+        }
         
         StateHasChanged();
     }
@@ -144,12 +181,18 @@
     private async Task HandleFinish(WorkSessionModel session)
     {
         // Finish closes the session and moves it to history
+        // Ensure StopTime is set
         if (session.StopTime == null)
         {
             session.StopTime = DateTime.UtcNow;
         }
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
+        
+        // Clear current session so "Start New Session" card appears
+        currentSession = null;
+        
+        // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
         ToastService.ShowSuccess("Session finished");
     }
@@ -180,6 +223,9 @@
     {
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
+        
+        // Reload to refresh the list
+        // LoadWorkSessionsAsync will preserve the current session by ID
         await LoadWorkSessionsAsync();
         ToastService.ShowSuccess("Session updated");
     }
