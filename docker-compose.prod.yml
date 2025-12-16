@@ -1,0 +1,62 @@
+version: '3.8'
+
+networks:
+  proxy:
+    external: true
+  fakturus-internal:
+    driver: bridge
+
+services:
+  fakturus-track-api:
+    image: registry.fakturus.com/fakturus-track-api:latest
+    container_name: fakturus-track-api
+    restart: unless-stopped
+    ports:
+      - 8082:80
+    networks:
+      - proxy
+      - fakturus-internal
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - KeyVault__VaultUrl=https://fakturus.vault.azure.net/
+      - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
+      - AzureAdB2C__Domain=fakturus.onmicrosoft.com
+      - AzureAdB2C__TenantId=17c44991-367b-4d16-b818-1c268d2faed5
+      - AzureAdB2C__ClientId=74fd0ed2-8865-4bad-b002-7d867ad8791a
+      - AzureAdB2C__Audience=74fd0ed2-8865-4bad-b002-7d867ad8791a
+      - AzureAdB2C__SignUpSignInPolicyId=B2C_1_fakt_sign_in
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fakturus-track-api.rule=Host(`api.track.fakturus.com`)"
+      - "traefik.http.routers.fakturus-track-api.entrypoints=https"
+      - "traefik.http.routers.fakturus-track-api.tls=true"
+      - "traefik.http.routers.fakturus-track-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fakturus-track-api.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  fakturus-track-ui:
+    image: registry.fakturus.com/fakturus-track-ui:latest
+    container_name: fakturus-track-ui
+    restart: unless-stopped
+    ports:
+      - 8092:80
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fakturus-track-ui.rule=Host(`track.fakturus.com`)"
+      - "traefik.http.routers.fakturus-track-ui.entrypoints=https"
+      - "traefik.http.routers.fakturus-track-ui.tls=true"
+      - "traefik.http.routers.fakturus-track-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fakturus-track-ui.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy"
+
