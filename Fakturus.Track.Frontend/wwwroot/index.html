@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Time Tracker - Track your daily work time"/>
+    <title>Time Tracker - Fakturus</title>
+    <base href="/"/>
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <link href="css/app.tailwind.css" rel="stylesheet"/>
+</head>
+
+<body class="min-h-screen bg-background font-sans antialiased">
+<div id="app">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div class="mt-2 text-gray-600">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<div id="blazor-error-ui" class="hidden fixed bottom-0 right-0 m-4 p-4 z-50 bg-red-500 text-white rounded shadow-lg">
+    An unhandled error has occurred.
+    <a href="." class="underline">Reload</a>
+    <button type="button" class="ml-2 px-2 py-1 bg-opacity-20 bg-black rounded" onclick="document.getElementById('blazor-error-ui').style.display = 'none'">
+        Close
+    </button>
+</div>
+
+<script src="_content/Microsoft.Authentication.WebAssembly.Msal/AuthenticationService.js"></script>
+<script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

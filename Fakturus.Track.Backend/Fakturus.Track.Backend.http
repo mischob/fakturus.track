@@ -1,0 +1,6 @@
+@Fakturus.Track.Backend_HostAddress = http://localhost:5295
+
+GET {{Fakturus.Track.Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

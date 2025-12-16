@@ -1,0 +1,176 @@
+@page "/"
+@page "/tracker"
+@using Fakturus.Track.Frontend.Models
+@using Fakturus.Track.Frontend.Services
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ILocalStorageService LocalStorageService
+@inject IWorkSessionsApiClient ApiClient
+@inject ISyncService SyncService
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Time Tracker</PageTitle>
+
+<div class="py-6 space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">Time Tracker</h1>
+        <button @onclick="HandleSync" 
+                class="btn-primary @(isSyncing ? "opacity-50 cursor-not-allowed" : "")"
+                disabled="@isSyncing">
+            @if (isSyncing)
+            {
+                <span>Syncing...</span>
+            }
+            else
+            {
+                <span>Sync</span>
+            }
+        </button>
+    </div>
+
+    <!-- Current Session Card -->
+    @if (currentSession != null)
+    {
+        <WorkSessionCard WorkSession="currentSession" 
+                         OnStart="HandleStart" 
+                         OnStop="HandleStop" 
+                         OnEdit="HandleEdit"
+                         OnSave="HandleSave"
+                         OnNew="HandleNew"/>
+    }
+    else
+    {
+        <div class="card">
+            <div class="text-center py-8">
+                <p class="text-gray-600 mb-4">No active session</p>
+                <button @onclick="HandleNew" class="btn-primary">
+                    Start New Session
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- History -->
+    <div class="space-y-4">
+        <h2 class="text-2xl font-semibold text-gray-900">History</h2>
+        @if (workSessions.Any())
+        {
+            @foreach (var session in workSessions.OrderByDescending(s => s.Date).ThenByDescending(s => s.StartTime))
+            {
+                <WorkSessionCard WorkSession="session" 
+                                 OnStart="HandleStart" 
+                                 OnStop="HandleStop" 
+                                 OnEdit="HandleEdit"
+                                 OnSave="HandleSave"
+                                 OnNew="HandleNew"
+                                 IsHistory="true"/>
+            }
+        }
+        else
+        {
+            <div class="card text-center py-8">
+                <p class="text-gray-600">No work sessions yet</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<WorkSessionModel> workSessions = new();
+    private WorkSessionModel? currentSession;
+    private bool isSyncing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWorkSessionsAsync();
+    }
+
+    private async Task LoadWorkSessionsAsync()
+    {
+        workSessions = await LocalStorageService.GetWorkSessionsAsync();
+        currentSession = workSessions
+            .Where(s => s.Date == DateOnly.FromDateTime(DateTime.Now) && s.StopTime == null)
+            .OrderByDescending(s => s.StartTime)
+            .FirstOrDefault();
+        
+        StateHasChanged();
+    }
+
+    private async Task HandleStart(WorkSessionModel session)
+    {
+        if (session.StartTime == default)
+        {
+            session.StartTime = DateTime.UtcNow;
+            session.Date = DateOnly.FromDateTime(DateTime.Now);
+            session.IsPendingSync = true;
+            await LocalStorageService.SaveWorkSessionAsync(session);
+            await LoadWorkSessionsAsync();
+            ToastService.ShowSuccess("Start time recorded");
+        }
+    }
+
+    private async Task HandleStop(WorkSessionModel session)
+    {
+        if (session.StopTime == null)
+        {
+            session.StopTime = DateTime.UtcNow;
+            session.IsPendingSync = true;
+            await LocalStorageService.SaveWorkSessionAsync(session);
+            await LoadWorkSessionsAsync();
+            ToastService.ShowSuccess("Stop time recorded");
+        }
+    }
+
+    private async Task HandleNew()
+    {
+        var newSession = new WorkSessionModel
+        {
+            Id = Guid.NewGuid(),
+            Date = DateOnly.FromDateTime(DateTime.Now),
+            StartTime = DateTime.UtcNow,
+            IsPendingSync = true
+        };
+        
+        await LocalStorageService.SaveWorkSessionAsync(newSession);
+        await LoadWorkSessionsAsync();
+        ToastService.ShowSuccess("New session created");
+    }
+
+    private async Task HandleEdit(WorkSessionModel session)
+    {
+        // TODO: Implement edit modal
+        ToastService.ShowInfo("Edit functionality coming soon");
+    }
+
+    private async Task HandleSave(WorkSessionModel session)
+    {
+        session.IsPendingSync = true;
+        await LocalStorageService.SaveWorkSessionAsync(session);
+        await LoadWorkSessionsAsync();
+        ToastService.ShowSuccess("Session updated");
+    }
+
+    private async Task HandleSync()
+    {
+        if (isSyncing) return;
+        
+        isSyncing = true;
+        try
+        {
+            await SyncService.SyncAsync();
+            await LoadWorkSessionsAsync();
+            ToastService.ShowSuccess("Sync completed");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Sync failed: {ex.Message}");
+        }
+        finally
+        {
+            isSyncing = false;
+        }
+    }
+}
+

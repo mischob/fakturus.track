@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<TrimmerRootAssembly Include="Microsoft.Authentication.WebAssembly.Msal" />
+		<TrimmerRootAssembly Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.1" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="10.0.1" />
+		<PackageReference Include="Refit.HttpClientFactory" Version="9.0.2" />
+		<PackageReference Include="FluentValidation" Version="12.1.1" />
+		<PackageReference Include="Blazored.Toast" Version="4.2.1" />
+	</ItemGroup>
+
+	<!-- Tailwind CSS Build Integration -->
+	<PropertyGroup>
+		<NpmCommand Condition="'$(OS)' == 'Windows_NT'">npm.cmd</NpmCommand>
+		<NpmCommand Condition="'$(OS)' != 'Windows_NT'">npm</NpmCommand>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<SkipTailwindBuild Condition="'$(SkipTailwindBuild)' == ''">false</SkipTailwindBuild>
+	</PropertyGroup>
+
+	<Target Name="EnsureNodeModules" BeforeTargets="BuildTailwindCSS" Condition="'$(SkipTailwindBuild)' != 'true'">
+		<Message Importance="high" Text="Checking for Node.js and npm..." />
+		<Exec Command="node --version" ContinueOnError="true" IgnoreExitCode="true">
+			<Output TaskParameter="ExitCode" PropertyName="NodeExitCode" />
+		</Exec>
+		<Exec Command="$(NpmCommand) --version" ContinueOnError="true" IgnoreExitCode="true">
+			<Output TaskParameter="ExitCode" PropertyName="NpmExitCode" />
+		</Exec>
+		
+		<PropertyGroup>
+			<NodeAvailable Condition="'$(NodeExitCode)' == '0' AND '$(NpmExitCode)' == '0'">true</NodeAvailable>
+		</PropertyGroup>
+		
+		<Message Condition="'$(NodeAvailable)' != 'true'" Importance="high" Text="Node.js/npm not available. Skipping Tailwind CSS build. Ensure CSS is pre-built or install Node.js." />
+		
+		<PropertyGroup Condition="'$(NodeAvailable)' == 'true'">
+			<NodeModulesExists Condition="Exists('$(MSBuildProjectDirectory)\node_modules')">true</NodeModulesExists>
+			<NodeModulesExists Condition="Exists('$(MSBuildProjectDirectory)/node_modules')">true</NodeModulesExists>
+		</PropertyGroup>
+		
+		<Message Condition="'$(NodeAvailable)' == 'true' AND '$(NodeModulesExists)' != 'true'" Importance="high" Text="node_modules not found. Running npm install..." />
+		<Exec Condition="'$(NodeAvailable)' == 'true' AND '$(NodeModulesExists)' != 'true'" Command="$(NpmCommand) install" WorkingDirectory="$(MSBuildProjectDirectory)" />
+	</Target>
+
+	<Target Name="BuildTailwindCSS" BeforeTargets="BeforeBuild" Condition="'$(SkipTailwindBuild)' != 'true' AND '$(NodeAvailable)' == 'true'">
+		<Message Importance="high" Text="Building Tailwind CSS..." />
+		<Exec Command="$(NpmCommand) run buildcss" WorkingDirectory="$(MSBuildProjectDirectory)" />
+		<Message Importance="high" Text="Tailwind CSS build completed." />
+	</Target>
+
+</Project>

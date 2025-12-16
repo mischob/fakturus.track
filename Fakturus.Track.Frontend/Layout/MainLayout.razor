@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <AuthorizeView>
+        <Authorized>
+            <!-- Fixed Header -->
+            <header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-200 z-50">
+                <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="/images/logo.svg" alt="Fakturus" class="h-10"/>
+                        <h1 class="text-xl font-bold text-gray-900">Time Tracker</h1>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <a href="authentication/logout" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="pb-20 pt-16">
+                <div class="max-w-4xl mx-auto px-4">
+                    @Body
+                </div>
+            </main>
+        </Authorized>
+        <NotAuthorized>
+            <!-- Enhanced Authentication Layout -->
+            <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-4">
+                <div class="w-full max-w-md">
+                    <div class="bg-white rounded-2xl shadow-lg p-8">
+                        <div class="text-center mb-8">
+                            <img src="/images/logo.svg" alt="Fakturus" class="h-16 mx-auto mb-4"/>
+                            <h1 class="text-2xl font-bold text-gray-900">Welcome to Time Tracker</h1>
+                            <p class="text-gray-600 mt-2">Track your daily work time</p>
+                        </div>
+                        @Body
+                    </div>
+                </div>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>

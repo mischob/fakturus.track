@@ -1,0 +1,55 @@
+﻿@using Blazored.Toast
+@using Blazored.Toast.Configuration
+@using Fakturus.Track.Frontend.Shared
+
+<ErrorBoundary>
+    <ChildContent>
+        <CascadingAuthenticationState>
+            <Router AppAssembly="@typeof(App).Assembly">
+                <Found Context="routeData">
+                    <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                        <NotAuthorized>
+                            @if (context.User.Identity?.IsAuthenticated != true)
+                            {
+                                <RedirectToLogin/>
+                            }
+                            else
+                            {
+                                <p role="alert">You are not authorized to access this resource.</p>
+                            }
+                        </NotAuthorized>
+                    </AuthorizeRouteView>
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+                </Found>
+                <NotFound>
+                    <PageTitle>Not found</PageTitle>
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <p role="alert">Sorry, there's nothing at this address.</p>
+                    </LayoutView>
+                </NotFound>
+            </Router>
+            <BlazoredToasts Position="ToastPosition.BottomRight"
+                            Timeout="5"
+                            IconType="IconType.FontAwesome"
+                            SuccessClass="success-toast"
+                            SuccessIcon="fas fa-check-circle"
+                            ErrorClass="error-toast"
+                            ErrorIcon="fas fa-times-circle"
+                            InfoClass="info-toast"
+                            InfoIcon="fas fa-info-circle"
+                            WarningClass="warning-toast"
+                            WarningIcon="fas fa-exclamation-triangle"/>
+        </CascadingAuthenticationState>
+    </ChildContent>
+    <ErrorContent>
+        <div class="flex items-center justify-center min-h-screen bg-background">
+            <div class="text-center p-8">
+                <h1 class="text-2xl font-bold text-destructive mb-4">An error occurred</h1>
+                <p class="text-muted-foreground mb-4">The application encountered an unexpected error.</p>
+                <button class="px-4 py-2 bg-primary text-primary-foreground rounded" onclick="window.location.reload()">
+                    Reload Page
+                </button>
+            </div>
+        </div>
+    </ErrorContent>
+</ErrorBoundary>

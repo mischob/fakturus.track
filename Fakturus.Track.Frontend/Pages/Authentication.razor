@@ -1,0 +1,41 @@
+@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <!-- Logo Section -->
+            <div class="text-center mb-8">
+                <img src="/images/logo.svg" alt="Fakturus" class="h-16 mx-auto mb-4"/>
+                <h1 class="text-2xl font-bold text-gray-900">Welcome to Time Tracker</h1>
+                <p class="text-gray-600 mt-2">Track your daily work time</p>
+            </div>
+
+            <!-- Azure AD B2C Login/Logout Form -->
+            <div class="space-y-4">
+                @if (Action == "logout")
+                {
+                    <div class="text-center py-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                        <p class="text-gray-600">Signing out...</p>
+                    </div>
+                }
+                <RemoteAuthenticatorView Action="@Action"/>
+            </div>
+
+            @if (Action == "login")
+            {
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-500">
+                        Sign in to start tracking your work time
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter] public string? Action { get; set; }
+}
+
