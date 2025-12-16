@@ -21,7 +21,8 @@ RUN dotnet build "Fakturus.Track.Frontend.csproj" -c Release -o /app/build
 
 # Publish the application
 FROM build AS publish
-RUN dotnet publish "Fakturus.Track.Frontend/Fakturus.Track.Frontend.csproj" -c Release -o /app/publish
+WORKDIR "/src/Fakturus.Track.Frontend"
+RUN dotnet publish "Fakturus.Track.Frontend.csproj" -c Release -o /app/publish
 
 # Use nginx to serve the Blazor WebAssembly application
 FROM nginx:alpine AS final

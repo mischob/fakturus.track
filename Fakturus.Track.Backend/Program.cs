@@ -168,6 +168,9 @@ builder.Services.AddAuthorization(options =>
 VersionSets.CreateApi("FakturusTrack", v => v
     .HasApiVersion(new ApiVersion(1, 0)));
 
+VersionSets.CreateApi("health", v => v
+    .HasApiVersion(new ApiVersion(1, 0)));
+
 // FastEndpoints with Versioning and Swagger
 builder.Services.AddFastEndpoints();
 
