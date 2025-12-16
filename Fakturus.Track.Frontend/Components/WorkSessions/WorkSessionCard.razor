@@ -111,16 +111,19 @@
             <div class="flex gap-2 pt-2">
                 @if (!IsHistory)
                 {
-                    <!-- Current session: Show New Session and Finish buttons, no Delete -->
-                    <button @onclick="() => OnNew.InvokeAsync()" 
-                            class="flex-1 btn-outline text-sm">
-                        New Session
-                    </button>
+                    <!-- Current session: Show Finish button when StopTime is set, otherwise show New Session -->
                     @if (WorkSession.StopTime.HasValue)
                     {
                         <button @onclick="() => OnFinish.InvokeAsync(WorkSession)" 
                                 class="flex-1 btn-primary text-sm">
                             Finish
+                        </button>
+                    }
+                    else
+                    {
+                        <button @onclick="() => OnNew.InvokeAsync()" 
+                                class="flex-1 btn-outline text-sm">
+                            New Session
                         </button>
                     }
                 }

@@ -279,10 +279,15 @@
         if (isSyncing) return;
         
         isSyncing = true;
+        StateHasChanged(); // Update UI to show syncing state
+        
         try
         {
             await SyncService.SyncAsync();
+            // After sync, reload sessions
+            // LoadWorkSessionsAsync will preserve the current session by ID if it exists
             await LoadWorkSessionsAsync();
+            StateHasChanged(); // Force UI refresh after sync
             ToastService.ShowSuccess("Sync completed");
         }
         catch (Exception ex)
@@ -292,6 +297,7 @@
         finally
         {
             isSyncing = false;
+            StateHasChanged(); // Update UI to hide syncing state
         }
     }
 }

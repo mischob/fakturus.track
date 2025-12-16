@@ -35,6 +35,13 @@ public class LocalStorageService : ILocalStorageService
         await SaveToStorageAsync(sessions);
     }
 
+    public async Task SaveWorkSessionsAsync(List<WorkSessionModel> workSessions)
+    {
+        // Replace all sessions with the provided list
+        // This is more efficient for bulk updates during sync
+        await SaveToStorageAsync(workSessions);
+    }
+
     public async Task<List<WorkSessionModel>> GetWorkSessionsAsync()
     {
         try

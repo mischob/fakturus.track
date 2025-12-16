@@ -135,11 +135,8 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                 }
             }
             
-            // Step 6: Save merged sessions to local storage
-            foreach (var session in mergedSessions.Values)
-            {
-                await localStorageService.SaveWorkSessionAsync(session);
-            }
+            // Step 6: Save merged sessions to local storage (bulk update to prevent duplicates)
+            await localStorageService.SaveWorkSessionsAsync(mergedSessions.Values.ToList());
         }
         catch (Exception ex)
         {
