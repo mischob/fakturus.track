@@ -286,6 +286,8 @@ curl -k https://track.fakturus.com
 
 **Important**: Ensure PostgreSQL is accessible and connection string is configured in Key Vault.
 
+The application automatically applies migrations on startup using `Database.Migrate()`. However, you can also run migrations manually:
+
 ```bash
 # Execute migrations inside the API container
 docker-compose exec fakturus-track-api dotnet ef database update
@@ -297,8 +299,11 @@ docker-compose exec fakturus-track-api /bin/bash
 ```
 
 **Note**: 
-- Ensure the `dotnet ef` tools are available in the container. If not, you may need to run migrations from your local development machine with the production connection string, or include the EF tools in your Dockerfile.
+- Migrations are automatically applied when the container starts (configured in `Program.cs`)
+- If migrations fail, the container will fail to start (fail-fast behavior)
+- Ensure the `dotnet ef` tools are available in the container. The Dockerfile includes `Microsoft.EntityFrameworkCore.Tools` package.
 - For Azure PostgreSQL, ensure the server firewall allows connections from the Hetzner server IP (91.99.65.63).
+- If you need to run migrations manually, ensure the connection string in Key Vault is accessible from your local machine or use Azure Cloud Shell.
 
 ## Update Deployment
 
