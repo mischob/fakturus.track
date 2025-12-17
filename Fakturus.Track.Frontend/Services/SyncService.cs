@@ -15,9 +15,11 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
         {
             // Step 1: Fetch all sessions from backend
             var backendSessions = await apiClient.GetWorkSessionsAsync();
+            Console.WriteLine($"SyncService.SyncAsync: Fetched {backendSessions.Count} sessions from backend");
             
             // Step 2: Get local sessions
             var localSessions = await localStorageService.GetWorkSessionsAsync();
+            Console.WriteLine($"SyncService.SyncAsync: Found {localSessions.Count} local sessions");
             
             // Step 3: Convert backend DTOs to Models
             var backendModels = backendSessions.Select(bs => new WorkSessionModel
@@ -136,7 +138,13 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
             }
             
             // Step 6: Save merged sessions to local storage (bulk update to prevent duplicates)
-            await localStorageService.SaveWorkSessionsAsync(mergedSessions.Values.ToList());
+            var finalSessions = mergedSessions.Values.ToList();
+            Console.WriteLine($"SyncService.SyncAsync: Saving {finalSessions.Count} merged sessions to local storage");
+            foreach (var session in finalSessions)
+            {
+                Console.WriteLine($"  - Session {session.Id}: Date={session.Date}, Start={session.StartTime}, Stop={session.StopTime}, IsSynced={session.IsSynced}");
+            }
+            await localStorageService.SaveWorkSessionsAsync(finalSessions);
         }
         catch (Exception ex)
         {

@@ -90,6 +90,7 @@
                         <input type="datetime-local" 
                                value="@(WorkSession.StopTime.HasValue ? FormatDateTimeLocal(WorkSession.StopTime.Value) : "")" 
                                @onchange="@((ChangeEventArgs e) => HandleTimeChange(e, "stop"))"
+                               min="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")"
                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                         <button @onclick="() => OnStop.InvokeAsync(WorkSession)" 
                                 class="btn-secondary text-sm px-4 py-2 whitespace-nowrap">
@@ -112,11 +113,15 @@
                 @if (!IsHistory)
                 {
                     <!-- Current session: Show Finish button when StopTime is set, otherwise show New Session -->
-                    @if (WorkSession.StopTime.HasValue)
+                    @if (WorkSession.StopTime.HasValue && WorkSession.StartTime != default)
                     {
                         <button @onclick="() => OnFinish.InvokeAsync(WorkSession)" 
                                 class="flex-1 btn-primary text-sm">
                             Finish
+                        </button>
+                        <button @onclick="HandleCancel" 
+                                class="flex-1 btn-outline text-sm">
+                            Cancel
                         </button>
                     }
                     else
@@ -157,10 +162,16 @@
     [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnCancel { get; set; }
     [Parameter] public EventCallback OnNew { get; set; }
     [Parameter] public bool IsHistory { get; set; } = false;
 
     private bool isEditing = false;
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync(WorkSession);
+    }
 
     private string FormatDateTimeLocal(DateTime dateTime)
     {
@@ -186,9 +197,21 @@
             {
                 WorkSession.StartTime = utcTime;
                 WorkSession.Date = DateOnly.FromDateTime(parsedTime);
+                
+                // If stop time is set and is now before start time, clear it
+                if (WorkSession.StopTime.HasValue && WorkSession.StopTime.Value < utcTime)
+                {
+                    WorkSession.StopTime = null;
+                }
             }
             else if (type == "stop")
             {
+                // Validate that stop time is not before start time
+                if (WorkSession.StartTime != default && utcTime < WorkSession.StartTime)
+                {
+                    // Don't set the stop time if it's before start time
+                    return;
+                }
                 WorkSession.StopTime = utcTime;
             }
 

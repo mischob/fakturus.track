@@ -40,6 +40,7 @@
                          OnFinish="HandleFinish"
                          OnSave="HandleSave"
                          OnDelete="HandleDelete"
+                         OnCancel="HandleCancel"
                          OnNew="HandleNew"/>
     }
     else
@@ -77,6 +78,7 @@
                                  OnFinish="HandleFinish"
                                  OnSave="HandleSave"
                                  OnDelete="HandleDelete"
+                                 OnCancel="HandleCancel"
                                  OnNew="HandleNew"
                                  IsHistory="true"/>
             }
@@ -115,6 +117,8 @@
     private async Task LoadWorkSessionsAsync()
     {
         workSessions = await LocalStorageService.GetWorkSessionsAsync();
+        Console.WriteLine($"LoadWorkSessionsAsync: Loaded {workSessions.Count} sessions from local storage");
+        
         var today = DateOnly.FromDateTime(DateTime.Now);
         
         // If we're finishing a session, don't reload it as current
@@ -139,11 +143,13 @@
                 if (existingCurrent.Date == today)
                 {
                     currentSession = existingCurrent;
+                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {currentSession.Id}");
                 }
                 else
                 {
                     // Date changed to not today, clear current session
                     currentSession = null;
+                    Console.WriteLine("LoadWorkSessionsAsync: Cleared current session (date changed)");
                 }
             }
             else
@@ -153,6 +159,7 @@
                     .Where(s => s.Date == today)
                     .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
                     .FirstOrDefault();
+                Console.WriteLine($"LoadWorkSessionsAsync: Found new current session: {currentSession?.Id}");
             }
         }
         else
@@ -163,6 +170,7 @@
                 .Where(s => s.Date == today)
                 .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
                 .FirstOrDefault();
+            Console.WriteLine($"LoadWorkSessionsAsync: No current session, found: {currentSession?.Id}");
         }
         
         StateHasChanged();
@@ -219,8 +227,18 @@
         };
         
         await LocalStorageService.SaveWorkSessionAsync(newSession);
+        currentSession = newSession; // Set as current session immediately
         await LoadWorkSessionsAsync();
         ToastService.ShowSuccess("New session created");
+    }
+
+    private async Task HandleCancel(WorkSessionModel session)
+    {
+        // Delete the session without saving
+        await LocalStorageService.DeleteWorkSessionAsync(session.Id);
+        currentSession = null;
+        await LoadWorkSessionsAsync();
+        ToastService.ShowInfo("Session cancelled");
     }
 
     private async Task HandleEdit(WorkSessionModel session)
