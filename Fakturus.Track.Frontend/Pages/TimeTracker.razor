@@ -137,8 +137,6 @@
         workSessions = await LocalStorageService.GetWorkSessionsAsync();
         Console.WriteLine($"LoadWorkSessionsAsync: Loaded {workSessions.Count} sessions from local storage");
         
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        
         // If we're finishing a session, don't reload it as current
         if (isFinishing)
         {
@@ -148,47 +146,43 @@
             return;
         }
         
-        // If we already have a currentSession, try to keep it (by ID) to prevent auto-finishing
-        // This ensures that manually entering times doesn't move the session to history
+        // Current session logic: Only local unfinished sessions can be current
+        // A session is "current" if:
+        // 1. It has IsPendingSync = true (not yet synced to backend)
+        // 2. OR it's the session we're actively working on (by ID match)
+        
         if (currentSession != null)
         {
             // Try to find the same session by ID first
             var existingCurrent = workSessions.FirstOrDefault(s => s.Id == currentSession.Id);
             if (existingCurrent != null)
             {
-                // Keep the session as current if it's from today
-                // This allows setting both times without auto-finishing
-                if (existingCurrent.Date == today)
+                // Keep as current only if it's still pending (not synced yet)
+                // Once synced, it should move to history
+                if (existingCurrent.IsPendingSync && !existingCurrent.IsSynced)
                 {
                     currentSession = existingCurrent;
-                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {currentSession.Id}");
+                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {currentSession.Id} (still pending)");
                 }
                 else
                 {
-                    // Date changed to not today, clear current session
+                    // Session was synced, move to history
                     currentSession = null;
-                    Console.WriteLine("LoadWorkSessionsAsync: Cleared current session (date changed)");
+                    Console.WriteLine("LoadWorkSessionsAsync: Current session was synced, moved to history");
                 }
             }
             else
             {
-                // Session not found (maybe deleted), find a new current session
-                currentSession = workSessions
-                    .Where(s => s.Date == today)
-                    .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
-                    .FirstOrDefault();
-                Console.WriteLine($"LoadWorkSessionsAsync: Found new current session: {currentSession?.Id}");
+                // Session not found (maybe deleted), clear current session
+                currentSession = null;
+                Console.WriteLine("LoadWorkSessionsAsync: Current session not found, cleared");
             }
         }
         else
         {
-            // No current session, find today's session
-            // Only find sessions without StopTime set, or the most recent one if all have StopTime
-            currentSession = workSessions
-                .Where(s => s.Date == today)
-                .OrderByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
-                .FirstOrDefault();
-            Console.WriteLine($"LoadWorkSessionsAsync: No current session, found: {currentSession?.Id}");
+            // No current session - don't automatically pick one from backend
+            // Current session should only be set when user explicitly creates a new one
+            Console.WriteLine("LoadWorkSessionsAsync: No current session");
         }
         
         StateHasChanged();
@@ -268,11 +262,17 @@
 
     private async Task HandleCancel(WorkSessionModel session)
     {
-        // Delete the session without saving
-        await LocalStorageService.DeleteWorkSessionAsync(session.Id);
-        currentSession = null;
+        // Just exit edit mode / clear current session without deleting
+        // For history items: WorkSessionCard handles exiting edit mode internally
+        // For current session: Clear it from current view
+        if (currentSession?.Id == session.Id)
+        {
+            currentSession = null;
+        }
+        
+        // Reload to refresh the view
         await LoadWorkSessionsAsync();
-        ToastService.ShowInfo("Session cancelled");
+        ToastService.ShowInfo("Cancelled");
     }
 
     private async Task HandleEdit(WorkSessionModel session)

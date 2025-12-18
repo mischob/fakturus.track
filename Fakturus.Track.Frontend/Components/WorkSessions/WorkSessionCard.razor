@@ -119,7 +119,7 @@
                                 class="flex-1 btn-primary text-sm">
                             Finish
                         </button>
-                        <button @onclick="HandleCancel" 
+                        <button @onclick="() => OnCancel.InvokeAsync(WorkSession)" 
                                 class="flex-1 btn-outline text-sm">
                             Cancel
                         </button>
@@ -167,11 +167,6 @@
     [Parameter] public bool IsHistory { get; set; } = false;
 
     private bool isEditing = false;
-
-    private async Task HandleCancel()
-    {
-        await OnCancel.InvokeAsync(WorkSession);
-    }
 
     private string FormatDateTimeLocal(DateTime dateTime)
     {
