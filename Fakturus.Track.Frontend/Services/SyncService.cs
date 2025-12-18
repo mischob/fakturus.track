@@ -9,6 +9,8 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
     private const int SyncIntervalSeconds = 30;
     private Timer? _syncTimer;
 
+    public event EventHandler? SyncCompleted;
+
     public void Dispose()
     {
         StopPeriodicSync();
@@ -100,6 +102,9 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                 Console.WriteLine("SyncService.SyncAsync: No pending sessions, stopping background sync");
                 StopPeriodicSync();
             }
+
+            // Notify subscribers that sync completed
+            SyncCompleted?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
         {

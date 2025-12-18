@@ -98,6 +98,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to sync completed event
+        SyncService.SyncCompleted += OnSyncCompleted;
+
         await LoadWorkSessionsAsync();
 
         // Perform initial sync
@@ -123,8 +126,21 @@
         }
     }
 
+    private async void OnSyncCompleted(object? sender, EventArgs e)
+    {
+        Console.WriteLine("TimeTracker: Sync completed, reloading sessions...");
+        await InvokeAsync(async () =>
+        {
+            await LoadWorkSessionsAsync();
+            StateHasChanged();
+        });
+    }
+
     public void Dispose()
     {
+        // Unsubscribe from sync completed event
+        SyncService.SyncCompleted -= OnSyncCompleted;
+        
         // Stop background sync when component is disposed
         SyncService.StopPeriodicSync();
     }
