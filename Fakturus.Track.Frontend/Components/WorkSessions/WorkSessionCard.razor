@@ -156,7 +156,6 @@
     [Parameter] public WorkSessionModel WorkSession { get; set; } = null!;
     [Parameter] public EventCallback<WorkSessionModel> OnStart { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
-    [Parameter] public EventCallback<WorkSessionModel> OnEdit { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
     [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
@@ -212,6 +211,7 @@
             // Save the changes when times are manually entered
             // But the session should remain current until Finish is explicitly clicked
             WorkSession.IsPendingSync = true;
+            WorkSession.IsSynced = false; // Mark as not synced so it will be included in next sync
             await OnSave.InvokeAsync(WorkSession);
         }
     }

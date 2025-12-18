@@ -34,7 +34,6 @@
         <WorkSessionCard WorkSession="_currentSession"
                          OnStart="HandleStart"
                          OnStop="HandleStop"
-                         OnEdit="HandleEdit"
                          OnFinish="HandleFinish"
                          OnSave="HandleSave"
                          OnDelete="HandleDelete"
@@ -72,7 +71,6 @@
                 <WorkSessionCard WorkSession="session"
                                  OnStart="HandleStart"
                                  OnStop="HandleStop"
-                                 OnEdit="HandleEdit"
                                  OnFinish="HandleFinish"
                                  OnSave="HandleSave"
                                  OnDelete="HandleDelete"
@@ -206,6 +204,7 @@
         session.StartTime = DateTime.UtcNow;
         session.Date = DateOnly.FromDateTime(DateTime.Now);
         session.IsPendingSync = true;
+        session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
 
@@ -220,6 +219,7 @@
         // Set stop time but don't close the session
         session.StopTime = DateTime.UtcNow;
         session.IsPendingSync = true;
+        session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
 
@@ -236,6 +236,7 @@
         session.StopTime ??= DateTime.UtcNow;
 
         session.IsPendingSync = true;
+        session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
 
         // Set flag to prevent re-loading the finished session
@@ -286,15 +287,10 @@
         ToastService.ShowInfo("Cancelled");
     }
 
-    private async Task HandleEdit(WorkSessionModel session)
-    {
-        // TODO: Implement edit modal
-        ToastService.ShowInfo("Edit functionality coming soon");
-    }
-
     private async Task HandleSave(WorkSessionModel session)
     {
         session.IsPendingSync = true;
+        session.IsSynced = false; // Mark as not synced so it will be included in next sync
         await LocalStorageService.SaveWorkSessionAsync(session);
 
         // Reload to refresh the list
