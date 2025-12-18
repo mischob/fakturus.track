@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace Fakturus.Track.Frontend.Services;
 
-public class LocalStorageService : ILocalStorageService
+public class LocalStorageService(IJSRuntime jsRuntime) : ILocalStorageService
 {
     private const string StorageKey = "workSessions";
 
@@ -12,13 +12,6 @@ public class LocalStorageService : ILocalStorageService
     {
         PropertyNameCaseInsensitive = true
     };
-
-    private readonly IJSRuntime _jsRuntime;
-
-    public LocalStorageService(IJSRuntime jsRuntime)
-    {
-        _jsRuntime = jsRuntime;
-    }
 
     public async Task SaveWorkSessionAsync(WorkSessionModel workSession)
     {
@@ -91,11 +84,11 @@ public class LocalStorageService : ILocalStorageService
     private async Task SaveToStorageAsync(List<WorkSessionModel> sessions)
     {
         var json = JsonSerializer.Serialize(sessions, _jsonOptions);
-        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
+        await jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
     }
 
     private async Task<string> GetFromStorageAsync()
     {
-        return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey) ?? string.Empty;
+        return await jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey) ?? string.Empty;
     }
 }

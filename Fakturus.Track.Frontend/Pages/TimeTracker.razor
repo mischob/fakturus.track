@@ -8,7 +8,6 @@
 @inject IWorkSessionsApiClient ApiClient
 @inject ISyncService SyncService
 @inject IToastService ToastService
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Time Tracker</PageTitle>
 
@@ -16,9 +15,9 @@
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900">Time Tracker</h1>
         <button @onclick="HandleSync"
-                class="btn-primary @(isSyncing ? "opacity-50 cursor-not-allowed" : "")"
-                disabled="@isSyncing">
-            @if (isSyncing)
+                class="btn-primary @(_isSyncing ? "opacity-50 cursor-not-allowed" : "")"
+                disabled="@_isSyncing">
+            @if (_isSyncing)
             {
                 <span>Syncing...</span>
             }
@@ -30,9 +29,9 @@
     </div>
 
     <!-- Current Session Card -->
-    @if (currentSession != null)
+    @if (_currentSession != null)
     {
-        <WorkSessionCard WorkSession="currentSession"
+        <WorkSessionCard WorkSession="_currentSession"
                          OnStart="HandleStart"
                          OnStop="HandleStop"
                          OnEdit="HandleEdit"
@@ -60,8 +59,8 @@
         @{
             // History: all sessions except the current one
             // Current session is today's session (may have StopTime set but not finished)
-            var historySessions = workSessions
-                .Where(s => currentSession == null || s.Id != currentSession.Id)
+            var historySessions = _workSessions
+                .Where(s => _currentSession == null || s.Id != _currentSession.Id)
                 .OrderByDescending(s => s.Date)
                 .ThenByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
                 .ToList();
@@ -92,10 +91,10 @@
 </div>
 
 @code {
-    private List<WorkSessionModel> workSessions = new();
-    private WorkSessionModel? currentSession;
-    private bool isSyncing;
-    private bool isFinishing; // Flag to prevent re-loading finished session
+    private List<WorkSessionModel> _workSessions = [];
+    private WorkSessionModel? _currentSession;
+    private bool _isSyncing;
+    private bool _isFinishing; // Flag to prevent re-loading finished session
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,14 +131,14 @@
 
     private async Task LoadWorkSessionsAsync()
     {
-        workSessions = await LocalStorageService.GetWorkSessionsAsync();
-        Console.WriteLine($"LoadWorkSessionsAsync: Loaded {workSessions.Count} sessions from local storage");
+        _workSessions = await LocalStorageService.GetWorkSessionsAsync();
+        Console.WriteLine($"LoadWorkSessionsAsync: Loaded {_workSessions.Count} sessions from local storage");
 
         // If we're finishing a session, don't reload it as current
-        if (isFinishing)
+        if (_isFinishing)
         {
-            isFinishing = false;
-            currentSession = null;
+            _isFinishing = false;
+            _currentSession = null;
             StateHasChanged();
             return;
         }
@@ -149,30 +148,30 @@
         // 1. It has IsPendingSync = true (not yet synced to backend)
         // 2. OR it's the session we're actively working on (by ID match)
 
-        if (currentSession != null)
+        if (_currentSession != null)
         {
             // Try to find the same session by ID first
-            var existingCurrent = workSessions.FirstOrDefault(s => s.Id == currentSession.Id);
+            var existingCurrent = _workSessions.FirstOrDefault(s => s.Id == _currentSession.Id);
             if (existingCurrent != null)
             {
                 // Keep as current only if it's still pending (not synced yet)
                 // Once synced, it should move to history
                 if (existingCurrent.IsPendingSync && !existingCurrent.IsSynced)
                 {
-                    currentSession = existingCurrent;
-                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {currentSession.Id} (still pending)");
+                    _currentSession = existingCurrent;
+                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {_currentSession.Id} (still pending)");
                 }
                 else
                 {
                     // Session was synced, move to history
-                    currentSession = null;
+                    _currentSession = null;
                     Console.WriteLine("LoadWorkSessionsAsync: Current session was synced, moved to history");
                 }
             }
             else
             {
                 // Session not found (maybe deleted), clear current session
-                currentSession = null;
+                _currentSession = null;
                 Console.WriteLine("LoadWorkSessionsAsync: Current session not found, cleared");
             }
         }
@@ -218,16 +217,13 @@
     {
         // Finish closes the session and moves it to history
         // Ensure StopTime is set
-        if (session.StopTime == null)
-        {
-            session.StopTime = DateTime.UtcNow;
-        }
+        session.StopTime ??= DateTime.UtcNow;
 
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
 
         // Set flag to prevent re-loading the finished session
-        isFinishing = true;
+        _isFinishing = true;
 
         // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
@@ -250,7 +246,7 @@
         };
 
         await LocalStorageService.SaveWorkSessionAsync(newSession);
-        currentSession = newSession; // Set as current session immediately
+        _currentSession = newSession; // Set as current session immediately
         await LoadWorkSessionsAsync();
 
         // Start background sync for new pending session
@@ -264,9 +260,9 @@
         // Just exit edit mode / clear current session without deleting
         // For history items: WorkSessionCard handles exiting edit mode internally
         // For current session: Clear it from current view
-        if (currentSession?.Id == session.Id)
+        if (_currentSession?.Id == session.Id)
         {
-            currentSession = null;
+            _currentSession = null;
         }
 
         // Reload to refresh the view
@@ -331,9 +327,9 @@
 
     private async Task HandleSync()
     {
-        if (isSyncing) return;
+        if (_isSyncing) return;
 
-        isSyncing = true;
+        _isSyncing = true;
         StateHasChanged(); // Update UI to show syncing state
 
         try
@@ -355,7 +351,7 @@
         }
         finally
         {
-            isSyncing = false;
+            _isSyncing = false;
             StateHasChanged(); // Update UI to hide syncing state
         }
     }

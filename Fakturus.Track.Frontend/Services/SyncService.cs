@@ -79,11 +79,10 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
 
             // Add local pending sessions that failed to sync (keep for retry)
             foreach (var localSession in localSessions)
-                if (localSession.IsPendingSync && !localSession.IsSynced &&
-                    !mergedSessions.ContainsKey(localSession.Id))
+                if (localSession is { IsPendingSync: true, IsSynced: false } &&
+                    mergedSessions.TryAdd(localSession.Id, localSession))
                 {
                     // Session is still pending and not in backend response (sync might have failed)
-                    mergedSessions[localSession.Id] = localSession;
                     Console.WriteLine($"SyncService.SyncAsync: Keeping pending session {localSession.Id} for retry");
                 }
 
@@ -140,7 +139,7 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
             Enabled = true
         };
 
-        _syncTimer.Elapsed += async (sender, e) =>
+        _syncTimer.Elapsed += async (_, e) =>
         {
             try
             {

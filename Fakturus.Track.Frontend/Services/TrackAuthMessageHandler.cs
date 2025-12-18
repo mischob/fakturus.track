@@ -19,7 +19,7 @@ public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfig
         // Request access token with the required scope to ensure proper token refresh
         var tokenRequestOptions = new AccessTokenRequestOptions
         {
-            Scopes = new[] { apiScope }
+            Scopes = [apiScope]
         };
 
         try

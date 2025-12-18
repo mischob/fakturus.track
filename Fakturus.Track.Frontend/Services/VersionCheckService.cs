@@ -5,19 +5,11 @@ using Timer = System.Timers.Timer;
 
 namespace Fakturus.Track.Frontend.Services;
 
-public class VersionCheckService : IVersionCheckService, IDisposable
+public class VersionCheckService(HttpClient httpClient, IJSRuntime jsRuntime) : IVersionCheckService, IDisposable
 {
     private const string VersionKey = "app_version";
     private const int CheckIntervalMinutes = 5;
-    private readonly HttpClient _httpClient;
-    private readonly IJSRuntime _jsRuntime;
     private Timer? _checkTimer;
-
-    public VersionCheckService(HttpClient httpClient, IJSRuntime jsRuntime)
-    {
-        _httpClient = httpClient;
-        _jsRuntime = jsRuntime;
-    }
 
     public void Dispose()
     {
@@ -28,7 +20,7 @@ public class VersionCheckService : IVersionCheckService, IDisposable
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<VersionResponse>("/v1/version");
+            var response = await httpClient.GetFromJsonAsync<VersionResponse>("/v1/version");
             if (response?.Version == null) return;
 
             var storedVersion = await GetStoredVersionAsync();
@@ -36,7 +28,9 @@ public class VersionCheckService : IVersionCheckService, IDisposable
             if (storedVersion != null && storedVersion != response.Version)
             {
                 Console.WriteLine($"Version changed: {storedVersion} -> {response.Version}. Reloading...");
-                await _jsRuntime.InvokeVoidAsync("eval", "location.reload()");
+                // Store the new version BEFORE reloading to prevent endless loop
+                await StoreVersionAsync(response.Version);
+                await jsRuntime.InvokeVoidAsync("eval", "location.reload()");
             }
             else
             {
@@ -76,7 +70,7 @@ public class VersionCheckService : IVersionCheckService, IDisposable
     {
         try
         {
-            return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", VersionKey);
+            return await jsRuntime.InvokeAsync<string>("localStorage.getItem", VersionKey);
         }
         catch
         {
@@ -88,7 +82,7 @@ public class VersionCheckService : IVersionCheckService, IDisposable
     {
         try
         {
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", VersionKey, version);
+            await jsRuntime.InvokeVoidAsync("localStorage.setItem", VersionKey, version);
         }
         catch
         {

@@ -29,7 +29,7 @@
             }
         </div>
 
-        @if (IsHistory && !isEditing)
+        @if (IsHistory && !_isEditing)
         {
             <!-- Simple read-only view for history -->
             <div class="space-y-2">
@@ -54,7 +54,7 @@
                 }
             </div>
             <div class="flex gap-2 pt-2">
-                <button @onclick="() => { isEditing = true; }"
+                <button @onclick="() => { _isEditing = true; }"
                         class="flex-1 btn-outline text-sm">
                     Edit
                 </button>
@@ -133,11 +133,11 @@
                 else
                 {
                     <!-- History session in edit mode: Show Save and Cancel buttons -->
-                    <button @onclick="() => { isEditing = false; OnSave.InvokeAsync(WorkSession); }"
+                    <button @onclick="() => { _isEditing = false; OnSave.InvokeAsync(WorkSession); }"
                             class="flex-1 btn-primary text-sm">
                         Save
                     </button>
-                    <button @onclick="() => { isEditing = false; }"
+                    <button @onclick="() => { _isEditing = false; }"
                             class="flex-1 btn-outline text-sm">
                         Cancel
                     </button>
@@ -164,7 +164,7 @@
     [Parameter] public EventCallback OnNew { get; set; }
     [Parameter] public bool IsHistory { get; set; }
 
-    private bool isEditing;
+    private bool _isEditing;
 
     private string FormatDateTimeLocal(DateTime dateTime)
     {
