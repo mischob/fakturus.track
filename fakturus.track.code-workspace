@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../fakturus.env"
+		},
+		{
+			"path": "../fakturus.poi"
+		}
+	],
+	"settings": {}
+}

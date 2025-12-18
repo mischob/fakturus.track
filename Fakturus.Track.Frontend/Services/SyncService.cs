@@ -7,65 +7,25 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
     : ISyncService, IDisposable
 {
     private Timer? _syncTimer;
-    private const int SyncIntervalMinutes = 5;
+    private const int SyncIntervalSeconds = 30;
 
     public async Task SyncAsync()
     {
         try
         {
-            // Step 1: Fetch all sessions from backend
-            var backendSessions = await apiClient.GetWorkSessionsAsync();
-            Console.WriteLine($"SyncService.SyncAsync: Fetched {backendSessions.Count} sessions from backend");
-            
-            // Step 2: Get local sessions
+            // Step 1: Get local sessions
             var localSessions = await localStorageService.GetWorkSessionsAsync();
             Console.WriteLine($"SyncService.SyncAsync: Found {localSessions.Count} local sessions");
             
-            // Step 3: Convert backend DTOs to Models
-            var backendModels = backendSessions.Select(bs => new WorkSessionModel
-            {
-                Id = bs.Id,
-                UserId = bs.UserId,
-                Date = bs.Date,
-                StartTime = bs.StartTime,
-                StopTime = bs.StopTime,
-                CreatedAt = bs.CreatedAt,
-                UpdatedAt = bs.UpdatedAt,
-                SyncedAt = bs.SyncedAt,
-                IsSynced = true,
-                IsPendingSync = false
-            }).ToList();
-            
-            // Step 4: Merge backend and local sessions
-            var mergedSessions = new Dictionary<Guid, WorkSessionModel>();
-            
-            // Add all backend sessions first (they are the source of truth for synced data)
-            foreach (var backendModel in backendModels)
-            {
-                mergedSessions[backendModel.Id] = backendModel;
-            }
-            
-            // Add/update with local sessions
-            foreach (var localSession in localSessions)
-            {
-                if (localSession.IsPendingSync && !localSession.IsSynced)
-                {
-                    // Local pending changes - keep them to push to backend
-                    // If backend already has this ID, we'll update it after sync
-                    mergedSessions[localSession.Id] = localSession;
-                }
-                else if (!mergedSessions.ContainsKey(localSession.Id))
-                {
-                    // Local-only session (not synced yet) - add it
-                    mergedSessions[localSession.Id] = localSession;
-                }
-                // If session exists in both and local is synced, backend version already added above wins
-            }
-            
-            // Step 5: Push pending local sessions to backend
-            var pendingSessions = mergedSessions.Values
+            // Step 2: Identify pending sessions (need to be synced to backend)
+            var pendingSessions = localSessions
                 .Where(s => s.IsPendingSync && !s.IsSynced)
                 .ToList();
+            
+            Console.WriteLine($"SyncService.SyncAsync: Found {pendingSessions.Count} pending sessions to sync");
+            
+            // Step 3: Push pending sessions to backend (if any) and get all backend sessions
+            List<WorkSessionModel> backendSessions;
             
             if (pendingSessions.Any())
             {
@@ -73,78 +33,69 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                 {
                     WorkSessions = pendingSessions.Select(s => new CreateWorkSessionRequest
                     {
+                        Id = s.Id, // Include client-generated UUID
                         Date = s.Date,
                         StartTime = s.StartTime,
                         StopTime = s.StopTime
                     }).ToList()
                 };
 
-                var syncedSessions = await apiClient.SyncWorkSessionsAsync(syncRequest);
-                
-                // Update merged sessions with synced data
-                foreach (var syncedSession in syncedSessions)
+                // Backend will upsert and return ALL user's sessions
+                backendSessions = await apiClient.SyncWorkSessionsAsync(syncRequest);
+                Console.WriteLine($"SyncService.SyncAsync: Synced pending sessions, received {backendSessions.Count} sessions from backend");
+            }
+            else
+            {
+                // No pending sessions, just fetch all from backend
+                backendSessions = await apiClient.GetWorkSessionsAsync();
+                Console.WriteLine($"SyncService.SyncAsync: No pending sessions, fetched {backendSessions.Count} sessions from backend");
+            }
+            
+            // Step 4: Merge logic - Backend is source of truth
+            var mergedSessions = new Dictionary<Guid, WorkSessionModel>();
+            
+            // Add all backend sessions (marked as synced)
+            foreach (var backendSession in backendSessions)
+            {
+                mergedSessions[backendSession.Id] = new WorkSessionModel
                 {
-                    // Find the matching pending session by comparing data (since ID might change)
-                    var matchingPending = pendingSessions.FirstOrDefault(s => 
-                        s.Date == syncedSession.Date &&
-                        Math.Abs((s.StartTime - syncedSession.StartTime).TotalSeconds) < 1 &&
-                        ((s.StopTime == null && syncedSession.StopTime == null) ||
-                         (s.StopTime.HasValue && syncedSession.StopTime.HasValue && 
-                          Math.Abs((s.StopTime.Value - syncedSession.StopTime.Value).TotalSeconds) < 1)));
-                    
-                    if (matchingPending != null)
-                    {
-                        // Remove old entry if ID changed
-                        if (matchingPending.Id != syncedSession.Id)
-                        {
-                            mergedSessions.Remove(matchingPending.Id);
-                        }
-                        
-                        // Add/update with synced data
-                        var syncedModel = new WorkSessionModel
-                        {
-                            Id = syncedSession.Id,
-                            UserId = syncedSession.UserId,
-                            Date = syncedSession.Date,
-                            StartTime = syncedSession.StartTime,
-                            StopTime = syncedSession.StopTime,
-                            CreatedAt = syncedSession.CreatedAt,
-                            UpdatedAt = syncedSession.UpdatedAt,
-                            SyncedAt = syncedSession.SyncedAt,
-                            IsSynced = true,
-                            IsPendingSync = false
-                        };
-                        mergedSessions[syncedModel.Id] = syncedModel;
-                    }
-                    else
-                    {
-                        // New session from backend (shouldn't happen, but handle it)
-                        var syncedModel = new WorkSessionModel
-                        {
-                            Id = syncedSession.Id,
-                            UserId = syncedSession.UserId,
-                            Date = syncedSession.Date,
-                            StartTime = syncedSession.StartTime,
-                            StopTime = syncedSession.StopTime,
-                            CreatedAt = syncedSession.CreatedAt,
-                            UpdatedAt = syncedSession.UpdatedAt,
-                            SyncedAt = syncedSession.SyncedAt,
-                            IsSynced = true,
-                            IsPendingSync = false
-                        };
-                        mergedSessions[syncedModel.Id] = syncedModel;
-                    }
+                    Id = backendSession.Id,
+                    UserId = backendSession.UserId,
+                    Date = backendSession.Date,
+                    StartTime = backendSession.StartTime,
+                    StopTime = backendSession.StopTime,
+                    CreatedAt = backendSession.CreatedAt,
+                    UpdatedAt = backendSession.UpdatedAt,
+                    SyncedAt = backendSession.SyncedAt,
+                    IsSynced = true,
+                    IsPendingSync = false
+                };
+            }
+            
+            // Add local pending sessions that failed to sync (keep for retry)
+            foreach (var localSession in localSessions)
+            {
+                if (localSession.IsPendingSync && !localSession.IsSynced && !mergedSessions.ContainsKey(localSession.Id))
+                {
+                    // Session is still pending and not in backend response (sync might have failed)
+                    mergedSessions[localSession.Id] = localSession;
+                    Console.WriteLine($"SyncService.SyncAsync: Keeping pending session {localSession.Id} for retry");
                 }
             }
             
-            // Step 6: Save merged sessions to local storage (bulk update to prevent duplicates)
-            var finalSessions = mergedSessions.Values.ToList();
+            // Step 5: Save merged sessions to local storage
+            var finalSessions = mergedSessions.Values.OrderByDescending(s => s.Date).ThenByDescending(s => s.StartTime).ToList();
             Console.WriteLine($"SyncService.SyncAsync: Saving {finalSessions.Count} merged sessions to local storage");
-            foreach (var session in finalSessions)
-            {
-                Console.WriteLine($"  - Session {session.Id}: Date={session.Date}, Start={session.StartTime}, Stop={session.StopTime}, IsSynced={session.IsSynced}");
-            }
+            
             await localStorageService.SaveWorkSessionsAsync(finalSessions);
+            
+            // Step 6: Check if we still have pending sessions and manage background sync
+            var stillPending = finalSessions.Any(s => s.IsPendingSync && !s.IsSynced);
+            if (!stillPending && _syncTimer != null)
+            {
+                Console.WriteLine("SyncService.SyncAsync: No pending sessions, stopping background sync");
+                StopPeriodicSync();
+            }
         }
         catch (Exception ex)
         {
@@ -154,27 +105,58 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
         }
     }
 
-    public Task StartPeriodicSyncAsync()
+    public async Task<bool> HasPendingSyncsAsync()
     {
-        if (_syncTimer != null)
-            return Task.CompletedTask;
+        var localSessions = await localStorageService.GetWorkSessionsAsync();
+        return localSessions.Any(s => s.IsPendingSync && !s.IsSynced);
+    }
 
-        _syncTimer = new Timer(TimeSpan.FromMinutes(SyncIntervalMinutes).TotalMilliseconds)
+    public async Task StartPeriodicSyncAsync()
+    {
+        // Only start if there are pending syncs
+        var hasPending = await HasPendingSyncsAsync();
+        if (!hasPending)
+        {
+            Console.WriteLine("SyncService.StartPeriodicSyncAsync: No pending syncs, not starting background sync");
+            return;
+        }
+
+        if (_syncTimer != null)
+        {
+            Console.WriteLine("SyncService.StartPeriodicSyncAsync: Background sync already running");
+            return;
+        }
+
+        Console.WriteLine($"SyncService.StartPeriodicSyncAsync: Starting background sync with {SyncIntervalSeconds}s interval");
+        _syncTimer = new Timer(TimeSpan.FromSeconds(SyncIntervalSeconds).TotalMilliseconds)
         {
             AutoReset = true,
             Enabled = true
         };
 
-        _syncTimer.Elapsed += async (sender, e) => await SyncAsync();
-
-        return Task.CompletedTask;
+        _syncTimer.Elapsed += async (sender, e) =>
+        {
+            try
+            {
+                await SyncAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Background sync error: {ex.Message}");
+                // Continue running timer for retry
+            }
+        };
     }
 
     public void StopPeriodicSync()
     {
-        _syncTimer?.Stop();
-        _syncTimer?.Dispose();
-        _syncTimer = null;
+        if (_syncTimer != null)
+        {
+            Console.WriteLine("SyncService.StopPeriodicSync: Stopping background sync");
+            _syncTimer.Stop();
+            _syncTimer.Dispose();
+            _syncTimer = null;
+        }
     }
 
     public void Dispose()

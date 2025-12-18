@@ -3,6 +3,7 @@ using Fakturus.Track.Frontend;
 using Fakturus.Track.Frontend.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using Refit;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -51,6 +52,20 @@ builder.Services.AddScoped<TrackAuthMessageHandler>();
 // Configure the BaseAddressAuthorizationMessageHandler
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>()
     .CreateClient("ServerAPI"));
+
+// NEW: Unauthenticated client for version check
+builder.Services.AddHttpClient("VersionCheck", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
+});
+
+builder.Services.AddScoped<IVersionCheckService>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("VersionCheck");
+    var jsRuntime = sp.GetRequiredService<IJSRuntime>();
+    return new VersionCheckService(httpClient, jsRuntime);
+});
 
 // Register services
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();

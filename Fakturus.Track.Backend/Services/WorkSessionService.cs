@@ -94,29 +94,45 @@ public class WorkSessionService : IWorkSessionService
 
     public async Task<List<WorkSessionDto>> SyncWorkSessionsAsync(List<CreateWorkSessionRequest> workSessions, string userId)
     {
-        var syncedSessions = new List<WorkSessionDto>();
-
+        // Process each work session from client (upsert logic)
         foreach (var request in workSessions)
         {
-            var workSession = new WorkSession
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Date = request.Date,
-                StartTime = request.StartTime.ToUniversalTime(),
-                StopTime = request.StopTime?.ToUniversalTime(),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                SyncedAt = DateTime.UtcNow
-            };
+            // Check if session with this UUID already exists
+            var existingSession = await _context.WorkSessions
+                .FirstOrDefaultAsync(ws => ws.Id == request.Id && ws.UserId == userId);
 
-            _context.WorkSessions.Add(workSession);
-            syncedSessions.Add(MapToDto(workSession));
+            if (existingSession != null)
+            {
+                // Update existing session
+                existingSession.Date = request.Date;
+                existingSession.StartTime = request.StartTime.ToUniversalTime();
+                existingSession.StopTime = request.StopTime?.ToUniversalTime();
+                existingSession.UpdatedAt = DateTime.UtcNow;
+                existingSession.SyncedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                // Create new session with client-provided UUID
+                var workSession = new WorkSession
+                {
+                    Id = request.Id, // Use client-generated UUID
+                    UserId = userId,
+                    Date = request.Date,
+                    StartTime = request.StartTime.ToUniversalTime(),
+                    StopTime = request.StopTime?.ToUniversalTime(),
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    SyncedAt = DateTime.UtcNow
+                };
+
+                _context.WorkSessions.Add(workSession);
+            }
         }
 
         await _context.SaveChangesAsync();
 
-        return syncedSessions;
+        // Return ALL user's work sessions (backend is source of truth)
+        return await GetWorkSessionsByUserIdAsync(userId);
     }
 
     private static WorkSessionDto MapToDto(WorkSession workSession)

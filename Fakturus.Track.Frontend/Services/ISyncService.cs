@@ -5,5 +5,6 @@ public interface ISyncService
     Task SyncAsync();
     Task StartPeriodicSyncAsync();
     void StopPeriodicSync();
+    Task<bool> HasPendingSyncsAsync();
 }
 

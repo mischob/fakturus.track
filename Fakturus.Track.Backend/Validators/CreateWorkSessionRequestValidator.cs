@@ -6,6 +6,10 @@ public class CreateWorkSessionRequestValidator : AbstractValidator<DTOs.CreateWo
 {
     public CreateWorkSessionRequestValidator()
     {
+        RuleFor(x => x.Id)
+            .NotEmpty()
+            .WithMessage("Id is required");
+
         RuleFor(x => x.Date)
             .NotEmpty()
             .WithMessage("Date is required");

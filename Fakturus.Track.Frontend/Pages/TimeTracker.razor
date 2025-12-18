@@ -5,6 +5,7 @@
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@implements IDisposable
 @inject ILocalStorageService LocalStorageService
 @inject IWorkSessionsApiClient ApiClient
 @inject ISyncService SyncService
@@ -101,7 +102,8 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadWorkSessionsAsync();
-        // Fetch from backend on initialization
+        
+        // Perform initial sync
         try
         {
             await SyncService.SyncAsync();
@@ -112,6 +114,22 @@
             // Silently fail on initialization - user can manually sync
             Console.WriteLine($"Initial sync failed: {ex.Message}");
         }
+        
+        // Start background sync if there are pending sessions
+        try
+        {
+            await SyncService.StartPeriodicSyncAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background sync: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        // Stop background sync when component is disposed
+        SyncService.StopPeriodicSync();
     }
 
     private async Task LoadWorkSessionsAsync()
@@ -183,6 +201,10 @@
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
+        
+        // Start background sync for pending session
+        await SyncService.StartPeriodicSyncAsync();
+        
         ToastService.ShowSuccess("Start time recorded");
     }
 
@@ -193,6 +215,10 @@
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
+        
+        // Start background sync for pending session
+        await SyncService.StartPeriodicSyncAsync();
+        
         ToastService.ShowSuccess("Stop time recorded");
     }
 
@@ -212,6 +238,10 @@
         
         // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
+        
+        // Start background sync for pending session
+        await SyncService.StartPeriodicSyncAsync();
+        
         ToastService.ShowSuccess("Session finished");
     }
 
@@ -229,6 +259,10 @@
         await LocalStorageService.SaveWorkSessionAsync(newSession);
         currentSession = newSession; // Set as current session immediately
         await LoadWorkSessionsAsync();
+        
+        // Start background sync for new pending session
+        await SyncService.StartPeriodicSyncAsync();
+        
         ToastService.ShowSuccess("New session created");
     }
 
@@ -255,6 +289,10 @@
         // Reload to refresh the list
         // LoadWorkSessionsAsync will preserve the current session by ID
         await LoadWorkSessionsAsync();
+        
+        // Start background sync for pending session
+        await SyncService.StartPeriodicSyncAsync();
+        
         ToastService.ShowSuccess("Session updated");
     }
 
@@ -305,6 +343,10 @@
             // After sync, reload sessions
             // LoadWorkSessionsAsync will preserve the current session by ID if it exists
             await LoadWorkSessionsAsync();
+            
+            // Restart background sync if there are still pending sessions
+            await SyncService.StartPeriodicSyncAsync();
+            
             StateHasChanged(); // Force UI refresh after sync
             ToastService.ShowSuccess("Sync completed");
         }

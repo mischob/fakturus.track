@@ -3,14 +3,18 @@ set -e
 
 echo "Starting Fakturus.Track deployment..."
 
+# Set APP_VERSION from git commit hash
+export APP_VERSION=$(git rev-parse --short HEAD 2>/dev/null || echo "1.0.0")
+echo "Deploying version: $APP_VERSION"
+
 # Pull latest images
-docker-compose pull
+docker-compose -f docker-compose.prod.yml pull
 
 # Stop services
-docker-compose down
+docker-compose -f docker-compose.prod.yml down
 
 # Start services
-docker-compose up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 sleep 30

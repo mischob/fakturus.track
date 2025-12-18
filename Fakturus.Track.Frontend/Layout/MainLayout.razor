@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject IVersionCheckService VersionCheckService
+@inject NavigationManager Navigation
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
     <AuthorizeView>
@@ -11,7 +13,7 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <a href="authentication/logout" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+                        <button @onclick="BeginLogout" class="text-sm text-gray-600 hover:text-gray-900 focus:outline-none">Logout</button>
                     </div>
                 </div>
             </header>
@@ -40,3 +42,19 @@
         </NotAuthorized>
     </AuthorizeView>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Check version on app start
+        await VersionCheckService.CheckVersionAsync();
+        
+        // Start periodic check
+        await VersionCheckService.StartPeriodicCheckAsync();
+    }
+
+    private void BeginLogout()
+    {
+        Navigation.NavigateTo("authentication/logout");
+    }
+}
