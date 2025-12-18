@@ -20,7 +20,26 @@
                         <p class="text-gray-600">Signing out...</p>
                     </div>
                 }
-                <RemoteAuthenticatorView Action="@Action"/>
+                <RemoteAuthenticatorView Action="@Action">
+                    <LogOut>
+                        <div class="text-center py-4">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                            <p class="text-gray-600">Processing logout...</p>
+                        </div>
+                    </LogOut>
+                    <LogOutSucceeded>
+                        <div class="text-center py-4">
+                            <p class="text-green-600 font-semibold">You have been logged out successfully.</p>
+                            <p class="text-gray-600 mt-2">Redirecting...</p>
+                        </div>
+                    </LogOutSucceeded>
+                    <LogOutFailed>
+                        <div class="text-center py-4">
+                            <p class="text-red-600 font-semibold">Logout failed.</p>
+                            <p class="text-gray-600 mt-2">Please try again.</p>
+                        </div>
+                    </LogOutFailed>
+                </RemoteAuthenticatorView>
             </div>
 
             @if (Action == "login")

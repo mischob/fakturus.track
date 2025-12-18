@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @inject IVersionCheckService VersionCheckService
 @inject NavigationManager Navigation
 
@@ -56,7 +56,7 @@
 
     private void BeginLogout()
     {
-        Navigation.NavigateTo("authentication/logout");
+        Navigation.NavigateTo("authentication/logout", forceLoad: true);
     }
 
 }
