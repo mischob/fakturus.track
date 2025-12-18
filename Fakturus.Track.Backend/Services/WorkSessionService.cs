@@ -5,18 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Backend.Services;
 
-public class WorkSessionService : IWorkSessionService
+public class WorkSessionService(ApplicationDbContext context) : IWorkSessionService
 {
-    private readonly ApplicationDbContext _context;
-
-    public WorkSessionService(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<WorkSessionDto>> GetWorkSessionsByUserIdAsync(string userId)
     {
-        var workSessions = await _context.WorkSessions
+        var workSessions = await context.WorkSessions
             .Where(ws => ws.UserId == userId)
             .OrderByDescending(ws => ws.Date)
             .ThenByDescending(ws => ws.StartTime)
@@ -27,7 +20,7 @@ public class WorkSessionService : IWorkSessionService
 
     public async Task<WorkSessionDto?> GetWorkSessionByIdAsync(Guid id, string userId)
     {
-        var workSession = await _context.WorkSessions
+        var workSession = await context.WorkSessions
             .FirstOrDefaultAsync(ws => ws.Id == id && ws.UserId == userId);
 
         return workSession == null ? null : MapToDto(workSession);
@@ -47,15 +40,15 @@ public class WorkSessionService : IWorkSessionService
             SyncedAt = DateTime.UtcNow
         };
 
-        _context.WorkSessions.Add(workSession);
-        await _context.SaveChangesAsync();
+        context.WorkSessions.Add(workSession);
+        await context.SaveChangesAsync();
 
         return MapToDto(workSession);
     }
 
     public async Task<WorkSessionDto> UpdateWorkSessionAsync(Guid id, UpdateWorkSessionRequest request, string userId)
     {
-        var workSession = await _context.WorkSessions
+        var workSession = await context.WorkSessions
             .FirstOrDefaultAsync(ws => ws.Id == id && ws.UserId == userId);
 
         if (workSession == null)
@@ -73,21 +66,21 @@ public class WorkSessionService : IWorkSessionService
         workSession.UpdatedAt = DateTime.UtcNow;
         workSession.SyncedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return MapToDto(workSession);
     }
 
     public async Task<bool> DeleteWorkSessionAsync(Guid id, string userId)
     {
-        var workSession = await _context.WorkSessions
+        var workSession = await context.WorkSessions
             .FirstOrDefaultAsync(ws => ws.Id == id && ws.UserId == userId);
 
         if (workSession == null)
             return false;
 
-        _context.WorkSessions.Remove(workSession);
-        await _context.SaveChangesAsync();
+        context.WorkSessions.Remove(workSession);
+        await context.SaveChangesAsync();
 
         return true;
     }
@@ -99,7 +92,7 @@ public class WorkSessionService : IWorkSessionService
         foreach (var request in workSessions)
         {
             // Check if session with this UUID already exists
-            var existingSession = await _context.WorkSessions
+            var existingSession = await context.WorkSessions
                 .FirstOrDefaultAsync(ws => ws.Id == request.Id && ws.UserId == userId);
 
             if (existingSession != null)
@@ -126,11 +119,11 @@ public class WorkSessionService : IWorkSessionService
                     SyncedAt = DateTime.UtcNow
                 };
 
-                _context.WorkSessions.Add(workSession);
+                context.WorkSessions.Add(workSession);
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         // Return ALL user's work sessions (backend is source of truth)
         return await GetWorkSessionsByUserIdAsync(userId);
