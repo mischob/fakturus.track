@@ -1,10 +1,8 @@
 @page "/"
 @page "/tracker"
-@using Fakturus.Track.Frontend.Models
-@using Fakturus.Track.Frontend.Services
+@attribute [Authorize]
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize]
 @implements IDisposable
 @inject ILocalStorageService LocalStorageService
 @inject IWorkSessionsApiClient ApiClient
@@ -17,7 +15,7 @@
 <div class="py-6 space-y-6">
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900">Time Tracker</h1>
-        <button @onclick="HandleSync" 
+        <button @onclick="HandleSync"
                 class="btn-primary @(isSyncing ? "opacity-50 cursor-not-allowed" : "")"
                 disabled="@isSyncing">
             @if (isSyncing)
@@ -34,9 +32,9 @@
     <!-- Current Session Card -->
     @if (currentSession != null)
     {
-        <WorkSessionCard WorkSession="currentSession" 
-                         OnStart="HandleStart" 
-                         OnStop="HandleStop" 
+        <WorkSessionCard WorkSession="currentSession"
+                         OnStart="HandleStart"
+                         OnStop="HandleStop"
                          OnEdit="HandleEdit"
                          OnFinish="HandleFinish"
                          OnSave="HandleSave"
@@ -72,9 +70,9 @@
         {
             @foreach (var session in historySessions)
             {
-                <WorkSessionCard WorkSession="session" 
-                                 OnStart="HandleStart" 
-                                 OnStop="HandleStop" 
+                <WorkSessionCard WorkSession="session"
+                                 OnStart="HandleStart"
+                                 OnStop="HandleStop"
                                  OnEdit="HandleEdit"
                                  OnFinish="HandleFinish"
                                  OnSave="HandleSave"
@@ -96,13 +94,13 @@
 @code {
     private List<WorkSessionModel> workSessions = new();
     private WorkSessionModel? currentSession;
-    private bool isSyncing = false;
-    private bool isFinishing = false; // Flag to prevent re-loading finished session
+    private bool isSyncing;
+    private bool isFinishing; // Flag to prevent re-loading finished session
 
     protected override async Task OnInitializedAsync()
     {
         await LoadWorkSessionsAsync();
-        
+
         // Perform initial sync
         try
         {
@@ -114,7 +112,7 @@
             // Silently fail on initialization - user can manually sync
             Console.WriteLine($"Initial sync failed: {ex.Message}");
         }
-        
+
         // Start background sync if there are pending sessions
         try
         {
@@ -136,7 +134,7 @@
     {
         workSessions = await LocalStorageService.GetWorkSessionsAsync();
         Console.WriteLine($"LoadWorkSessionsAsync: Loaded {workSessions.Count} sessions from local storage");
-        
+
         // If we're finishing a session, don't reload it as current
         if (isFinishing)
         {
@@ -145,12 +143,12 @@
             StateHasChanged();
             return;
         }
-        
+
         // Current session logic: Only local unfinished sessions can be current
         // A session is "current" if:
         // 1. It has IsPendingSync = true (not yet synced to backend)
         // 2. OR it's the session we're actively working on (by ID match)
-        
+
         if (currentSession != null)
         {
             // Try to find the same session by ID first
@@ -184,7 +182,7 @@
             // Current session should only be set when user explicitly creates a new one
             Console.WriteLine("LoadWorkSessionsAsync: No current session");
         }
-        
+
         StateHasChanged();
     }
 
@@ -195,10 +193,10 @@
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
-        
+
         // Start background sync for pending session
         await SyncService.StartPeriodicSyncAsync();
-        
+
         ToastService.ShowSuccess("Start time recorded");
     }
 
@@ -209,10 +207,10 @@
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
-        
+
         // Start background sync for pending session
         await SyncService.StartPeriodicSyncAsync();
-        
+
         ToastService.ShowSuccess("Stop time recorded");
     }
 
@@ -224,18 +222,19 @@
         {
             session.StopTime = DateTime.UtcNow;
         }
+
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
-        
+
         // Set flag to prevent re-loading the finished session
         isFinishing = true;
-        
+
         // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
-        
+
         // Start background sync for pending session
         await SyncService.StartPeriodicSyncAsync();
-        
+
         ToastService.ShowSuccess("Session finished");
     }
 
@@ -249,14 +248,14 @@
             StopTime = null,
             IsPendingSync = true
         };
-        
+
         await LocalStorageService.SaveWorkSessionAsync(newSession);
         currentSession = newSession; // Set as current session immediately
         await LoadWorkSessionsAsync();
-        
+
         // Start background sync for new pending session
         await SyncService.StartPeriodicSyncAsync();
-        
+
         ToastService.ShowSuccess("New session created");
     }
 
@@ -269,7 +268,7 @@
         {
             currentSession = null;
         }
-        
+
         // Reload to refresh the view
         await LoadWorkSessionsAsync();
         ToastService.ShowInfo("Cancelled");
@@ -285,14 +284,14 @@
     {
         session.IsPendingSync = true;
         await LocalStorageService.SaveWorkSessionAsync(session);
-        
+
         // Reload to refresh the list
         // LoadWorkSessionsAsync will preserve the current session by ID
         await LoadWorkSessionsAsync();
-        
+
         // Start background sync for pending session
         await SyncService.StartPeriodicSyncAsync();
-        
+
         ToastService.ShowSuccess("Session updated");
     }
 
@@ -319,7 +318,7 @@
                 // Session was never synced, just delete locally
                 ToastService.ShowSuccess("Session deleted");
             }
-            
+
             // Delete from local storage
             await LocalStorageService.DeleteWorkSessionAsync(session.Id);
             await LoadWorkSessionsAsync();
@@ -333,20 +332,20 @@
     private async Task HandleSync()
     {
         if (isSyncing) return;
-        
+
         isSyncing = true;
         StateHasChanged(); // Update UI to show syncing state
-        
+
         try
         {
             await SyncService.SyncAsync();
             // After sync, reload sessions
             // LoadWorkSessionsAsync will preserve the current session by ID if it exists
             await LoadWorkSessionsAsync();
-            
+
             // Restart background sync if there are still pending sessions
             await SyncService.StartPeriodicSyncAsync();
-            
+
             StateHasChanged(); // Force UI refresh after sync
             ToastService.ShowSuccess("Sync completed");
         }
@@ -360,5 +359,5 @@
             StateHasChanged(); // Update UI to hide syncing state
         }
     }
-}
 
+}

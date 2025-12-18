@@ -44,7 +44,8 @@ public class DeleteWorkSessionEndpoint(IWorkSessionService workSessionService) :
         {
             Logger.LogError(ex, "Error deleting work session");
             HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "An error occurred while deleting the work session" }, ct);
+            await HttpContext.Response.WriteAsJsonAsync(
+                new { Error = "An error occurred while deleting the work session" }, ct);
         }
     }
 }
@@ -53,4 +54,3 @@ public class DeleteWorkSessionRequest
 {
     public Guid Id { get; set; }
 }
-

@@ -7,11 +7,13 @@ namespace Fakturus.Track.Frontend.Services;
 public class LocalStorageService : ILocalStorageService
 {
     private const string StorageKey = "workSessions";
-    private readonly IJSRuntime _jsRuntime;
+
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
+
+    private readonly IJSRuntime _jsRuntime;
 
     public LocalStorageService(IJSRuntime jsRuntime)
     {
@@ -24,13 +26,9 @@ public class LocalStorageService : ILocalStorageService
         var existingIndex = sessions.FindIndex(s => s.Id == workSession.Id);
 
         if (existingIndex >= 0)
-        {
             sessions[existingIndex] = workSession;
-        }
         else
-        {
             sessions.Add(workSession);
-        }
 
         await SaveToStorageAsync(sessions);
     }
@@ -101,4 +99,3 @@ public class LocalStorageService : ILocalStorageService
         return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey) ?? string.Empty;
     }
 }
-

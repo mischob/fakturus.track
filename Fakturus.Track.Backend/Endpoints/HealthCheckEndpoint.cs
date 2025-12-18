@@ -29,4 +29,3 @@ public class HealthCheckEndpoint : EndpointWithoutRequest<HealthResponse>
         return Task.CompletedTask;
     }
 }
-

@@ -22,10 +22,7 @@ builder.Services.AddMsalAuthentication(options =>
 
     // Add the required scope for your API from configuration
     var apiScope = builder.Configuration["AzureAdB2C:ApiScope"];
-    if (!string.IsNullOrEmpty(apiScope))
-    {
-        options.ProviderOptions.DefaultAccessTokenScopes.Add(apiScope);
-    }
+    if (!string.IsNullOrEmpty(apiScope)) options.ProviderOptions.DefaultAccessTokenScopes.Add(apiScope);
 
     options.ProviderOptions.LoginMode = "redirect";
 });
@@ -54,10 +51,11 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>()
     .CreateClient("ServerAPI"));
 
 // NEW: Unauthenticated client for version check
-builder.Services.AddHttpClient("VersionCheck", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
-});
+builder.Services.AddHttpClient("VersionCheck",
+    client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
+    });
 
 builder.Services.AddScoped<IVersionCheckService>(sp =>
 {

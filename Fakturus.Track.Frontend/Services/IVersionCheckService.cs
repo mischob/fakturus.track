@@ -6,6 +6,3 @@ public interface IVersionCheckService
     Task StartPeriodicCheckAsync();
     void StopPeriodicCheck();
 }
-
-
-

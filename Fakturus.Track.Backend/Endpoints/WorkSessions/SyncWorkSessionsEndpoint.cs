@@ -6,7 +6,8 @@ using FastEndpoints.AspVersioning;
 
 namespace Fakturus.Track.Backend.Endpoints.WorkSessions;
 
-public class SyncWorkSessionsEndpoint(IWorkSessionService workSessionService) : Endpoint<SyncWorkSessionsRequest, List<WorkSessionDto>>
+public class SyncWorkSessionsEndpoint(IWorkSessionService workSessionService)
+    : Endpoint<SyncWorkSessionsRequest, List<WorkSessionDto>>
 {
     public override void Configure()
     {
@@ -38,8 +39,8 @@ public class SyncWorkSessionsEndpoint(IWorkSessionService workSessionService) : 
         {
             Logger.LogError(ex, "Error syncing work sessions");
             HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "An error occurred while syncing work sessions" }, ct);
+            await HttpContext.Response.WriteAsJsonAsync(new { Error = "An error occurred while syncing work sessions" },
+                ct);
         }
     }
 }
-

@@ -44,11 +44,12 @@
 </div>
 
 @code {
+
     protected override async Task OnInitializedAsync()
     {
         // Check version on app start
         await VersionCheckService.CheckVersionAsync();
-        
+
         // Start periodic check
         await VersionCheckService.StartPeriodicCheckAsync();
     }
@@ -57,4 +58,5 @@
     {
         Navigation.NavigateTo("authentication/logout");
     }
+
 }

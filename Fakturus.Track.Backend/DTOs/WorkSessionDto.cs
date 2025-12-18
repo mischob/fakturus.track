@@ -11,4 +11,3 @@ public class WorkSessionDto
     public DateTime UpdatedAt { get; set; }
     public DateTime? SyncedAt { get; set; }
 }
-

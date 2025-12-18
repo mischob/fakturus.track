@@ -92,7 +92,8 @@ public class WorkSessionService : IWorkSessionService
         return true;
     }
 
-    public async Task<List<WorkSessionDto>> SyncWorkSessionsAsync(List<CreateWorkSessionRequest> workSessions, string userId)
+    public async Task<List<WorkSessionDto>> SyncWorkSessionsAsync(List<CreateWorkSessionRequest> workSessions,
+        string userId)
     {
         // Process each work session from client (upsert logic)
         foreach (var request in workSessions)
@@ -150,4 +151,3 @@ public class WorkSessionService : IWorkSessionService
         };
     }
 }
-

@@ -1,8 +1,9 @@
+using Fakturus.Track.Backend.DTOs;
 using FluentValidation;
 
 namespace Fakturus.Track.Backend.Validators;
 
-public class CreateWorkSessionRequestValidator : AbstractValidator<DTOs.CreateWorkSessionRequest>
+public class CreateWorkSessionRequestValidator : AbstractValidator<CreateWorkSessionRequest>
 {
     public CreateWorkSessionRequestValidator()
     {
@@ -23,4 +24,3 @@ public class CreateWorkSessionRequestValidator : AbstractValidator<DTOs.CreateWo
             .WithMessage("StopTime must be after StartTime");
     }
 }
-

@@ -1,10 +1,11 @@
+using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
-using Microsoft.Extensions.Configuration;
 
 namespace Fakturus.Track.Frontend.Services;
 
-public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfiguration configuration) : DelegatingHandler
+public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfiguration configuration)
+    : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -13,9 +14,7 @@ public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfig
         // Get the API scope from configuration
         var apiScope = configuration["AzureAdB2C:ApiScope"];
         if (string.IsNullOrEmpty(apiScope))
-        {
             throw new InvalidOperationException("AzureAdB2C:ApiScope is not configured in appsettings.json");
-        }
 
         // Request access token with the required scope to ensure proper token refresh
         var tokenRequestOptions = new AccessTokenRequestOptions
@@ -30,10 +29,8 @@ public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfig
             var tokenResult = await tokenProvider.RequestAccessToken(tokenRequestOptions);
 
             if (tokenResult.TryGetToken(out var token))
-            {
                 // Add the Bearer token to the Authorization header
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
-            }
         }
         catch (AccessTokenNotAvailableException ex)
         {
@@ -45,13 +42,12 @@ public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfig
         var response = await base.SendAsync(request, cancellationToken);
 
         // If we get a 401, the token might have expired - try to refresh and retry once
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
             try
             {
                 // Request a fresh token
                 var tokenResult = await tokenProvider.RequestAccessToken(tokenRequestOptions);
-                
+
                 if (tokenResult.TryGetToken(out var refreshedToken))
                 {
                     // Retry the request with the refreshed token
@@ -65,9 +61,7 @@ public class TrackAuthMessageHandler(IAccessTokenProvider tokenProvider, IConfig
                 ex.Redirect();
                 throw;
             }
-        }
 
         return response;
     }
 }
-

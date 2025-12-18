@@ -12,4 +12,3 @@ public interface ILocalStorageService
     Task<List<WorkSessionModel>> GetPendingSyncWorkSessionsAsync();
     Task MarkAsSyncedAsync(Guid id);
 }
-

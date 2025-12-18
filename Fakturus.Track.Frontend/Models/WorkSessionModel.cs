@@ -13,4 +13,3 @@ public class WorkSessionModel
     public bool IsSynced { get; set; }
     public bool IsPendingSync { get; set; }
 }
-

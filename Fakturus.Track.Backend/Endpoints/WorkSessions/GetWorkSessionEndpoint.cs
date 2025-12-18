@@ -6,7 +6,8 @@ using FastEndpoints.AspVersioning;
 
 namespace Fakturus.Track.Backend.Endpoints.WorkSessions;
 
-public class GetWorkSessionEndpoint(IWorkSessionService workSessionService) : Endpoint<GetWorkSessionRequest, WorkSessionDto>
+public class GetWorkSessionEndpoint(IWorkSessionService workSessionService)
+    : Endpoint<GetWorkSessionRequest, WorkSessionDto>
 {
     public override void Configure()
     {
@@ -45,7 +46,8 @@ public class GetWorkSessionEndpoint(IWorkSessionService workSessionService) : En
         {
             Logger.LogError(ex, "Error retrieving work session");
             HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "An error occurred while retrieving the work session" }, ct);
+            await HttpContext.Response.WriteAsJsonAsync(
+                new { Error = "An error occurred while retrieving the work session" }, ct);
         }
     }
 }
@@ -54,4 +56,3 @@ public class GetWorkSessionRequest
 {
     public Guid Id { get; set; }
 }
-

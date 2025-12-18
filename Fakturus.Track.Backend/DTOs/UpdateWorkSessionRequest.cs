@@ -6,4 +6,3 @@ public class UpdateWorkSessionRequest
     public DateTime? StartTime { get; set; }
     public DateTime? StopTime { get; set; }
 }
-

@@ -7,4 +7,3 @@ public class CreateWorkSessionRequest
     public DateTime StartTime { get; set; }
     public DateTime? StopTime { get; set; }
 }
-

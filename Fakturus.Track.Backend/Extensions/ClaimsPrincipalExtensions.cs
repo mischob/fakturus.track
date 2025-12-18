@@ -15,4 +15,3 @@ public static class ClaimsPrincipalExtensions
                throw new InvalidOperationException("Object ID not found in claims");
     }
 }
-

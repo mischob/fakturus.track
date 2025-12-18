@@ -10,7 +10,7 @@ public class VersionEndpoint : EndpointWithoutRequest<VersionResponse>
     {
         Get("/v1/version");
         AllowAnonymous(); // Wichtig: Kein Auth erforderlich
-        
+
         Summary(s =>
         {
             s.Summary = "Version endpoint";
@@ -21,16 +21,13 @@ public class VersionEndpoint : EndpointWithoutRequest<VersionResponse>
     public override Task HandleAsync(CancellationToken ct)
     {
         // Version aus Assembly oder Environment Variable
-        var version = Environment.GetEnvironmentVariable("APP_VERSION") 
+        var version = Environment.GetEnvironmentVariable("APP_VERSION")
                       ?? Assembly.GetExecutingAssembly()
-                                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                                ?.InformationalVersion 
+                          .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                          ?.InformationalVersion
                       ?? "1.0.0";
-        
+
         Response = new VersionResponse { Version = version };
         return Task.CompletedTask;
     }
 }
-
-
-

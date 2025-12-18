@@ -7,4 +7,3 @@ public interface ISyncService
     void StopPeriodicSync();
     Task<bool> HasPendingSyncsAsync();
 }
-

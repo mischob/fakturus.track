@@ -6,7 +6,8 @@ using FastEndpoints.AspVersioning;
 
 namespace Fakturus.Track.Backend.Endpoints.WorkSessions;
 
-public class UpdateWorkSessionEndpoint(IWorkSessionService workSessionService) : Endpoint<UpdateWorkSessionRequest, WorkSessionDto>
+public class UpdateWorkSessionEndpoint(IWorkSessionService workSessionService)
+    : Endpoint<UpdateWorkSessionRequest, WorkSessionDto>
 {
     public override void Configure()
     {
@@ -31,14 +32,14 @@ public class UpdateWorkSessionEndpoint(IWorkSessionService workSessionService) :
         {
             var userId = User.GetObjectId();
             var routeId = Route<Guid>("Id");
-            
+
             var updateRequest = new DTOs.UpdateWorkSessionRequest
             {
                 Date = req.Date,
                 StartTime = req.StartTime,
                 StopTime = req.StopTime
             };
-            
+
             var workSession = await workSessionService.UpdateWorkSessionAsync(routeId, updateRequest, userId);
             Response = workSession;
             HttpContext.Response.StatusCode = StatusCodes.Status200OK;
@@ -53,7 +54,8 @@ public class UpdateWorkSessionEndpoint(IWorkSessionService workSessionService) :
         {
             Logger.LogError(ex, "Error updating work session");
             HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "An error occurred while updating the work session" }, ct);
+            await HttpContext.Response.WriteAsJsonAsync(
+                new { Error = "An error occurred while updating the work session" }, ct);
         }
     }
 }
@@ -64,4 +66,3 @@ public class UpdateWorkSessionRequest
     public DateTime? StartTime { get; set; }
     public DateTime? StopTime { get; set; }
 }
-

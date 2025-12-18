@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Azure.Identity;
 using Fakturus.Track.Backend.Data;
+using Fakturus.Track.Backend.Services;
 using FastEndpoints;
 using FastEndpoints.AspVersioning;
 using FastEndpoints.Swagger;
@@ -205,7 +206,7 @@ builder.Services.SwaggerDocument(o =>
 });
 
 // Add custom services
-builder.Services.AddScoped<Fakturus.Track.Backend.Services.IWorkSessionService, Fakturus.Track.Backend.Services.WorkSessionService>();
+builder.Services.AddScoped<IWorkSessionService, WorkSessionService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -216,7 +217,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         if (builder.Environment.IsDevelopment())
-            policy.WithOrigins("https://localhost:7086", "http://localhost:5138", "https://localhost:7003", "http://localhost:7003")
+            policy.WithOrigins("https://localhost:7086", "http://localhost:5138", "https://localhost:7003",
+                    "http://localhost:7003")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -266,10 +268,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
+if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
 
 app
     .UseAuthentication()
@@ -288,4 +287,3 @@ catch (Exception e)
     Console.WriteLine(e);
     throw;
 }
-

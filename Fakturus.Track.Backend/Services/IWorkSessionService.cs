@@ -11,4 +11,3 @@ public interface IWorkSessionService
     Task<bool> DeleteWorkSessionAsync(Guid id, string userId);
     Task<List<WorkSessionDto>> SyncWorkSessionsAsync(List<CreateWorkSessionRequest> workSessions, string userId);
 }
-

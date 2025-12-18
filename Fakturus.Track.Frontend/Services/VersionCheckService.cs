@@ -1,22 +1,27 @@
 using System.Net.Http.Json;
-using System.Timers;
 using Fakturus.Track.Frontend.Models;
 using Microsoft.JSInterop;
+using Timer = System.Timers.Timer;
 
 namespace Fakturus.Track.Frontend.Services;
 
 public class VersionCheckService : IVersionCheckService, IDisposable
 {
-    private readonly HttpClient _httpClient;
-    private readonly IJSRuntime _jsRuntime;
-    private System.Timers.Timer? _checkTimer;
     private const string VersionKey = "app_version";
     private const int CheckIntervalMinutes = 5;
+    private readonly HttpClient _httpClient;
+    private readonly IJSRuntime _jsRuntime;
+    private Timer? _checkTimer;
 
     public VersionCheckService(HttpClient httpClient, IJSRuntime jsRuntime)
     {
         _httpClient = httpClient;
         _jsRuntime = jsRuntime;
+    }
+
+    public void Dispose()
+    {
+        StopPeriodicCheck();
     }
 
     public async Task CheckVersionAsync()
@@ -27,7 +32,7 @@ public class VersionCheckService : IVersionCheckService, IDisposable
             if (response?.Version == null) return;
 
             var storedVersion = await GetStoredVersionAsync();
-            
+
             if (storedVersion != null && storedVersion != response.Version)
             {
                 Console.WriteLine($"Version changed: {storedVersion} -> {response.Version}. Reloading...");
@@ -49,7 +54,7 @@ public class VersionCheckService : IVersionCheckService, IDisposable
         if (_checkTimer != null)
             return Task.CompletedTask;
 
-        _checkTimer = new System.Timers.Timer(TimeSpan.FromMinutes(CheckIntervalMinutes).TotalMilliseconds)
+        _checkTimer = new Timer(TimeSpan.FromMinutes(CheckIntervalMinutes).TotalMilliseconds)
         {
             AutoReset = true,
             Enabled = true
@@ -90,10 +95,4 @@ public class VersionCheckService : IVersionCheckService, IDisposable
             // Ignore storage errors
         }
     }
-
-    public void Dispose()
-    {
-        StopPeriodicCheck();
-    }
 }
-
