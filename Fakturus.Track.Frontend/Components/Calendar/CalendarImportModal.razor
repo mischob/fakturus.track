@@ -1,29 +1,34 @@
 @using Fakturus.Track.Frontend.Models
 @using Fakturus.Track.Frontend.Services
+@using Microsoft.JSInterop
 
 @if (IsVisible)
 {
     <!-- Full screen modal below site header -->
-    <div class="fixed left-0 right-0 bottom-0 z-[99999] bg-white flex flex-col" style="top: 64px;"
+    <div class="fixed inset-x-0 z-[99999] bg-white" 
+         style="top: 64px; bottom: 0; display: flex; flex-direction: column; pointer-events: auto; isolation: isolate; contain: layout style paint;"
          role="dialog" aria-modal="true" aria-labelledby="modal-title">
         
         <!-- Fixed Header with Actions -->
-        <div class="flex-shrink-0 border-b border-gray-200 bg-white">
+        <div style="flex-shrink: 0;" class="border-b border-gray-200 bg-white">
             <div class="flex items-center justify-between p-4">
                 <div class="flex gap-2">
-                    <button @onclick="ImportSelected"
+                    <button type="button"
+                            @onclick="ImportSelected"
                             disabled="@(_isLoading || _events?.Any(e => e.IsSelected) != true)"
                             class="px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-800
                                    hover:bg-gray-300 transition-colors min-h-[44px]">
                         Übernehmen (@(_events?.Count(e => e.IsSelected) ?? 0))
                     </button>
-                    <button @onclick="Close"
+                    <button type="button"
+                            @onclick="Close"
                             class="px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-800
                                    hover:bg-gray-300 transition-colors min-h-[44px]">
                         Cancel
                     </button>
                 </div>
-                <button @onclick="Close"
+                <button type="button"
+                        @onclick="Close"
                         class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
                         aria-label="Close">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,7 +39,7 @@
         </div>
         
         <!-- Scrollable Body -->
-        <div class="flex-1 overflow-y-auto">
+        <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; overflow-anchor: none; position: relative;">
             <div class="p-4">
                 @if (_isLoading)
                 {
@@ -87,10 +92,12 @@
                             
                             <div class="border border-gray-200 rounded-lg overflow-hidden">
                                 <!-- Month Header (Clickable) -->
-                                <button @onclick="@(() => ToggleMonth(monthKey))"
-                                        class="w-full flex items-center justify-between p-4 min-h-[56px]
-                                               @(isExpanded ? "bg-gray-100" : "bg-gray-50") hover:bg-gray-100
-                                               transition-colors text-left">
+                                <div role="button" tabindex="0"
+                                     @onclick="@(() => ToggleMonth(monthKey))"
+                                     class="w-full flex items-center justify-between p-4 min-h-[56px]
+                                            @(isExpanded ? "bg-gray-100" : "bg-gray-50") hover:bg-gray-100
+                                            transition-colors text-left select-none cursor-pointer"
+                                     style="touch-action: pan-y;">
                                     <div class="flex items-center gap-3">
                                         <svg class="w-5 h-5 text-gray-600 transition-transform @(isExpanded ? "rotate-90" : "")"
                                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +106,7 @@
                                         <span class="text-lg font-semibold text-gray-900">@monthKey</span>
                                     </div>
                                     <span class="text-base text-gray-600">(@monthGroup.Value.Count)</span>
-                                </button>
+                                </div>
                                 
                                 <!-- Event List (Shown when expanded) -->
                                 @if (isExpanded)
@@ -151,10 +158,12 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<List<CalendarEventModel>> OnImport { get; set; }
     [Inject] private ICalendarApiClient CalendarApiClient { get; set; } = null!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = null!;
 
     private List<CalendarEventModel>? _events;
     private bool _isLoading;
     private string? _errorMessage;
+    private bool _wasVisible;
     
     // Track which months are expanded
     private readonly HashSet<string> _expandedMonths = new();
@@ -162,10 +171,10 @@
     protected override async Task OnParametersSetAsync()
     {
         if (IsVisible && _events == null)
-        {
-            await LoadEventsAsync();
+            {
+                await LoadEventsAsync();
+            }
         }
-    }
 
     private async Task LoadEventsAsync()
     {

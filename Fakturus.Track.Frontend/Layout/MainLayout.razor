@@ -52,7 +52,7 @@
     </AuthorizeView>
 </div>
 
-<!-- Calendar Import Modal (rendered at root level, outside all containers) -->
+<!-- Calendar Import Modal (rendered OUTSIDE main layout container for proper z-index and scroll) -->
 <CalendarImportModal IsVisible="_showCalendarModal"
                      OnClose="CloseCalendarImport"
                      OnImport="HandleCalendarImport"/>
