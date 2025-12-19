@@ -1,6 +1,7 @@
 using Fakturus.Track.Backend.Data;
 using Fakturus.Track.Backend.DTOs;
 using Ical.Net;
+using System.Text.RegularExpressions;
 
 namespace Fakturus.Track.Backend.Services;
 
@@ -41,7 +42,9 @@ public class CalendarService(
             }
 
             var icalContent = await response.Content.ReadAsStringAsync();
-            
+            icalContent = SanitizeIcs(icalContent);
+            icalContent = RemoveBrokenLines(icalContent);
+
             // Parse the iCal content with error handling for malformed data
             var events = new List<CalendarEventDto>();
             
@@ -53,14 +56,24 @@ public class CalendarService(
                 {
                     try
                     {
-                        // Only include future events and events from the last 30 days
+                        // Only include future events and events from the last 600 days
                         if (calendarEvent.Start == null)
                         {
                             continue;
                         }
 
                         var eventStart = calendarEvent.Start.AsUtc;
-                        if (eventStart < DateTime.UtcNow.AddDays(-30))
+                        if (eventStart < DateTime.UtcNow.AddDays(-600))
+                        {
+                            continue;
+                        }
+
+                        if (eventStart > DateTime.UtcNow.AddDays(2))
+                        {
+                            continue;
+                        }
+
+                        if (calendarEvent.Summary != null && (!calendarEvent.Summary.ToLowerInvariant().Contains("arbeit") && !calendarEvent.Summary.ToLowerInvariant().Contains("kirsten")))
                         {
                             continue;
                         }
@@ -145,6 +158,61 @@ public class CalendarService(
             logger.LogError(ex, "Error fetching calendar events for user {UserId}", userId);
             return new List<CalendarEventDto>();
         }
+    }
+
+    static string RemoveBrokenLines(string ics)
+    {
+        // Normalisiere Zeilenenden
+        ics = ics.Replace("\r\n", "\n").Replace("\r", "\n");
+
+        var lines = ics.Split('\n');
+        var kept = new List<string>(lines.Length);
+
+        foreach (var line in lines)
+        {
+            var s = line.TrimEnd();
+
+            // drop the known broken line pattern
+            if (s.StartsWith("SCHÖNAICH:", StringComparison.OrdinalIgnoreCase) ||
+                (s.Contains(":geo:", StringComparison.OrdinalIgnoreCase) && !s.StartsWith("GEO:", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            kept.Add(s);
+        }
+
+        return string.Join("\r\n", kept);
+    }
+
+    static string SanitizeIcs(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return raw;
+
+        // 1) Normalisiere Newlines
+        raw = raw.Replace("\r\n", "\n").Replace("\r", "\n");
+
+        // 2) RFC5545 Unfold: Zeilen, die mit SPACE oder TAB beginnen, an vorherige Zeile anhängen
+        var lines = raw.Split('\n');
+        var unfolded = new List<string>(lines.Length);
+        foreach (var l in lines)
+        {
+            if ((l.StartsWith(" ") || l.StartsWith("\t")) && unfolded.Count > 0)
+                unfolded[unfolded.Count - 1] += l.TrimStart(' ', '\t');
+            else
+                unfolded.Add(l);
+        }
+
+        // 3) END:VEVENT/END:VCALENDAR/END:... müssen "clean" sein (manche Feeds hängen Mist an)
+        for (int i = 0; i < unfolded.Count; i++)
+        {
+            var s = unfolded[i].TrimEnd();
+            if (s.StartsWith("END:VEVENT", StringComparison.OrdinalIgnoreCase)) unfolded[i] = "END:VEVENT";
+            if (s.StartsWith("END:VCALENDAR", StringComparison.OrdinalIgnoreCase)) unfolded[i] = "END:VCALENDAR";
+            if (s.StartsWith("END:VTODO", StringComparison.OrdinalIgnoreCase)) unfolded[i] = "END:VTODO";
+        }
+
+        return string.Join("\r\n", unfolded);
     }
 
     private async Task<string?> GetCalendarUrlForUserAsync(string userId)
