@@ -3,12 +3,12 @@
 @attribute [Authorize]
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
-@using Fakturus.Track.Frontend.Components.Calendar
 @implements IDisposable
 @inject ILocalStorageService LocalStorageService
 @inject IWorkSessionsApiClient ApiClient
 @inject ISyncService SyncService
 @inject IToastService ToastService
+@inject ICalendarModalService CalendarModalService
 
 <PageTitle>Time Tracker</PageTitle>
 
@@ -95,22 +95,19 @@
     </div>
 </div>
 
-<!-- Calendar Import Modal -->
-<CalendarImportModal IsVisible="_showCalendarModal"
-                     OnClose="CloseCalendarImport"
-                     OnImport="HandleCalendarImport"/>
-
 @code {
     private List<WorkSessionModel> _workSessions = [];
     private WorkSessionModel? _currentSession;
     private bool _isSyncing;
     private bool _isFinishing; // Flag to prevent re-loading finished session
-    private bool _showCalendarModal;
 
     protected override async Task OnInitializedAsync()
     {
         // Subscribe to sync completed event
         SyncService.SyncCompleted += OnSyncCompleted;
+        
+        // Subscribe to calendar import events
+        CalendarModalService.EventsImported += OnCalendarEventsImported;
 
         await LoadWorkSessionsAsync();
 
@@ -383,49 +380,16 @@
 
     private void OpenCalendarImport()
     {
-        _showCalendarModal = true;
-        StateHasChanged();
+        CalendarModalService.Show();
     }
 
-    private void CloseCalendarImport()
+    private async void OnCalendarEventsImported(object? sender, List<CalendarEventModel> selectedEvents)
     {
-        _showCalendarModal = false;
-    }
-
-    private async Task HandleCalendarImport(List<CalendarEventModel> selectedEvents)
-    {
-        try
+        await InvokeAsync(async () =>
         {
-            var importedCount = 0;
-            foreach (var evt in selectedEvents)
-            {
-                // Convert calendar event to work session
-                var workSession = new WorkSessionModel
-                {
-                    Id = Guid.NewGuid(),
-                    Date = DateOnly.FromDateTime(evt.StartTime.ToLocalTime()),
-                    StartTime = evt.StartTime,
-                    StopTime = evt.EndTime,
-                    IsPendingSync = true,
-                    IsSynced = false
-                };
-
-                await LocalStorageService.SaveWorkSessionAsync(workSession);
-                importedCount++;
-            }
-
-            // Reload work sessions
             await LoadWorkSessionsAsync();
-
-            // Trigger sync
-            await SyncService.StartPeriodicSyncAsync();
-
-            ToastService.ShowSuccess($"Imported {importedCount} event(s) from calendar");
-        }
-        catch (Exception ex)
-        {
-            ToastService.ShowError($"Failed to import calendar events: {ex.Message}");
-        }
+            StateHasChanged();
+        });
     }
 
 }

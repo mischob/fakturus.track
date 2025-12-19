@@ -75,6 +75,7 @@ builder.Services.AddScoped<IVersionCheckService>(sp =>
 // Register services
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddSingleton<ICalendarModalService, CalendarModalService>();
 
 // Add Toast notifications
 builder.Services.AddBlazoredToast();

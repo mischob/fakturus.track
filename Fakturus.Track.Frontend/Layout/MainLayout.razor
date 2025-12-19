@@ -1,6 +1,15 @@
 @inherits LayoutComponentBase
+@using Fakturus.Track.Frontend.Components.Calendar
+@using Fakturus.Track.Frontend.Services
+@using Fakturus.Track.Frontend.Models
+@using Blazored.Toast.Services
 @inject IVersionCheckService VersionCheckService
 @inject NavigationManager Navigation
+@inject ICalendarModalService CalendarModalService
+@inject ILocalStorageService LocalStorageService
+@inject ISyncService SyncService
+@inject IToastService ToastService
+@implements IDisposable
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
     <AuthorizeView>
@@ -43,10 +52,19 @@
     </AuthorizeView>
 </div>
 
+<!-- Calendar Import Modal (rendered at root level, outside all containers) -->
+<CalendarImportModal IsVisible="_showCalendarModal"
+                     OnClose="CloseCalendarImport"
+                     OnImport="HandleCalendarImport"/>
+
 @code {
+    private bool _showCalendarModal;
 
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to calendar modal events
+        CalendarModalService.VisibilityChanged += OnModalVisibilityChanged;
+        
         // Check version on app start
         await VersionCheckService.CheckVersionAsync();
 
@@ -54,9 +72,58 @@
         await VersionCheckService.StartPeriodicCheckAsync();
     }
 
+    private void OnModalVisibilityChanged(object? sender, bool isVisible)
+    {
+        _showCalendarModal = isVisible;
+        StateHasChanged();
+    }
+
+    private void CloseCalendarImport()
+    {
+        _showCalendarModal = false;
+        CalendarModalService.Hide();
+    }
+
+    private async Task HandleCalendarImport(List<CalendarEventModel> selectedEvents)
+    {
+        try
+        {
+            var importedCount = 0;
+            foreach (var evt in selectedEvents)
+            {
+                // Convert calendar event to work session
+                var workSession = new WorkSessionModel
+                {
+                    Id = Guid.NewGuid(),
+                    Date = DateOnly.FromDateTime(evt.StartTime.ToLocalTime()),
+                    StartTime = evt.StartTime,
+                    StopTime = evt.EndTime,
+                    IsPendingSync = true,
+                    IsSynced = false
+                };
+
+                await LocalStorageService.SaveWorkSessionAsync(workSession);
+                importedCount++;
+            }
+
+            // Trigger sync
+            await SyncService.StartPeriodicSyncAsync();
+
+            ToastService.ShowSuccess($"Imported {importedCount} event(s) from calendar");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to import calendar events: {ex.Message}");
+        }
+    }
+
     private void BeginLogout()
     {
         Navigation.NavigateTo("authentication/logout", forceLoad: true);
     }
 
+    public void Dispose()
+    {
+        CalendarModalService.VisibilityChanged -= OnModalVisibilityChanged;
+    }
 }

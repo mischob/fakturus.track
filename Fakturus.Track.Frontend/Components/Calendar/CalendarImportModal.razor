@@ -1,6 +1,3 @@
-@using Fakturus.Track.Frontend.Models
-@using Fakturus.Track.Frontend.Services
-
 @if (IsVisible)
 {
     <!-- Full screen modal below site header -->
@@ -13,10 +10,9 @@
                 <div class="flex gap-2">
                     <button @onclick="ImportSelected"
                             disabled="@(_isLoading || _events?.Any(e => e.IsSelected) != true)"
-                            class="px-6 py-3 rounded-lg font-semibold bg-blue-600 text-white
-                                   disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed
-                                   transition-colors min-h-[44px]">
-                        Import (@(_events?.Count(e => e.IsSelected) ?? 0))
+                            class="px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-800
+                                   hover:bg-gray-300 transition-colors min-h-[44px]">
+                        Übernehmen (@(_events?.Count(e => e.IsSelected) ?? 0))
                     </button>
                     <button @onclick="Close"
                             class="px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-800
@@ -158,7 +154,7 @@
     private string? _errorMessage;
     
     // Track which months are expanded
-    private HashSet<string> _expandedMonths = new();
+    private readonly HashSet<string> _expandedMonths = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -204,10 +200,8 @@
 
     private void ToggleMonth(string monthKey)
     {
-        if (_expandedMonths.Contains(monthKey))
+        if (!_expandedMonths.Add(monthKey))
             _expandedMonths.Remove(monthKey);
-        else
-            _expandedMonths.Add(monthKey);
     }
 
     private bool IsMonthExpanded(string monthKey) => _expandedMonths.Contains(monthKey);
