@@ -7,6 +7,7 @@ public class WorkSession
     public DateOnly Date { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime? StopTime { get; set; }
+    public string? CalendarEventId { get; set; } // Optional UID from imported calendar event
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? SyncedAt { get; set; }

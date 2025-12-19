@@ -3,6 +3,7 @@
 @attribute [Authorize]
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
+@using Fakturus.Track.Frontend.Components.Calendar
 @implements IDisposable
 @inject ILocalStorageService LocalStorageService
 @inject IWorkSessionsApiClient ApiClient
@@ -14,18 +15,24 @@
 <div class="py-6 space-y-6">
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900">Time Tracker</h1>
-        <button @onclick="HandleSync"
-                class="btn-primary @(_isSyncing ? "opacity-50 cursor-not-allowed" : "")"
-                disabled="@_isSyncing">
-            @if (_isSyncing)
-            {
-                <span>Syncing...</span>
-            }
-            else
-            {
-                <span>Sync</span>
-            }
-        </button>
+        <div class="flex gap-3">
+            <button @onclick="OpenCalendarImport"
+                    class="btn-secondary">
+                Import from Calendar
+            </button>
+            <button @onclick="HandleSync"
+                    class="btn-primary @(_isSyncing ? "opacity-50 cursor-not-allowed" : "")"
+                    disabled="@_isSyncing">
+                @if (_isSyncing)
+                {
+                    <span>Syncing...</span>
+                }
+                else
+                {
+                    <span>Sync</span>
+                }
+            </button>
+        </div>
     </div>
 
     <!-- Current Session Card -->
@@ -88,11 +95,17 @@
     </div>
 </div>
 
+<!-- Calendar Import Modal -->
+<CalendarImportModal IsVisible="_showCalendarModal"
+                     OnClose="CloseCalendarImport"
+                     OnImport="HandleCalendarImport"/>
+
 @code {
     private List<WorkSessionModel> _workSessions = [];
     private WorkSessionModel? _currentSession;
     private bool _isSyncing;
     private bool _isFinishing; // Flag to prevent re-loading finished session
+    private bool _showCalendarModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -365,6 +378,52 @@
         {
             _isSyncing = false;
             StateHasChanged(); // Update UI to hide syncing state
+        }
+    }
+
+    private void OpenCalendarImport()
+    {
+        _showCalendarModal = true;
+    }
+
+    private void CloseCalendarImport()
+    {
+        _showCalendarModal = false;
+    }
+
+    private async Task HandleCalendarImport(List<CalendarEventModel> selectedEvents)
+    {
+        try
+        {
+            var importedCount = 0;
+            foreach (var evt in selectedEvents)
+            {
+                // Convert calendar event to work session
+                var workSession = new WorkSessionModel
+                {
+                    Id = Guid.NewGuid(),
+                    Date = DateOnly.FromDateTime(evt.StartTime.ToLocalTime()),
+                    StartTime = evt.StartTime,
+                    StopTime = evt.EndTime,
+                    IsPendingSync = true,
+                    IsSynced = false
+                };
+
+                await LocalStorageService.SaveWorkSessionAsync(workSession);
+                importedCount++;
+            }
+
+            // Reload work sessions
+            await LoadWorkSessionsAsync();
+
+            // Trigger sync
+            await SyncService.StartPeriodicSyncAsync();
+
+            ToastService.ShowSuccess($"Imported {importedCount} event(s) from calendar");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to import calendar events: {ex.Message}");
         }
     }
 

@@ -207,6 +207,8 @@ builder.Services.SwaggerDocument(o =>
 
 // Add custom services
 builder.Services.AddScoped<IWorkSessionService, WorkSessionService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddHttpClient(); // For fetching calendar feed
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -245,7 +247,7 @@ if (!app.Environment.IsDevelopment())
     logger.LogInformation("AzureAdB2C Audience configured: {HasAudience}", !string.IsNullOrEmpty(audience));
 }
 
-// Ensure database is created
+// Apply pending database migrations automatically
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -253,12 +255,24 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        context.Database.EnsureCreated();
-        dbLogger.LogInformation("Database ensured/created successfully");
+        var pendingMigrations = context.Database.GetPendingMigrations().ToList();
+        if (pendingMigrations.Any())
+        {
+            dbLogger.LogInformation("Applying {Count} pending migration(s): {Migrations}", 
+                pendingMigrations.Count, 
+                string.Join(", ", pendingMigrations));
+            context.Database.Migrate();
+            dbLogger.LogInformation("Database migrations applied successfully");
+        }
+        else
+        {
+            dbLogger.LogInformation("Database is up to date, no pending migrations");
+        }
     }
     catch (Exception ex)
     {
-        dbLogger.LogError(ex, "An error occurred while ensuring database creation");
+        dbLogger.LogError(ex, "An error occurred while applying database migrations");
+        throw; // Re-throw to prevent app from starting with incorrect database schema
     }
 }
 

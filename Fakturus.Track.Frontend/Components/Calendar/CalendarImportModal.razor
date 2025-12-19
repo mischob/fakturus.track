@@ -1,0 +1,245 @@
+@using Fakturus.Track.Frontend.Models
+@using Fakturus.Track.Frontend.Services
+
+@if (IsVisible)
+{
+    <!-- Full screen modal -->
+    <div class="fixed inset-0 z-[9999] bg-white flex flex-col"
+         role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        
+        <!-- Fixed Header with Actions -->
+        <div class="flex-shrink-0 border-b border-gray-200 bg-white">
+            <div class="flex items-center justify-between p-4">
+                <div class="flex gap-2">
+                    <button @onclick="ImportSelected"
+                            disabled="@(_isLoading || _events?.Any(e => e.IsSelected) != true)"
+                            class="px-6 py-3 rounded-lg font-semibold bg-blue-600 text-white
+                                   disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed
+                                   transition-colors min-h-[44px]">
+                        Import (@(_events?.Count(e => e.IsSelected) ?? 0))
+                    </button>
+                    <button @onclick="Close"
+                            class="px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-800
+                                   hover:bg-gray-300 transition-colors min-h-[44px]">
+                        Cancel
+                    </button>
+                </div>
+                <button @onclick="Close"
+                        class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                        aria-label="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Scrollable Body -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-4">
+                @if (_isLoading)
+                {
+                    <!-- Loading State -->
+                    <div class="flex items-center justify-center py-16">
+                        <div class="text-center">
+                            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="mt-4 text-base font-medium text-gray-700">Loading calendar events...</p>
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <!-- Error State -->
+                    <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-base font-semibold text-red-900">Error loading calendar</p>
+                                <p class="text-sm text-red-800 mt-1">@_errorMessage</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (_events == null || !_events.Any())
+                {
+                    <!-- Empty State -->
+                    <div class="text-center py-16">
+                        <svg class="h-16 w-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p class="mt-4 text-base font-medium text-gray-700">No calendar events found</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- Month Groups (Collapsible) -->
+                    <div class="space-y-2">
+                        @foreach (var monthGroup in GetEventsByMonth())
+                        {
+                            var monthKey = monthGroup.Key;
+                            var isExpanded = IsMonthExpanded(monthKey);
+                            
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <!-- Month Header (Clickable) -->
+                                <button @onclick="@(() => ToggleMonth(monthKey))"
+                                        class="w-full flex items-center justify-between p-4 min-h-[56px]
+                                               @(isExpanded ? "bg-gray-100" : "bg-gray-50") hover:bg-gray-100
+                                               transition-colors text-left">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="w-5 h-5 text-gray-600 transition-transform @(isExpanded ? "rotate-90" : "")"
+                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        <span class="text-lg font-semibold text-gray-900">@monthKey</span>
+                                    </div>
+                                    <span class="text-base text-gray-600">(@monthGroup.Value.Count)</span>
+                                </button>
+                                
+                                <!-- Event List (Shown when expanded) -->
+                                @if (isExpanded)
+                                {
+                                    <div class="border-t border-gray-200">
+                                        @foreach (var evt in monthGroup.Value)
+                                        {
+                                            <div class="flex items-start gap-3 p-4 min-h-[60px] border-b border-gray-100 last:border-b-0
+                                                        hover:bg-gray-50 transition-colors @(evt.IsSelected ? "bg-blue-50 border-l-4 border-l-blue-600" : "")">
+                                                <input type="checkbox"
+                                                       checked="@evt.IsSelected"
+                                                       @onchange="@(() => ToggleSelection(evt))"
+                                                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600
+                                                              focus:ring-2 focus:ring-blue-500" />
+                                                
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-base font-semibold text-gray-900 mb-1">
+                                                        @evt.Summary
+                                                    </div>
+                                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+                                                        <span>@evt.StartTime.ToLocalTime().ToString("dd.MM.yyyy")</span>
+                                                        <span>@evt.StartTime.ToLocalTime().ToString("HH:mm") - @evt.EndTime.ToLocalTime().ToString("HH:mm")</span>
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                                                            @FormatDuration(evt.Duration)
+                                                        </span>
+                                                    </div>
+                                                    @if (!string.IsNullOrWhiteSpace(evt.Location))
+                                                    {
+                                                        <div class="mt-1 text-sm text-gray-500 truncate">
+                                                            📍 @evt.Location
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<List<CalendarEventModel>> OnImport { get; set; }
+    [Inject] private ICalendarApiClient CalendarApiClient { get; set; } = null!;
+
+    private List<CalendarEventModel>? _events;
+    private bool _isLoading;
+    private string? _errorMessage;
+    
+    // Track which months are expanded
+    private HashSet<string> _expandedMonths = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && _events == null)
+        {
+            await LoadEventsAsync();
+        }
+    }
+
+    private async Task LoadEventsAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _events = await CalendarApiClient.GetCalendarEventsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message.Contains("403")
+                ? "Calendar access is not enabled for your account."
+                : "Failed to load calendar events. Please try again later.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private Dictionary<string, List<CalendarEventModel>> GetEventsByMonth()
+    {
+        if (_events == null || !_events.Any())
+            return new Dictionary<string, List<CalendarEventModel>>();
+
+        return _events
+            .OrderByDescending(e => e.StartTime)
+            .GroupBy(e => e.StartTime.ToLocalTime().ToString("MMMM yyyy"))
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private void ToggleMonth(string monthKey)
+    {
+        if (_expandedMonths.Contains(monthKey))
+            _expandedMonths.Remove(monthKey);
+        else
+            _expandedMonths.Add(monthKey);
+    }
+
+    private bool IsMonthExpanded(string monthKey) => _expandedMonths.Contains(monthKey);
+
+    private void ToggleSelection(CalendarEventModel evt) => evt.IsSelected = !evt.IsSelected;
+
+    private async Task ImportSelected()
+    {
+        if (_events != null)
+        {
+            var selectedEvents = _events.Where(e => e.IsSelected).ToList();
+            if (selectedEvents.Any())
+            {
+                await OnImport.InvokeAsync(selectedEvents);
+            }
+        }
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        _events = null;
+        _errorMessage = null;
+        _expandedMonths.Clear();
+        await OnClose.InvokeAsync();
+    }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
+        return $"{hours}h {minutes}m";
+    }
+}
