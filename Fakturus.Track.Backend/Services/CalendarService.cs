@@ -177,36 +177,59 @@ public class CalendarService(
             var line = lines[i];
             
             // Handle END:VEVENT that has been corrupted with attendee data
-            if (line.StartsWith("END:VEVENT") && line.Length > 10)
+            // Example: "END:VEVENT;PARTSTAT=ACCEPTED;..." should become just "END:VEVENT"
+            if (line.StartsWith("END:VEVENT"))
             {
-                logger.LogDebug("Cleaning corrupted END:VEVENT line: {Line}", line);
+                if (line.Length > 10)
+                {
+                    logger.LogDebug("Cleaning corrupted END:VEVENT line: {Line}", line.Substring(0, Math.Min(50, line.Length)));
+                }
                 cleanedLines.Add("END:VEVENT");
                 continue;
             }
             
-            // Handle BEGIN/END statements that might be corrupted
+            // Handle BEGIN:VEVENT that might be corrupted
+            if (line.StartsWith("BEGIN:VEVENT"))
+            {
+                if (line.Length > 12)
+                {
+                    logger.LogDebug("Cleaning corrupted BEGIN:VEVENT line: {Line}", line.Substring(0, Math.Min(50, line.Length)));
+                }
+                cleanedLines.Add("BEGIN:VEVENT");
+                continue;
+            }
+            
+            // Handle other BEGIN/END statements
             if (line.StartsWith("BEGIN:") || line.StartsWith("END:"))
             {
-                // Extract just the BEGIN/END statement, ignore any trailing garbage
-                var parts = line.Split(new[] { ';', ':', '/' }, 2);
-                if (parts.Length > 0 && (parts[0].StartsWith("BEGIN:") || parts[0].StartsWith("END:")))
+                // Extract just the BEGIN/END statement up to any semicolon or slash
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex > 0)
                 {
-                    cleanedLines.Add(parts[0]);
-                    if (line != parts[0])
+                    var afterColon = line.Substring(colonIndex + 1);
+                    // Find the first semicolon or slash after the colon
+                    var endIndex = afterColon.IndexOfAny(new[] { ';', '/' });
+                    if (endIndex > 0)
                     {
-                        logger.LogDebug("Cleaned line from '{Original}' to '{Cleaned}'", line, parts[0]);
+                        var cleaned = line.Substring(0, colonIndex + 1 + endIndex);
+                        logger.LogDebug("Cleaned line from '{Original}' to '{Cleaned}'", 
+                            line.Substring(0, Math.Min(50, line.Length)), cleaned);
+                        cleanedLines.Add(cleaned);
+                        continue;
                     }
-                    continue;
                 }
+                cleanedLines.Add(line);
+                continue;
             }
             
             // Skip lines that are clearly malformed (missing colon, invalid format)
+            // But allow empty lines and lines starting with space (continuation lines)
             if (!string.IsNullOrWhiteSpace(line) && 
-                !line.StartsWith("BEGIN:") && 
-                !line.StartsWith("END:") && 
+                !line.StartsWith(" ") &&
+                !line.StartsWith("\t") &&
                 !line.Contains(':'))
             {
-                logger.LogDebug("Skipping malformed line: {Line}", line);
+                logger.LogDebug("Skipping malformed line: {Line}", line.Substring(0, Math.Min(50, line.Length)));
                 continue;
             }
 
