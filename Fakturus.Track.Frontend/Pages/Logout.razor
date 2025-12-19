@@ -1,0 +1,23 @@
+@page "/logout"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                <p class="text-gray-600">Completing logout...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Now that we're back from Azure B2C logout, complete the local logout
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+}
