@@ -16,4 +16,3 @@ public record SyncVacationDaysResponse(
     List<VacationDayDto> ServerVacationDays,
     List<Guid> DeletedIds
 );
-

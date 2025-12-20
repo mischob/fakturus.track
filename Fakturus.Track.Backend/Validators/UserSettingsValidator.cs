@@ -34,9 +34,11 @@ public class UpdateUserSettingsRequestValidator : AbstractValidator<UpdateUserSe
 
     private bool BeValidBundesland(string bundesland)
     {
-        var validCodes = new[] { "BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", 
-                                 "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH" };
+        var validCodes = new[]
+        {
+            "BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV",
+            "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH"
+        };
         return validCodes.Contains(bundesland);
     }
 }
-

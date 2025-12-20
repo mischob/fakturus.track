@@ -22,4 +22,3 @@ public class UpdateUserSettingsRequest
     public int WorkDays { get; set; }
     public string Bundesland { get; set; } = "NW";
 }
-

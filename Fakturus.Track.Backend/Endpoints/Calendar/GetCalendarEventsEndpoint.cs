@@ -31,7 +31,7 @@ public class GetCalendarEventsEndpoint(ICalendarService calendarService, IConfig
         try
         {
             var userId = User.GetObjectId();
-            
+
             // Check if user is authorized to access calendar
             var enabledUserId = configuration["Calendar:EnabledUserId"];
             if (string.IsNullOrEmpty(enabledUserId) || userId != enabledUserId)

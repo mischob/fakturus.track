@@ -7,4 +7,3 @@ public class UserSettingsModel
     public int WorkDays { get; set; } = 31; // Default Mo-Fr (0b0011111)
     public string Bundesland { get; set; } = "NW";
 }
-

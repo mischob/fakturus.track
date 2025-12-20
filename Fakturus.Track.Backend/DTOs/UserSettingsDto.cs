@@ -13,4 +13,3 @@ public record UpdateUserSettingsRequest(
     int WorkDays,
     string Bundesland
 );
-

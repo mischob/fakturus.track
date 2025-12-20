@@ -8,12 +8,12 @@ public class HolidayService : IHolidayService
     {
         var countryCode = CountryCode.DE;
         var countyCode = MapBundeslandToCountyCode(bundesland);
-        
+
         var holidays = DateSystem.GetPublicHolidays(year, countryCode)
             .Where(h => h.Counties == null || h.Counties.Contains(countyCode))
             .Select(h => DateOnly.FromDateTime(h.Date))
             .ToList();
-        
+
         return holidays;
     }
 
@@ -47,4 +47,3 @@ public class HolidayService : IHolidayService
         };
     }
 }
-

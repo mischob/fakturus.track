@@ -13,10 +13,7 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
         var existing = await context.VacationDays
             .FirstOrDefaultAsync(v => v.UserId == userId && v.Date == request.Date);
 
-        if (existing != null)
-        {
-            throw new InvalidOperationException("Vacation day already exists for this date");
-        }
+        if (existing != null) throw new InvalidOperationException("Vacation day already exists for this date");
 
         var vacationDay = new VacationDay
         {
@@ -57,10 +54,7 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
         var vacationDay = await context.VacationDays
             .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
 
-        if (vacationDay == null)
-        {
-            throw new InvalidOperationException("Vacation day not found");
-        }
+        if (vacationDay == null) throw new InvalidOperationException("Vacation day not found");
 
         context.VacationDays.Remove(vacationDay);
         await context.SaveChangesAsync();
@@ -92,10 +86,7 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
             .ToList();
 
         // Delete vacation days
-        foreach (var vacationDay in vacationDaysToDelete)
-        {
-            context.VacationDays.Remove(vacationDay);
-        }
+        foreach (var vacationDay in vacationDaysToDelete) context.VacationDays.Remove(vacationDay);
 
         // Add new vacation days
         foreach (var vacationDayDto in vacationDaysToAdd)
@@ -149,4 +140,3 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
         );
     }
 }
-

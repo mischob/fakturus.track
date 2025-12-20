@@ -9,4 +9,3 @@ public class VacationDay
     public DateTime UpdatedAt { get; set; }
     public DateTime? SyncedAt { get; set; }
 }
-

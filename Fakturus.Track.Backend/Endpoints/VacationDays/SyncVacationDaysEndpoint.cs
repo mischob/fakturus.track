@@ -43,4 +43,3 @@ public class SyncVacationDaysEndpoint(IVacationDayService vacationDayService)
         }
     }
 }
-

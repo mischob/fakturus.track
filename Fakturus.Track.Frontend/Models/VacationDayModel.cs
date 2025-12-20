@@ -10,4 +10,3 @@ public class VacationDayModel
     public bool IsPendingSync { get; set; }
     public bool IsSynced { get; set; }
 }
-

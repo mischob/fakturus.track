@@ -17,4 +17,3 @@ public record MonthlyOvertimeDto(
     decimal WorkedHours,
     decimal ExpectedHours
 );
-

@@ -1,9 +1,8 @@
 @page "/gesamt"
-@attribute [Authorize]
 @using Blazored.Toast.Services
-@using Microsoft.AspNetCore.Authorization
-@using Fakturus.Track.Frontend.Models
 @using Fakturus.Track.Frontend.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject ISettingsApiClient SettingsApiClient
 @inject IToastService ToastService
 
@@ -22,21 +21,21 @@
     {
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <OvertimeCard 
+            <OvertimeCard
                 Title="Gesamt Überstunden"
                 Value="@FormatHours(_summary.TotalOvertimeHours)"
                 Subtitle="@GetOvertimeSubtitle(_summary.TotalOvertimeHours)"
                 IconColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"
                 ValueColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"/>
 
-            <OvertimeCard 
+            <OvertimeCard
                 Title="Urlaub"
                 Value="@($"{_summary.VacationDaysTaken} / {_summary.VacationDaysPerYear}")"
                 Subtitle="@($"{_summary.VacationDaysRemaining} Tage übrig")"
                 IconColor="text-blue-600"
                 ValueColor="text-gray-900"/>
 
-            <OvertimeCard 
+            <OvertimeCard
                 Title="Feiertage"
                 Value="@_summary.HolidaysTaken.ToString()"
                 Subtitle="@($"Feiertage in {_selectedYear}")"
@@ -65,35 +64,35 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left py-2 px-2 font-semibold text-gray-700 w-16">Monat</th>
-                            <th class="text-right py-2 px-2 font-semibold text-gray-700">Gearbeitet</th>
-                            <th class="text-right py-2 px-2 font-semibold text-gray-700">Erwartet</th>
-                            <th class="text-right py-2 px-2 font-semibold text-gray-700">Überstunden</th>
-                        </tr>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-2 px-2 font-semibold text-gray-700 w-16">Monat</th>
+                        <th class="text-right py-2 px-2 font-semibold text-gray-700">Gearbeitet</th>
+                        <th class="text-right py-2 px-2 font-semibold text-gray-700">Erwartet</th>
+                        <th class="text-right py-2 px-2 font-semibold text-gray-700">Überstunden</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        @foreach (var month in _summary.MonthlyOvertime)
-                        {
-                            <tr class="border-b border-gray-100 hover:bg-gray-50">
-                                <td class="py-2 px-2 whitespace-nowrap">@GetShortMonthName(month.MonthName)</td>
-                                <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(month.WorkedHours)</td>
-                                <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(month.ExpectedHours)</td>
-                                <td class="text-right py-2 px-2 font-semibold whitespace-nowrap @(month.OvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
-                                    @FormatHours(month.OvertimeHours)
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot>
-                        <tr class="border-t-2 border-gray-300 font-bold">
-                            <td class="py-2 px-2 whitespace-nowrap">Gesamt</td>
-                            <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.WorkedHours))</td>
-                            <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.ExpectedHours))</td>
-                            <td class="text-right py-2 px-2 whitespace-nowrap @(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
-                                @FormatHours(_summary.TotalOvertimeHours)
+                    @foreach (var month in _summary.MonthlyOvertime)
+                    {
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="py-2 px-2 whitespace-nowrap">@GetShortMonthName(month.MonthName)</td>
+                            <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(month.WorkedHours)</td>
+                            <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(month.ExpectedHours)</td>
+                            <td class="text-right py-2 px-2 font-semibold whitespace-nowrap @(month.OvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                                @FormatHours(month.OvertimeHours)
                             </td>
                         </tr>
+                    }
+                    </tbody>
+                    <tfoot>
+                    <tr class="border-t-2 border-gray-300 font-bold">
+                        <td class="py-2 px-2 whitespace-nowrap">Gesamt</td>
+                        <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.WorkedHours))</td>
+                        <td class="text-right py-2 px-2 whitespace-nowrap">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.ExpectedHours))</td>
+                        <td class="text-right py-2 px-2 whitespace-nowrap @(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                            @FormatHours(_summary.TotalOvertimeHours)
+                        </td>
+                    </tr>
                     </tfoot>
                 </table>
             </div>
@@ -162,10 +161,9 @@
     {
         if (hours > 0)
             return "Mehr gearbeitet als erwartet";
-        else if (hours < 0)
+        if (hours < 0)
             return "Weniger gearbeitet als erwartet";
-        else
-            return "Genau wie erwartet gearbeitet";
+        return "Genau wie erwartet gearbeitet";
     }
 
     private string GetShortMonthName(string fullMonthName)
@@ -187,5 +185,5 @@
             _ => fullMonthName
         };
     }
-}
 
+}

@@ -30,8 +30,8 @@ public class WorkSessionService(ApplicationDbContext context) : IWorkSessionServ
     {
         // Check for duplicate work session (same date and start time within 5 minutes)
         var existingSession = await FindDuplicateWorkSessionAsync(
-            userId, 
-            request.Date, 
+            userId,
+            request.Date,
             request.StartTime.ToUniversalTime());
 
         if (existingSession != null)

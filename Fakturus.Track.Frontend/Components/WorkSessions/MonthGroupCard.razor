@@ -1,5 +1,3 @@
-@using Fakturus.Track.Frontend.Models
-
 <div class="card">
     <!-- Collapsible Header -->
     <div class="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors"
@@ -43,40 +41,31 @@
 </div>
 
 @code {
-    [Parameter]
-    public MonthGroup MonthGroup { get; set; } = null!;
+    [Parameter] public MonthGroup MonthGroup { get; set; } = null!;
 
-    [Parameter]
-    public EventCallback<MonthGroup> OnToggle { get; set; }
+    [Parameter] public EventCallback<MonthGroup> OnToggle { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnStart { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnStart { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnStop { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnFinish { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnSave { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnDelete { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnCancel { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnCancel { get; set; }
 
-    [Parameter]
-    public EventCallback OnNew { get; set; }
+    [Parameter] public EventCallback OnNew { get; set; }
 
-    [Parameter]
-    public EventCallback<WorkSessionModel> OnTimeChanged { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnTimeChanged { get; set; }
 
     private string FormatDuration(TimeSpan duration)
     {
-        int hours = (int)duration.TotalHours;
-        int minutes = duration.Minutes;
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
         return $"{hours:D2}:{minutes:D2}h";
     }
+
 }

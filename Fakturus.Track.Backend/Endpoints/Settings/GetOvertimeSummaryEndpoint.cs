@@ -48,4 +48,3 @@ public class GetOvertimeSummaryEndpoint(IOvertimeCalculationService overtimeCalc
         }
     }
 }
-

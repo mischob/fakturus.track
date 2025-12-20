@@ -9,6 +9,6 @@ public class CalendarEventModel
     public string? Description { get; set; }
     public string? Location { get; set; }
     public bool IsSelected { get; set; } = false; // For UI binding
-    
+
     public TimeSpan Duration => EndTime - StartTime;
 }

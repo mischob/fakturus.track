@@ -6,4 +6,3 @@ public interface IOvertimeCalculationService
 {
     Task<OvertimeSummaryDto> CalculateOvertimeAsync(string userId, int? year = null);
 }
-

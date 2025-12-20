@@ -53,4 +53,3 @@ public class DeleteVacationDayEndpoint(IVacationDayService vacationDayService)
         }
     }
 }
-

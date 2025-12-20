@@ -42,4 +42,3 @@ public class SyncVacationDaysResponse
     public List<VacationDayModel> ServerVacationDays { get; set; } = new();
     public List<Guid> DeletedIds { get; set; } = new();
 }
-

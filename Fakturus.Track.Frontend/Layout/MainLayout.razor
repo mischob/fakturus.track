@@ -1,15 +1,13 @@
 @inherits LayoutComponentBase
-@using Fakturus.Track.Frontend.Components.Calendar
-@using Fakturus.Track.Frontend.Components.Navigation
-@using Fakturus.Track.Frontend.Services
-@using Fakturus.Track.Frontend.Models
-@using Blazored.Toast.Services
 @inject IVersionCheckService VersionCheckService
 @inject NavigationManager Navigation
 @inject ICalendarModalService CalendarModalService
 @inject ILocalStorageService LocalStorageService
 @inject ISyncService SyncService
 @inject IToastService ToastService
+@using Blazored.Toast.Services
+@using Fakturus.Track.Frontend.Components.Calendar
+@using Fakturus.Track.Frontend.Components.Navigation
 @implements IDisposable
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -19,7 +17,7 @@
             <header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-200 z-50">
                 <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <img src="/images/logo.svg" alt="Fakturus" class="h-8 max-h-full w-auto object-contain block" />
+                        <img src="/images/logo.svg" alt="Fakturus" class="h-8 max-h-full w-auto object-contain block"/>
                     </div>
 
                     <div class="flex items-center gap-3">
@@ -68,7 +66,7 @@
     {
         // Subscribe to calendar modal events
         CalendarModalService.VisibilityChanged += OnModalVisibilityChanged;
-        
+
         // Check version on app start
         await VersionCheckService.CheckVersionAsync();
 
@@ -94,29 +92,29 @@
         {
             // Load existing sessions to check for duplicates
             var existingSessions = await LocalStorageService.GetWorkSessionsAsync();
-            
+
             var importedCount = 0;
             var skippedCount = 0;
-            
+
             foreach (var evt in selectedEvents)
             {
                 var eventDate = DateOnly.FromDateTime(evt.StartTime.ToLocalTime());
                 var eventStartTime = evt.StartTime;
                 var eventEndTime = evt.EndTime;
-                
+
                 // Check if a session with the same date, start time, and end time already exists
-                var isDuplicate = existingSessions.Any(s => 
-                    s.Date == eventDate && 
-                    s.StartTime == eventStartTime && 
+                var isDuplicate = existingSessions.Any(s =>
+                    s.Date == eventDate &&
+                    s.StartTime == eventStartTime &&
                     s.StopTime == eventEndTime);
-                
+
                 if (isDuplicate)
                 {
                     skippedCount++;
                     Console.WriteLine($"Skipping duplicate calendar event: {evt.Summary} on {eventDate} at {eventStartTime.ToLocalTime():HH:mm}");
                     continue;
                 }
-                
+
                 // Convert calendar event to work session
                 var workSession = new WorkSessionModel
                 {
@@ -160,11 +158,12 @@
 
     private void BeginLogout()
     {
-        Navigation.NavigateTo("authentication/logout", forceLoad: true);
+        Navigation.NavigateTo("authentication/logout", true);
     }
 
     public void Dispose()
     {
         CalendarModalService.VisibilityChanged -= OnModalVisibilityChanged;
     }
+
 }

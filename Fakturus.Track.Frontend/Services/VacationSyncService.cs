@@ -10,13 +10,14 @@ public class VacationSyncService(
     ILogger<VacationSyncService> logger) : IVacationSyncService
 {
     private const string StorageKey = "vacationDays";
-    private Timer? _syncTimer;
-    private bool _isSyncing;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
+
+    private bool _isSyncing;
+    private Timer? _syncTimer;
 
     public event EventHandler? SyncCompleted;
 
@@ -62,7 +63,8 @@ public class VacationSyncService(
             // Call sync endpoint
             var response = await vacationApiClient.SyncVacationDaysAsync(syncRequest);
 
-            logger.LogInformation("Sync response received: {ServerCount} vacation days from server, {DeletedCount} deleted",
+            logger.LogInformation(
+                "Sync response received: {ServerCount} vacation days from server, {DeletedCount} deleted",
                 response.ServerVacationDays.Count, response.DeletedIds.Count);
 
             // Update local storage with server response
@@ -200,4 +202,3 @@ public class VacationSyncService(
         return await jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey) ?? string.Empty;
     }
 }
-

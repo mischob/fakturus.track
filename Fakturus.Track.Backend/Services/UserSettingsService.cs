@@ -1,7 +1,6 @@
 using Fakturus.Track.Backend.Data;
 using Fakturus.Track.Backend.Data.Entities;
 using Fakturus.Track.Backend.DTOs;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Backend.Services;
 
@@ -10,7 +9,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
     public async Task<UserSettingsDto> GetUserSettingsAsync(string userId)
     {
         var user = await context.Users.FindAsync(userId);
-        
+
         if (user == null)
         {
             // Create user with default settings if not exists
@@ -39,7 +38,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
     public async Task<UserSettingsDto> UpdateUserSettingsAsync(UpdateUserSettingsRequest request, string userId)
     {
         var user = await context.Users.FindAsync(userId);
-        
+
         if (user == null)
         {
             // Create user if not exists
@@ -74,4 +73,3 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
         );
     }
 }
-

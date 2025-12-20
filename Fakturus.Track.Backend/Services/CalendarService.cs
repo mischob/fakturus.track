@@ -1,7 +1,7 @@
+using System.Globalization;
 using Fakturus.Track.Backend.Data;
 using Fakturus.Track.Backend.DTOs;
-using Ical.Net;
-using System.Text.RegularExpressions;
+using Calendar = Ical.Net.Calendar;
 
 namespace Fakturus.Track.Backend.Services;
 
@@ -18,7 +18,7 @@ public class CalendarService(
         {
             // Get calendar URL - first check user table, then fall back to appsettings
             var calendarUrl = await GetCalendarUrlForUserAsync(userId);
-            
+
             if (string.IsNullOrEmpty(calendarUrl))
             {
                 logger.LogWarning("No calendar URL configured for user {UserId}", userId);
@@ -27,14 +27,12 @@ public class CalendarService(
 
             // Convert webcal:// to https://
             if (calendarUrl.StartsWith("webcal://", StringComparison.OrdinalIgnoreCase))
-            {
                 calendarUrl = "https://" + calendarUrl.Substring(9);
-            }
 
             // Fetch the iCal feed
             var httpClient = httpClientFactory.CreateClient();
             var response = await httpClient.GetAsync(calendarUrl);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogError("Failed to fetch calendar feed. Status: {StatusCode}", response.StatusCode);
@@ -47,36 +45,25 @@ public class CalendarService(
 
             // Parse the iCal content with error handling for malformed data
             var events = new List<CalendarEventDto>();
-            
+
             try
             {
                 var calendar = Calendar.Load(icalContent);
 
                 foreach (var calendarEvent in calendar.Events)
-                {
                     try
                     {
                         // Only include future events and events from the last 600 days
-                        if (calendarEvent.Start == null)
-                        {
-                            continue;
-                        }
+                        if (calendarEvent.Start == null) continue;
 
                         var eventStart = calendarEvent.Start.AsUtc;
-                        if (eventStart < DateTime.UtcNow.AddDays(-600))
-                        {
-                            continue;
-                        }
+                        if (eventStart < DateTime.UtcNow.AddDays(-600)) continue;
 
-                        if (eventStart > DateTime.UtcNow.AddDays(2))
-                        {
-                            continue;
-                        }
+                        if (eventStart > DateTime.UtcNow.AddDays(2)) continue;
 
-                        if (calendarEvent.Summary != null && (!calendarEvent.Summary.ToLowerInvariant().Contains("arbeit") && !calendarEvent.Summary.ToLowerInvariant().Contains("kirsten")))
-                        {
-                            continue;
-                        }
+                        if (calendarEvent.Summary != null &&
+                            !calendarEvent.Summary.ToLowerInvariant().Contains("arbeit") &&
+                            !calendarEvent.Summary.ToLowerInvariant().Contains("kirsten")) continue;
 
                         var eventEnd = calendarEvent.End?.AsUtc ?? eventStart.AddHours(1);
 
@@ -95,12 +82,11 @@ public class CalendarService(
                         // Log but continue processing other events
                         logger.LogWarning(eventEx, "Failed to parse calendar event, skipping");
                     }
-                }
             }
             catch (Exception parseEx)
             {
                 logger.LogWarning(parseEx, "Standard parsing failed, attempting with cleaned content");
-                
+
                 try
                 {
                     // Try to clean up common iCal formatting issues
@@ -108,19 +94,12 @@ public class CalendarService(
                     var calendar = Calendar.Load(cleanedContent);
 
                     foreach (var calendarEvent in calendar.Events)
-                    {
                         try
                         {
-                            if (calendarEvent.Start == null)
-                            {
-                                continue;
-                            }
+                            if (calendarEvent.Start == null) continue;
 
                             var eventStart = calendarEvent.Start.AsUtc;
-                            if (eventStart < DateTime.UtcNow.AddDays(-30))
-                            {
-                                continue;
-                            }
+                            if (eventStart < DateTime.UtcNow.AddDays(-30)) continue;
 
                             var eventEnd = calendarEvent.End?.AsUtc ?? eventStart.AddHours(1);
 
@@ -138,12 +117,11 @@ public class CalendarService(
                         {
                             logger.LogWarning(eventEx, "Failed to parse calendar event in cleaned content, skipping");
                         }
-                    }
                 }
                 catch (Exception cleanEx)
                 {
                     logger.LogWarning(cleanEx, "Cleaned parsing also failed, attempting manual parsing");
-                    
+
                     // If cleaned parsing also fails, try to extract events manually
                     events = ParseICalManually(icalContent);
                     logger.LogInformation("Manual parsing extracted {Count} events", events.Count);
@@ -160,7 +138,7 @@ public class CalendarService(
         }
     }
 
-    static string RemoveBrokenLines(string ics)
+    private static string RemoveBrokenLines(string ics)
     {
         // Normalisiere Zeilenenden
         ics = ics.Replace("\r\n", "\n").Replace("\r", "\n");
@@ -174,10 +152,9 @@ public class CalendarService(
 
             // drop the known broken line pattern
             if (s.StartsWith("SCHÖNAICH:", StringComparison.OrdinalIgnoreCase) ||
-                (s.Contains(":geo:", StringComparison.OrdinalIgnoreCase) && !s.StartsWith("GEO:", StringComparison.OrdinalIgnoreCase)))
-            {
+                (s.Contains(":geo:", StringComparison.OrdinalIgnoreCase) &&
+                 !s.StartsWith("GEO:", StringComparison.OrdinalIgnoreCase)))
                 continue;
-            }
 
             kept.Add(s);
         }
@@ -185,7 +162,7 @@ public class CalendarService(
         return string.Join("\r\n", kept);
     }
 
-    static string SanitizeIcs(string raw)
+    private static string SanitizeIcs(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return raw;
 
@@ -196,15 +173,13 @@ public class CalendarService(
         var lines = raw.Split('\n');
         var unfolded = new List<string>(lines.Length);
         foreach (var l in lines)
-        {
             if ((l.StartsWith(" ") || l.StartsWith("\t")) && unfolded.Count > 0)
                 unfolded[unfolded.Count - 1] += l.TrimStart(' ', '\t');
             else
                 unfolded.Add(l);
-        }
 
         // 3) END:VEVENT/END:VCALENDAR/END:... müssen "clean" sein (manche Feeds hängen Mist an)
-        for (int i = 0; i < unfolded.Count; i++)
+        for (var i = 0; i < unfolded.Count; i++)
         {
             var s = unfolded[i].TrimEnd();
             if (s.StartsWith("END:VEVENT", StringComparison.OrdinalIgnoreCase)) unfolded[i] = "END:VEVENT";
@@ -219,17 +194,11 @@ public class CalendarService(
     {
         // First, check if user exists in database and has a calendar URL
         var user = await context.Users.FindAsync(userId);
-        if (user?.CalendarUrl != null)
-        {
-            return user.CalendarUrl;
-        }
+        if (user?.CalendarUrl != null) return user.CalendarUrl;
 
         // Fall back to appsettings configuration
         var enabledUserId = configuration["Calendar:EnabledUserId"];
-        if (enabledUserId == userId)
-        {
-            return configuration["Calendar:PublicCalendarUrl"];
-        }
+        if (enabledUserId == userId) return configuration["Calendar:PublicCalendarUrl"];
 
         return null;
     }
@@ -240,33 +209,31 @@ public class CalendarService(
         var lines = icalContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
         var cleanedLines = new List<string>();
 
-        for (int i = 0; i < lines.Length; i++)
+        for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i];
-            
+
             // Handle END:VEVENT that has been corrupted with attendee data
             // Example: "END:VEVENT;PARTSTAT=ACCEPTED;..." should become just "END:VEVENT"
             if (line.StartsWith("END:VEVENT"))
             {
                 if (line.Length > 10)
-                {
-                    logger.LogDebug("Cleaning corrupted END:VEVENT line: {Line}", line.Substring(0, Math.Min(50, line.Length)));
-                }
+                    logger.LogDebug("Cleaning corrupted END:VEVENT line: {Line}",
+                        line.Substring(0, Math.Min(50, line.Length)));
                 cleanedLines.Add("END:VEVENT");
                 continue;
             }
-            
+
             // Handle BEGIN:VEVENT that might be corrupted
             if (line.StartsWith("BEGIN:VEVENT"))
             {
                 if (line.Length > 12)
-                {
-                    logger.LogDebug("Cleaning corrupted BEGIN:VEVENT line: {Line}", line.Substring(0, Math.Min(50, line.Length)));
-                }
+                    logger.LogDebug("Cleaning corrupted BEGIN:VEVENT line: {Line}",
+                        line.Substring(0, Math.Min(50, line.Length)));
                 cleanedLines.Add("BEGIN:VEVENT");
                 continue;
             }
-            
+
             // Handle other BEGIN/END statements
             if (line.StartsWith("BEGIN:") || line.StartsWith("END:"))
             {
@@ -280,19 +247,20 @@ public class CalendarService(
                     if (endIndex > 0)
                     {
                         var cleaned = line.Substring(0, colonIndex + 1 + endIndex);
-                        logger.LogDebug("Cleaned line from '{Original}' to '{Cleaned}'", 
+                        logger.LogDebug("Cleaned line from '{Original}' to '{Cleaned}'",
                             line.Substring(0, Math.Min(50, line.Length)), cleaned);
                         cleanedLines.Add(cleaned);
                         continue;
                     }
                 }
+
                 cleanedLines.Add(line);
                 continue;
             }
-            
+
             // Skip lines that are clearly malformed (missing colon, invalid format)
             // But allow empty lines and lines starting with space (continuation lines)
-            if (!string.IsNullOrWhiteSpace(line) && 
+            if (!string.IsNullOrWhiteSpace(line) &&
                 !line.StartsWith(" ") &&
                 !line.StartsWith("\t") &&
                 !line.Contains(':'))
@@ -310,14 +278,13 @@ public class CalendarService(
     private List<CalendarEventDto> ParseICalManually(string icalContent)
     {
         var events = new List<CalendarEventDto>();
-        
+
         try
         {
             var lines = icalContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             CalendarEventDto? currentEvent = null;
-            
+
             foreach (var line in lines)
-            {
                 if (line.StartsWith("BEGIN:VEVENT"))
                 {
                     currentEvent = new CalendarEventDto();
@@ -325,11 +292,9 @@ public class CalendarService(
                 else if (line.StartsWith("END:VEVENT") && currentEvent != null)
                 {
                     // Only add events with valid start time
-                    if (currentEvent.StartTime != default && 
+                    if (currentEvent.StartTime != default &&
                         currentEvent.StartTime >= DateTime.UtcNow.AddDays(-30))
-                    {
                         events.Add(currentEvent);
-                    }
                     currentEvent = null;
                 }
                 else if (currentEvent != null && line.Contains(':'))
@@ -341,36 +306,22 @@ public class CalendarService(
                     try
                     {
                         if (key.StartsWith("DTSTART"))
-                        {
                             currentEvent.StartTime = ParseICalDateTime(value);
-                        }
                         else if (key.StartsWith("DTEND"))
-                        {
                             currentEvent.EndTime = ParseICalDateTime(value);
-                        }
                         else if (key == "SUMMARY")
-                        {
                             currentEvent.Summary = value;
-                        }
                         else if (key == "DESCRIPTION")
-                        {
                             currentEvent.Description = value;
-                        }
                         else if (key == "UID")
-                        {
                             currentEvent.Uid = value;
-                        }
-                        else if (key == "LOCATION")
-                        {
-                            currentEvent.Location = value;
-                        }
+                        else if (key == "LOCATION") currentEvent.Location = value;
                     }
                     catch (Exception ex)
                     {
                         logger.LogDebug(ex, "Failed to parse iCal property {Key}", key);
                     }
                 }
-            }
         }
         catch (Exception ex)
         {
@@ -383,24 +334,16 @@ public class CalendarService(
     private DateTime ParseICalDateTime(string value)
     {
         // Remove timezone info if present (e.g., "TZID=Europe/Berlin:")
-        if (value.Contains(':'))
-        {
-            value = value.Substring(value.LastIndexOf(':') + 1);
-        }
+        if (value.Contains(':')) value = value.Substring(value.LastIndexOf(':') + 1);
 
         // iCal format: 20231225T120000Z or 20231225T120000
-        if (value.EndsWith("Z"))
-        {
-            value = value.TrimEnd('Z');
-        }
+        if (value.EndsWith("Z")) value = value.TrimEnd('Z');
 
-        if (DateTime.TryParseExact(value, "yyyyMMddTHHmmss", 
-            System.Globalization.CultureInfo.InvariantCulture, 
-            System.Globalization.DateTimeStyles.AssumeUniversal, 
-            out var result))
-        {
+        if (DateTime.TryParseExact(value, "yyyyMMddTHHmmss",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal,
+                out var result))
             return result.ToUniversalTime();
-        }
 
         return default;
     }

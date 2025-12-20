@@ -43,4 +43,3 @@ public class GetUserSettingsEndpoint(IUserSettingsService userSettingsService)
         }
     }
 }
-

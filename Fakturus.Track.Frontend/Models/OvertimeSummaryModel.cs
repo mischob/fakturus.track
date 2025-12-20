@@ -19,4 +19,3 @@ public class MonthlyOvertimeModel
     public decimal WorkedHours { get; set; }
     public decimal ExpectedHours { get; set; }
 }
-

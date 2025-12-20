@@ -30,17 +30,18 @@
 </nav>
 
 @code {
+
     private bool IsCurrentRoute(string route)
     {
         var currentRoute = Navigation.ToBaseRelativePath(Navigation.Uri);
-        
+
         // Handle root path - map to /zeiten
         if (string.IsNullOrEmpty(currentRoute) || currentRoute == "/")
         {
             return route == "/zeiten";
         }
-        
+
         return currentRoute.StartsWith(route.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
     }
-}
 
+}

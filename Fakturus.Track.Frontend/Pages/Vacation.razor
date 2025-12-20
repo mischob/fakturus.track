@@ -1,12 +1,11 @@
 @page "/urlaub"
 @attribute [Authorize]
-@using Blazored.Toast.Services
-@using Microsoft.AspNetCore.Authorization
-@using Fakturus.Track.Frontend.Models
-@using Fakturus.Track.Frontend.Components
 @inject IVacationSyncService VacationSyncService
 @inject IVacationApiClient VacationApiClient
 @inject IToastService ToastService
+@using Blazored.Toast.Services
+@using Fakturus.Track.Frontend.Components
+@using Microsoft.AspNetCore.Authorization
 @implements IDisposable
 
 <PageTitle>Urlaub - Time Tracker</PageTitle>
@@ -34,7 +33,7 @@
     <!-- Selected vacation days list -->
     <div class="card">
         <h2 class="text-xl font-semibold mb-4">Ausgewählte Urlaubstage (@_vacationDays.Count)</h2>
-        
+
         @if (_vacationDays.Any())
         {
             <div class="space-y-2">
@@ -125,7 +124,7 @@
             IsPendingSync = true,
             IsSynced = false
         };
-        
+
         await VacationSyncService.SaveVacationDayAsync(vacationDay);
         await LoadVacationDaysAsync();
 
@@ -221,5 +220,5 @@
         VacationSyncService.SyncCompleted -= OnSyncCompleted;
         VacationSyncService.StopPeriodicSync();
     }
-}
 
+}

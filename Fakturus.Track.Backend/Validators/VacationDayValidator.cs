@@ -22,4 +22,3 @@ public class SyncVacationDaysRequestValidator : AbstractValidator<SyncVacationDa
             .WithMessage("VacationDays list is required");
     }
 }
-

@@ -1,8 +1,7 @@
 @page "/settings"
-@attribute [Authorize]
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
-@using Fakturus.Track.Frontend.Models
+@attribute [Authorize]
 @inject ISettingsApiClient SettingsApiClient
 @inject IToastService ToastService
 
@@ -65,12 +64,12 @@
                         Wählen Sie die Tage, an denen Sie typischerweise arbeiten:
                     </p>
                     <div class="grid grid-cols-2 gap-3">
-                        @for (int i = 0; i < 7; i++)
+                        @for (var i = 0; i < 7; i++)
                         {
                             var index = i; // Capture for lambda
                             var dayName = GetDayName(index);
                             var isSelected = GetDaySelection(index);
-                            
+
                             <label class="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors @(isSelected ? "bg-blue-50 border-blue-500" : "bg-white border-gray-300 hover:border-gray-400")">
                                 <input type="checkbox"
                                        checked="@isSelected"
@@ -144,8 +143,8 @@
                 <div>
                     <h3 class="font-semibold text-blue-900 mb-2">Überstunden-Berechnung</h3>
                     <p class="text-sm text-blue-800">
-                        Überstunden werden auf Wochenbasis berechnet. Die erwarteten Arbeitsstunden pro Woche werden auf die ausgewählten Arbeitstage verteilt. 
-                        Wochenenden, Urlaubstage und Feiertage werden als gearbeitete Zeit gezählt. Wenn Sie mehr als die erwarteten Stunden arbeiten, 
+                        Überstunden werden auf Wochenbasis berechnet. Die erwarteten Arbeitsstunden pro Woche werden auf die ausgewählten Arbeitstage verteilt.
+                        Wochenenden, Urlaubstage und Feiertage werden als gearbeitete Zeit gezählt. Wenn Sie mehr als die erwarteten Stunden arbeiten,
                         werden diese als Überstunden gezählt.
                     </p>
                 </div>
@@ -164,7 +163,7 @@
     private UserSettingsModel? _settings;
     private UserSettingsModel? _originalSettings;
     private bool _isLoading = true;
-    private bool _isSaving = false;
+    private bool _isSaving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -235,7 +234,7 @@
             };
 
             _settings = await SettingsApiClient.UpdateUserSettingsAsync(request);
-            
+
             _originalSettings = new UserSettingsModel
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
@@ -271,17 +270,20 @@
     }
 
     // Helper methods for workdays bitmask
-    private string GetDayName(int dayIndex) => dayIndex switch
+    private string GetDayName(int dayIndex)
     {
-        0 => "Mo",
-        1 => "Di",
-        2 => "Mi",
-        3 => "Do",
-        4 => "Fr",
-        5 => "Sa",
-        6 => "So",
-        _ => ""
-    };
+        return dayIndex switch
+        {
+            0 => "Mo",
+            1 => "Di",
+            2 => "Mi",
+            3 => "Do",
+            4 => "Fr",
+            5 => "Sa",
+            6 => "So",
+            _ => ""
+        };
+    }
 
     private bool GetDaySelection(int dayIndex)
     {
@@ -292,8 +294,8 @@
     private void ToggleWorkDay(int dayIndex)
     {
         if (_settings == null) return;
-        
-        int mask = 1 << dayIndex;
+
+        var mask = 1 << dayIndex;
         if ((_settings.WorkDays & mask) != 0)
         {
             // Day is selected, unselect it
@@ -304,7 +306,8 @@
             // Day is not selected, select it
             _settings.WorkDays |= mask;
         }
+
         StateHasChanged();
     }
-}
 
+}

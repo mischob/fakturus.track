@@ -1,14 +1,10 @@
-@using Fakturus.Track.Frontend.Models
-@using Fakturus.Track.Frontend.Services
-@using Microsoft.JSInterop
-
 @if (IsVisible)
 {
     <!-- Full screen modal below site header -->
-    <div class="fixed inset-x-0 z-[99999] bg-white" 
+    <div class="fixed inset-x-0 z-[99999] bg-white"
          style="top: 64px; bottom: 0; display: flex; flex-direction: column; pointer-events: auto; isolation: isolate; contain: layout style paint;"
          role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        
+
         <!-- Fixed Header with Actions -->
         <div style="flex-shrink: 0;" class="border-b border-gray-200 bg-white">
             <div class="flex items-center justify-between p-4">
@@ -32,12 +28,12 @@
                         class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
                         aria-label="Close">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
         </div>
-        
+
         <!-- Scrollable Body -->
         <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; overflow-anchor: none; position: relative;">
             <div class="p-4">
@@ -61,7 +57,7 @@
                         <div class="flex gap-3">
                             <div class="flex-shrink-0">
                                 <svg class="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
                             <div>
@@ -76,7 +72,7 @@
                     <!-- Empty State -->
                     <div class="text-center py-16">
                         <svg class="h-16 w-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         <p class="mt-4 text-base font-medium text-gray-700">No calendar events found</p>
                     </div>
@@ -89,7 +85,7 @@
                         {
                             var monthKey = monthGroup.Key;
                             var isExpanded = IsMonthExpanded(monthKey);
-                            
+
                             <div class="border border-gray-200 rounded-lg overflow-hidden">
                                 <!-- Month Header (Clickable) -->
                                 <div role="button" tabindex="0"
@@ -101,13 +97,13 @@
                                     <div class="flex items-center gap-3">
                                         <svg class="w-5 h-5 text-gray-600 transition-transform @(isExpanded ? "rotate-90" : "")"
                                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
                                         <span class="text-lg font-semibold text-gray-900">@monthKey</span>
                                     </div>
                                     <span class="text-base text-gray-600">(@monthGroup.Value.Count)</span>
                                 </div>
-                                
+
                                 <!-- Event List (Shown when expanded) -->
                                 @if (isExpanded)
                                 {
@@ -120,8 +116,8 @@
                                                        checked="@evt.IsSelected"
                                                        @onchange="@(() => ToggleSelection(evt))"
                                                        class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600
-                                                              focus:ring-2 focus:ring-blue-500" />
-                                                
+                                                              focus:ring-2 focus:ring-blue-500"/>
+
                                                 <div class="flex-1 min-w-0">
                                                     <div class="text-base font-semibold text-gray-900 mb-1">
                                                         @evt.Summary
@@ -164,17 +160,17 @@
     private bool _isLoading;
     private string? _errorMessage;
     private bool _wasVisible;
-    
+
     // Track which months are expanded
     private readonly HashSet<string> _expandedMonths = new();
 
     protected override async Task OnParametersSetAsync()
     {
         if (IsVisible && _events == null)
-            {
-                await LoadEventsAsync();
-            }
+        {
+            await LoadEventsAsync();
         }
+    }
 
     private async Task LoadEventsAsync()
     {
@@ -216,9 +212,15 @@
             _expandedMonths.Remove(monthKey);
     }
 
-    private bool IsMonthExpanded(string monthKey) => _expandedMonths.Contains(monthKey);
+    private bool IsMonthExpanded(string monthKey)
+    {
+        return _expandedMonths.Contains(monthKey);
+    }
 
-    private void ToggleSelection(CalendarEventModel evt) => evt.IsSelected = !evt.IsSelected;
+    private void ToggleSelection(CalendarEventModel evt)
+    {
+        evt.IsSelected = !evt.IsSelected;
+    }
 
     private async Task ImportSelected()
     {
@@ -230,6 +232,7 @@
                 await OnImport.InvokeAsync(selectedEvents);
             }
         }
+
         await Close();
     }
 
@@ -248,4 +251,5 @@
         var minutes = duration.Minutes;
         return $"{hours}h {minutes}m";
     }
+
 }

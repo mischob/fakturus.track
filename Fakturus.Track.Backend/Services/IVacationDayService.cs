@@ -9,4 +9,3 @@ public interface IVacationDayService
     Task DeleteVacationDayAsync(Guid id, string userId);
     Task<SyncVacationDaysResponse> SyncVacationDaysAsync(SyncVacationDaysRequest request, string userId);
 }
-

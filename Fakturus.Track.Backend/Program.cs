@@ -262,8 +262,8 @@ using (var scope = app.Services.CreateScope())
         var pendingMigrations = context.Database.GetPendingMigrations().ToList();
         if (pendingMigrations.Any())
         {
-            dbLogger.LogInformation("Applying {Count} pending migration(s): {Migrations}", 
-                pendingMigrations.Count, 
+            dbLogger.LogInformation("Applying {Count} pending migration(s): {Migrations}",
+                pendingMigrations.Count,
                 string.Join(", ", pendingMigrations));
             context.Database.Migrate();
             dbLogger.LogInformation("Database migrations applied successfully");

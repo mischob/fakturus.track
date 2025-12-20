@@ -9,12 +9,12 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
     private const int SyncIntervalSeconds = 30;
     private Timer? _syncTimer;
 
-    public event EventHandler? SyncCompleted;
-
     public void Dispose()
     {
         StopPeriodicSync();
     }
+
+    public event EventHandler? SyncCompleted;
 
     public async Task SyncAsync()
     {
@@ -78,7 +78,7 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                     SyncedAt = backendSession.SyncedAt,
                     IsSynced = true,
                     IsPendingSync = false,
-                    IsFinished = true  // Backend sessions are always finished
+                    IsFinished = true // Backend sessions are always finished
                 };
 
             // Add local pending sessions that failed to sync (keep for retry)
@@ -88,15 +88,13 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                     mergedSessions.TryAdd(localSession.Id, localSession))
                 {
                     if (localSession.IsFinished)
-                    {
                         // Session is finished but still pending (sync might have failed)
-                        Console.WriteLine($"SyncService.SyncAsync: Keeping pending finished session {localSession.Id} for retry");
-                    }
+                        Console.WriteLine(
+                            $"SyncService.SyncAsync: Keeping pending finished session {localSession.Id} for retry");
                     else
-                    {
                         // Session is unfinished (current/in-edit) - preserve in local storage
-                        Console.WriteLine($"SyncService.SyncAsync: Keeping unfinished session {localSession.Id} in local storage");
-                    }
+                        Console.WriteLine(
+                            $"SyncService.SyncAsync: Keeping unfinished session {localSession.Id} in local storage");
                 }
 
             // Step 5: Save merged sessions to local storage

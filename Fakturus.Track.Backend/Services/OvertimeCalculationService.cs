@@ -1,11 +1,12 @@
 using Fakturus.Track.Backend.Data;
+using Fakturus.Track.Backend.Data.Entities;
 using Fakturus.Track.Backend.DTOs;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
 
 namespace Fakturus.Track.Backend.Services;
 
-public class OvertimeCalculationService(ApplicationDbContext context, IHolidayService holidayService) : IOvertimeCalculationService
+public class OvertimeCalculationService(ApplicationDbContext context, IHolidayService holidayService)
+    : IOvertimeCalculationService
 {
     public async Task<OvertimeSummaryDto> CalculateOvertimeAsync(string userId, int? year = null)
     {
@@ -13,10 +14,7 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
 
         // Get user settings
         var user = await context.Users.FindAsync(userId);
-        if (user == null)
-        {
-            throw new InvalidOperationException("User not found");
-        }
+        if (user == null) throw new InvalidOperationException("User not found");
 
         var workHoursPerWeek = user.WorkHoursPerWeek;
         var vacationDaysPerYear = user.VacationDaysPerYear;
@@ -44,7 +42,7 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
         var monthlyOvertime = new List<MonthlyOvertimeDto>();
         decimal totalOvertimeHours = 0;
 
-        for (int month = 1; month <= 12; month++)
+        for (var month = 1; month <= 12; month++)
         {
             var monthStart = new DateOnly(targetYear, month, 1);
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
@@ -57,13 +55,11 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
             // Calculate worked hours
             decimal workedHours = 0;
             foreach (var session in monthSessions)
-            {
                 if (session.StopTime.HasValue)
                 {
                     var duration = session.StopTime.Value - session.StartTime;
                     workedHours += (decimal)duration.TotalHours;
                 }
-            }
 
             // Calculate expected hours for the month
             // Count working days based on user's workday selection
@@ -100,23 +96,21 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
         );
     }
 
-    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<Data.Entities.VacationDay> vacationDays, int workDaysBitmask, List<DateOnly> holidays)
+    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<VacationDay> vacationDays,
+        int workDaysBitmask, List<DateOnly> holidays)
     {
-        int workingDays = 0;
+        var workingDays = 0;
         var currentDate = startDate;
 
         while (currentDate <= endDate)
         {
             // Check if this day is in the user's workdays bitmask
             if (IsWorkDay(currentDate.DayOfWeek, workDaysBitmask))
-            {
                 // Check if it's not a vacation day or holiday
-                if (!vacationDays.Any(v => v.Date == currentDate) && 
+                if (!vacationDays.Any(v => v.Date == currentDate) &&
                     !holidays.Contains(currentDate))
-                {
                     workingDays++;
-                }
-            }
+
             currentDate = currentDate.AddDays(1);
         }
 
@@ -131,7 +125,7 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
     private bool IsWorkDay(DayOfWeek dayOfWeek, int workDaysBitmask)
     {
         // Convert DayOfWeek (Sunday=0, Monday=1, ...) to our bitmask (Monday=bit0, Tuesday=bit1, ...)
-        int bitPosition = dayOfWeek switch
+        var bitPosition = dayOfWeek switch
         {
             DayOfWeek.Monday => 0,
             DayOfWeek.Tuesday => 1,
@@ -150,32 +144,31 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
 
     private int CountSelectedWorkDays(int workDaysBitmask)
     {
-        int count = 0;
-        for (int i = 0; i < 7; i++)
-        {
+        var count = 0;
+        for (var i = 0; i < 7; i++)
             if ((workDaysBitmask & (1 << i)) != 0)
-            {
                 count++;
-            }
-        }
+
         return count;
     }
 
-    private string GetGermanMonthName(int month) => month switch
+    private string GetGermanMonthName(int month)
     {
-        1 => "Januar",
-        2 => "Februar",
-        3 => "März",
-        4 => "April",
-        5 => "Mai",
-        6 => "Juni",
-        7 => "Juli",
-        8 => "August",
-        9 => "September",
-        10 => "Oktober",
-        11 => "November",
-        12 => "Dezember",
-        _ => ""
-    };
+        return month switch
+        {
+            1 => "Januar",
+            2 => "Februar",
+            3 => "März",
+            4 => "April",
+            5 => "Mai",
+            6 => "Juni",
+            7 => "Juli",
+            8 => "August",
+            9 => "September",
+            10 => "Oktober",
+            11 => "November",
+            12 => "Dezember",
+            _ => ""
+        };
+    }
 }
-
