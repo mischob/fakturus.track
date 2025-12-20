@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using Fakturus.Track.Frontend.Components.Calendar
+@using Fakturus.Track.Frontend.Components.Navigation
 @using Fakturus.Track.Frontend.Services
 @using Fakturus.Track.Frontend.Models
 @using Blazored.Toast.Services
@@ -33,6 +34,9 @@
                     @Body
                 </div>
             </main>
+
+            <!-- Bottom Navigation -->
+            <TrackBottomNavigation/>
         </Authorized>
         <NotAuthorized>
             <!-- Enhanced Authentication Layout -->

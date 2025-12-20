@@ -50,6 +50,20 @@ builder.Services.AddRefitClient<ICalendarApiClient>()
     })
     .AddHttpMessageHandler<TrackAuthMessageHandler>();
 
+builder.Services.AddRefitClient<IVacationApiClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
+    })
+    .AddHttpMessageHandler<TrackAuthMessageHandler>();
+
+builder.Services.AddRefitClient<ISettingsApiClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
+    })
+    .AddHttpMessageHandler<TrackAuthMessageHandler>();
+
 // Register the authorization message handler
 builder.Services.AddScoped<TrackAuthMessageHandler>();
 
@@ -75,6 +89,7 @@ builder.Services.AddScoped<IVersionCheckService>(sp =>
 // Register services
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddScoped<IVacationSyncService, VacationSyncService>();
 builder.Services.AddSingleton<ICalendarModalService, CalendarModalService>();
 
 // Add Toast notifications

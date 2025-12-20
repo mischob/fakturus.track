@@ -1,0 +1,28 @@
+@using Fakturus.Track.Frontend.Models
+
+<div class="card">
+    <div class="flex items-center gap-3 mb-4">
+        <svg class="w-6 h-6 @IconColor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold">@Title</h3>
+    </div>
+    
+    <div class="text-3xl font-bold @ValueColor mb-2">
+        @Value
+    </div>
+    
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="text-sm text-gray-600">@Subtitle</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public string IconColor { get; set; } = "text-blue-600";
+    [Parameter] public string ValueColor { get; set; } = "text-gray-900";
+}
+

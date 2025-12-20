@@ -1,0 +1,242 @@
+@page "/urlaub"
+@attribute [Authorize]
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@using Fakturus.Track.Frontend.Models
+@using Fakturus.Track.Frontend.Components
+@inject IVacationSyncService VacationSyncService
+@inject IVacationApiClient VacationApiClient
+@inject IToastService ToastService
+@implements IDisposable
+
+<PageTitle>Urlaub - Time Tracker</PageTitle>
+
+<div class="py-6 space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">Urlaub</h1>
+        <button @onclick="HandleSync"
+                class="btn-primary @(_isSyncing ? "opacity-50 cursor-not-allowed" : "")"
+                disabled="@_isSyncing">
+            @if (_isSyncing)
+            {
+                <span>Syncing...</span>
+            }
+            else
+            {
+                <span>Sync</span>
+            }
+        </button>
+    </div>
+
+    <!-- Calendar for selecting vacation days -->
+    <VacationCalendar SelectedDates="_selectedDates" SelectedDatesChanged="OnSelectedDatesChanged"/>
+
+    <!-- Selected vacation days list -->
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4">Ausgewählte Urlaubstage (@_vacationDays.Count)</h2>
+        
+        @if (_vacationDays.Any())
+        {
+            <div class="space-y-2">
+                @foreach (var vacationDay in _vacationDays.OrderBy(v => v.Date))
+                {
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="font-medium">@vacationDay.Date.ToString("dd.MM.yyyy")</span>
+                            <span class="text-sm text-gray-600">(@GetDayOfWeekGerman(vacationDay.Date))</span>
+                            @if (vacationDay.IsPendingSync && !vacationDay.IsSynced)
+                            {
+                                <span class="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">Pending Sync</span>
+                            }
+                        </div>
+                        <button @onclick="() => HandleDelete(vacationDay)"
+                                class="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-gray-600 text-center py-8">Keine Urlaubstage ausgewählt</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<VacationDayModel> _vacationDays = new();
+    private List<DateOnly> _selectedDates = new();
+    private bool _isSyncing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        VacationSyncService.SyncCompleted += OnSyncCompleted;
+        await LoadVacationDaysAsync();
+
+        // Perform initial sync
+        try
+        {
+            await VacationSyncService.SyncAsync();
+            await LoadVacationDaysAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Initial sync failed: {ex.Message}");
+        }
+
+        // Start background sync if there are pending vacation days
+        try
+        {
+            await VacationSyncService.StartPeriodicSyncAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background sync: {ex.Message}");
+        }
+    }
+
+    private async Task LoadVacationDaysAsync()
+    {
+        _vacationDays = await VacationSyncService.GetVacationDaysAsync();
+        _selectedDates = _vacationDays.Select(v => v.Date).ToList();
+        StateHasChanged();
+    }
+
+    private async Task OnSelectedDatesChanged(List<DateOnly> selectedDates)
+    {
+        // Find newly added dates
+        var newDates = selectedDates.Except(_selectedDates).ToList();
+        
+        // Find removed dates
+        var removedDates = _selectedDates.Except(selectedDates).ToList();
+
+        // Add new vacation days
+        foreach (var date in newDates)
+        {
+            var vacationDay = new VacationDayModel
+            {
+                Id = Guid.NewGuid(),
+                Date = date,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsPendingSync = true,
+                IsSynced = false
+            };
+            await VacationSyncService.SaveVacationDayAsync(vacationDay);
+        }
+
+        // Remove vacation days
+        foreach (var date in removedDates)
+        {
+            var vacationDay = _vacationDays.FirstOrDefault(v => v.Date == date);
+            if (vacationDay != null)
+            {
+                await HandleDelete(vacationDay);
+            }
+        }
+
+        await LoadVacationDaysAsync();
+
+        // Start sync for new vacation days
+        if (newDates.Any())
+        {
+            await VacationSyncService.StartPeriodicSyncAsync();
+            ToastService.ShowSuccess($"{newDates.Count} Urlaubstag(e) hinzugefügt");
+        }
+    }
+
+    private async Task HandleDelete(VacationDayModel vacationDay)
+    {
+        try
+        {
+            // If synced, delete from backend
+            if (vacationDay.IsSynced || vacationDay.SyncedAt.HasValue)
+            {
+                try
+                {
+                    await VacationApiClient.DeleteVacationDayAsync(vacationDay.Id);
+                    ToastService.ShowSuccess("Urlaubstag vom Server gelöscht");
+                }
+                catch (Exception ex)
+                {
+                    ToastService.ShowWarning($"Lokal gelöscht, Server-Löschung fehlgeschlagen: {ex.Message}");
+                }
+            }
+            else
+            {
+                ToastService.ShowSuccess("Urlaubstag gelöscht");
+            }
+
+            // Delete from local storage
+            await VacationSyncService.DeleteVacationDayAsync(vacationDay.Id);
+            await LoadVacationDaysAsync();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Fehler beim Löschen: {ex.Message}");
+        }
+    }
+
+    private async Task HandleSync()
+    {
+        if (_isSyncing) return;
+
+        _isSyncing = true;
+        StateHasChanged();
+
+        try
+        {
+            await VacationSyncService.SyncAsync();
+            await LoadVacationDaysAsync();
+            await VacationSyncService.StartPeriodicSyncAsync();
+            StateHasChanged();
+            ToastService.ShowSuccess("Sync abgeschlossen");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Sync fehlgeschlagen: {ex.Message}");
+        }
+        finally
+        {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async void OnSyncCompleted(object? sender, EventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadVacationDaysAsync();
+            StateHasChanged();
+        });
+    }
+
+    private string GetDayOfWeekGerman(DateOnly date)
+    {
+        return date.DayOfWeek switch
+        {
+            DayOfWeek.Monday => "Montag",
+            DayOfWeek.Tuesday => "Dienstag",
+            DayOfWeek.Wednesday => "Mittwoch",
+            DayOfWeek.Thursday => "Donnerstag",
+            DayOfWeek.Friday => "Freitag",
+            DayOfWeek.Saturday => "Samstag",
+            DayOfWeek.Sunday => "Sonntag",
+            _ => ""
+        };
+    }
+
+    public void Dispose()
+    {
+        VacationSyncService.SyncCompleted -= OnSyncCompleted;
+        VacationSyncService.StopPeriodicSync();
+    }
+}
+

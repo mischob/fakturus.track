@@ -1,0 +1,164 @@
+@page "/gesamt"
+@attribute [Authorize]
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@using Fakturus.Track.Frontend.Models
+@using Fakturus.Track.Frontend.Components
+@inject ISettingsApiClient SettingsApiClient
+@inject IToastService ToastService
+
+<PageTitle>Gesamt - Time Tracker</PageTitle>
+
+<div class="py-6 space-y-6">
+    <h1 class="text-3xl font-bold text-gray-900">Übersicht</h1>
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-12">
+            <p class="text-gray-600">Lade Übersicht...</p>
+        </div>
+    }
+    else if (_summary != null)
+    {
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <OvertimeCard 
+                Title="Gesamt Überstunden"
+                Value="@FormatHours(_summary.TotalOvertimeHours)"
+                Subtitle="@GetOvertimeSubtitle(_summary.TotalOvertimeHours)"
+                IconColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"
+                ValueColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"/>
+
+            <OvertimeCard 
+                Title="Urlaub"
+                Value="@($"{_summary.VacationDaysTaken} / {_summary.VacationDaysPerYear}")"
+                Subtitle="@($"{_summary.VacationDaysRemaining} Tage übrig")"
+                IconColor="text-blue-600"
+                ValueColor="text-gray-900"/>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="card">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold">Monatliche Übersicht</h2>
+                <div class="flex gap-2">
+                    <button @onclick="PreviousYear" class="btn-secondary">
+                        ← @(_selectedYear - 1)
+                    </button>
+                    <span class="px-4 py-2 font-semibold">@_selectedYear</span>
+                    <button @onclick="NextYear" class="btn-secondary">
+                        @(_selectedYear + 1) →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Breakdown -->
+        <div class="card">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Monat</th>
+                            <th class="text-right py-3 px-4 font-semibold text-gray-700">Gearbeitet</th>
+                            <th class="text-right py-3 px-4 font-semibold text-gray-700">Erwartet</th>
+                            <th class="text-right py-3 px-4 font-semibold text-gray-700">Überstunden</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var month in _summary.MonthlyOvertime)
+                        {
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">@month.MonthName</td>
+                                <td class="text-right py-3 px-4">@FormatHours(month.WorkedHours)</td>
+                                <td class="text-right py-3 px-4">@FormatHours(month.ExpectedHours)</td>
+                                <td class="text-right py-3 px-4 font-semibold @(month.OvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                                    @FormatHours(month.OvertimeHours)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t-2 border-gray-300 font-bold">
+                            <td class="py-3 px-4">Gesamt</td>
+                            <td class="text-right py-3 px-4">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.WorkedHours))</td>
+                            <td class="text-right py-3 px-4">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.ExpectedHours))</td>
+                            <td class="text-right py-3 px-4 @(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                                @FormatHours(_summary.TotalOvertimeHours)
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card text-center py-12">
+            <p class="text-gray-600">Keine Daten verfügbar</p>
+        </div>
+    }
+</div>
+
+@code {
+    private OvertimeSummaryModel? _summary;
+    private int _selectedYear = DateTime.Now.Year;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSummaryAsync();
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _summary = await SettingsApiClient.GetOvertimeSummaryAsync(_selectedYear);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Fehler beim Laden der Übersicht: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviousYear()
+    {
+        _selectedYear--;
+        await LoadSummaryAsync();
+    }
+
+    private async Task NextYear()
+    {
+        _selectedYear++;
+        await LoadSummaryAsync();
+    }
+
+    private string FormatHours(decimal hours)
+    {
+        var sign = hours < 0 ? "-" : "";
+        var absHours = Math.Abs(hours);
+        var wholeHours = (int)absHours;
+        var minutes = (int)((absHours - wholeHours) * 60);
+        return $"{sign}{wholeHours:D2}:{minutes:D2}h";
+    }
+
+    private string GetOvertimeSubtitle(decimal hours)
+    {
+        if (hours > 0)
+            return "Mehr gearbeitet als erwartet";
+        else if (hours < 0)
+            return "Weniger gearbeitet als erwartet";
+        else
+            return "Genau wie erwartet gearbeitet";
+    }
+}
+

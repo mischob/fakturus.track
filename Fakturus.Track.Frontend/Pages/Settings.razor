@@ -1,0 +1,203 @@
+@page "/settings"
+@attribute [Authorize]
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@using Fakturus.Track.Frontend.Models
+@inject ISettingsApiClient SettingsApiClient
+@inject IToastService ToastService
+
+<PageTitle>Einstellungen - Time Tracker</PageTitle>
+
+<div class="py-6 space-y-6">
+    <h1 class="text-3xl font-bold text-gray-900">Einstellungen</h1>
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-12">
+            <p class="text-gray-600">Lade Einstellungen...</p>
+        </div>
+    }
+    else if (_settings != null)
+    {
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-6">Arbeitszeit & Urlaub</h2>
+
+            <div class="space-y-6">
+                <!-- Vacation Days Per Year -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Urlaubstage pro Jahr
+                    </label>
+                    <input type="number"
+                           @bind="_settings.VacationDaysPerYear"
+                           min="1"
+                           max="365"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="z.B. 30"/>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Anzahl der Urlaubstage, die Ihnen pro Jahr zur Verfügung stehen
+                    </p>
+                </div>
+
+                <!-- Work Hours Per Week -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Arbeitsstunden pro Woche
+                    </label>
+                    <input type="number"
+                           @bind="_settings.WorkHoursPerWeek"
+                           min="1"
+                           max="168"
+                           step="0.5"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="z.B. 40"/>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Ihre wöchentliche Sollarbeitszeit (z.B. 40 für eine Vollzeitstelle)
+                    </p>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex gap-3">
+                    <button @onclick="HandleSave"
+                            disabled="@_isSaving"
+                            class="btn-primary @(_isSaving ? "opacity-50 cursor-not-allowed" : "")">
+                        @if (_isSaving)
+                        {
+                            <span>Speichern...</span>
+                        }
+                        else
+                        {
+                            <span>Einstellungen speichern</span>
+                        }
+                    </button>
+
+                    <button @onclick="HandleReset"
+                            disabled="@_isSaving"
+                            class="btn-secondary">
+                        Zurücksetzen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Card -->
+        <div class="card bg-blue-50 border border-blue-200">
+            <div class="flex gap-3">
+                <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-blue-900 mb-2">Überstunden-Berechnung</h3>
+                    <p class="text-sm text-blue-800">
+                        Überstunden werden auf Wochenbasis berechnet. Die erwarteten Arbeitsstunden pro Woche werden auf die Arbeitstage (Mo-Fr) verteilt, 
+                        wobei Wochenenden und Urlaubstage ausgenommen sind. Wenn Sie mehr als die erwarteten Stunden arbeiten, werden diese als Überstunden gezählt.
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card text-center py-12">
+            <p class="text-gray-600">Fehler beim Laden der Einstellungen</p>
+        </div>
+    }
+</div>
+
+@code {
+    private UserSettingsModel? _settings;
+    private UserSettingsModel? _originalSettings;
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _settings = await SettingsApiClient.GetUserSettingsAsync();
+            _originalSettings = new UserSettingsModel
+            {
+                VacationDaysPerYear = _settings.VacationDaysPerYear,
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+            };
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Fehler beim Laden der Einstellungen: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        if (_settings == null) return;
+
+        // Validate
+        if (_settings.VacationDaysPerYear < 1 || _settings.VacationDaysPerYear > 365)
+        {
+            ToastService.ShowError("Urlaubstage müssen zwischen 1 und 365 liegen");
+            return;
+        }
+
+        if (_settings.WorkHoursPerWeek <= 0 || _settings.WorkHoursPerWeek > 168)
+        {
+            ToastService.ShowError("Arbeitsstunden pro Woche müssen zwischen 0 und 168 liegen");
+            return;
+        }
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateUserSettingsRequest
+            {
+                VacationDaysPerYear = _settings.VacationDaysPerYear,
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+            };
+
+            _settings = await SettingsApiClient.UpdateUserSettingsAsync(request);
+            
+            _originalSettings = new UserSettingsModel
+            {
+                VacationDaysPerYear = _settings.VacationDaysPerYear,
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+            };
+
+            ToastService.ShowSuccess("Einstellungen gespeichert");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Fehler beim Speichern: {ex.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleReset()
+    {
+        if (_originalSettings != null && _settings != null)
+        {
+            _settings.VacationDaysPerYear = _originalSettings.VacationDaysPerYear;
+            _settings.WorkHoursPerWeek = _originalSettings.WorkHoursPerWeek;
+            StateHasChanged();
+            ToastService.ShowInfo("Änderungen zurückgesetzt");
+        }
+    }
+}
+

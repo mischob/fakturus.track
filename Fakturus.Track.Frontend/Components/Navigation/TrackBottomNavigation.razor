@@ -1,0 +1,46 @@
+@* Bottom navigation with time tracking sections *@
+@inject NavigationManager Navigation
+
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+    <div class="flex items-center justify-around h-16 px-2">
+        <TrackNavItem Href="/zeiten"
+                      Icon="clock"
+                      Label="Zeiten"
+                      Color="blue"
+                      IsActive="@IsCurrentRoute("/zeiten")"/>
+
+        <TrackNavItem Href="/urlaub"
+                      Icon="sun"
+                      Label="Urlaub"
+                      Color="green"
+                      IsActive="@IsCurrentRoute("/urlaub")"/>
+
+        <TrackNavItem Href="/gesamt"
+                      Icon="chart"
+                      Label="Gesamt"
+                      Color="orange"
+                      IsActive="@IsCurrentRoute("/gesamt")"/>
+
+        <TrackNavItem Href="/settings"
+                      Icon="settings"
+                      Label="Settings"
+                      Color="gray"
+                      IsActive="@IsCurrentRoute("/settings")"/>
+    </div>
+</nav>
+
+@code {
+    private bool IsCurrentRoute(string route)
+    {
+        var currentRoute = Navigation.ToBaseRelativePath(Navigation.Uri);
+        
+        // Handle root path - map to /zeiten
+        if (string.IsNullOrEmpty(currentRoute) || currentRoute == "/")
+        {
+            return route == "/zeiten";
+        }
+        
+        return currentRoute.StartsWith(route.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+    }
+}
+

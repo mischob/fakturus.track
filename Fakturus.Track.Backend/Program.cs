@@ -208,6 +208,9 @@ builder.Services.SwaggerDocument(o =>
 // Add custom services
 builder.Services.AddScoped<IWorkSessionService, WorkSessionService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<IVacationDayService, VacationDayService>();
+builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
+builder.Services.AddScoped<IOvertimeCalculationService, OvertimeCalculationService>();
 builder.Services.AddHttpClient(); // For fetching calendar feed
 
 builder.Services.AddEndpointsApiExplorer();
