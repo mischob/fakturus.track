@@ -19,6 +19,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
                 Id = userId,
                 VacationDaysPerYear = 30,
                 WorkHoursPerWeek = 40,
+                WorkDays = 31, // Mo-Fr
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -28,7 +29,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
 
         return new UserSettingsDto(
             user.VacationDaysPerYear,
-            user.WorkHoursPerWeek
+            user.WorkHoursPerWeek,
+            user.WorkDays
         );
     }
 
@@ -44,6 +46,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
                 Id = userId,
                 VacationDaysPerYear = request.VacationDaysPerYear,
                 WorkHoursPerWeek = request.WorkHoursPerWeek,
+                WorkDays = request.WorkDays,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -53,6 +56,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
         {
             user.VacationDaysPerYear = request.VacationDaysPerYear;
             user.WorkHoursPerWeek = request.WorkHoursPerWeek;
+            user.WorkDays = request.WorkDays;
             user.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -60,7 +64,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
 
         return new UserSettingsDto(
             user.VacationDaysPerYear,
-            user.WorkHoursPerWeek
+            user.WorkHoursPerWeek,
+            user.WorkDays
         );
     }
 }

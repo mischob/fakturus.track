@@ -56,6 +56,32 @@
                     </p>
                 </div>
 
+                <!-- Work Days Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Arbeitstage
+                    </label>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Wählen Sie die Tage, an denen Sie typischerweise arbeiten:
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var index = i; // Capture for lambda
+                            var dayName = GetDayName(index);
+                            var isSelected = GetDaySelection(index);
+                            
+                            <label class="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors @(isSelected ? "bg-blue-50 border-blue-500" : "bg-white border-gray-300 hover:border-gray-400")">
+                                <input type="checkbox"
+                                       checked="@isSelected"
+                                       @onchange="@(() => ToggleWorkDay(index))"
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
+                                <span class="text-sm font-medium @(isSelected ? "text-blue-900" : "text-gray-700")">@dayName</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
                 <!-- Save Button -->
                 <div class="flex gap-3">
                     <button @onclick="HandleSave"
@@ -126,7 +152,8 @@
             _originalSettings = new UserSettingsModel
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
-                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek,
+                WorkDays = _settings.WorkDays
             };
         }
         catch (Exception ex)
@@ -157,6 +184,12 @@
             return;
         }
 
+        if (_settings.WorkDays <= 0)
+        {
+            ToastService.ShowError("Mindestens ein Arbeitstag muss ausgewählt sein");
+            return;
+        }
+
         _isSaving = true;
         StateHasChanged();
 
@@ -165,7 +198,8 @@
             var request = new UpdateUserSettingsRequest
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
-                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek,
+                WorkDays = _settings.WorkDays
             };
 
             _settings = await SettingsApiClient.UpdateUserSettingsAsync(request);
@@ -173,7 +207,8 @@
             _originalSettings = new UserSettingsModel
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
-                WorkHoursPerWeek = _settings.WorkHoursPerWeek
+                WorkHoursPerWeek = _settings.WorkHoursPerWeek,
+                WorkDays = _settings.WorkDays
             };
 
             ToastService.ShowSuccess("Einstellungen gespeichert");
@@ -195,9 +230,47 @@
         {
             _settings.VacationDaysPerYear = _originalSettings.VacationDaysPerYear;
             _settings.WorkHoursPerWeek = _originalSettings.WorkHoursPerWeek;
+            _settings.WorkDays = _originalSettings.WorkDays;
             StateHasChanged();
             ToastService.ShowInfo("Änderungen zurückgesetzt");
         }
+    }
+
+    // Helper methods for workdays bitmask
+    private string GetDayName(int dayIndex) => dayIndex switch
+    {
+        0 => "Mo",
+        1 => "Di",
+        2 => "Mi",
+        3 => "Do",
+        4 => "Fr",
+        5 => "Sa",
+        6 => "So",
+        _ => ""
+    };
+
+    private bool GetDaySelection(int dayIndex)
+    {
+        if (_settings == null) return false;
+        return (_settings.WorkDays & (1 << dayIndex)) != 0;
+    }
+
+    private void ToggleWorkDay(int dayIndex)
+    {
+        if (_settings == null) return;
+        
+        int mask = 1 << dayIndex;
+        if ((_settings.WorkDays & mask) != 0)
+        {
+            // Day is selected, unselect it
+            _settings.WorkDays &= ~mask;
+        }
+        else
+        {
+            // Day is not selected, select it
+            _settings.WorkDays |= mask;
+        }
+        StateHasChanged();
     }
 }
 

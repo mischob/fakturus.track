@@ -20,6 +20,7 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
 
         var workHoursPerWeek = user.WorkHoursPerWeek;
         var vacationDaysPerYear = user.VacationDaysPerYear;
+        var workDays = user.WorkDays;
 
         // Get all work sessions for the year
         var startDate = new DateOnly(targetYear, 1, 1);
@@ -61,9 +62,10 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
             }
 
             // Calculate expected hours for the month
-            // Count working days (excluding weekends and vacation days)
-            var workingDays = CountWorkingDays(monthStart, monthEnd, vacationDays);
-            var expectedHoursPerDay = workHoursPerWeek / 5; // Assuming 5-day work week
+            // Count working days based on user's workday selection
+            var workingDays = CountWorkingDays(monthStart, monthEnd, vacationDays, workDays);
+            var selectedWorkDaysCount = CountSelectedWorkDays(workDays);
+            var expectedHoursPerDay = selectedWorkDaysCount > 0 ? workHoursPerWeek / selectedWorkDaysCount : 0;
             var expectedHours = workingDays * expectedHoursPerDay;
 
             // Calculate overtime for this month
@@ -89,16 +91,15 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
         );
     }
 
-    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<Data.Entities.VacationDay> vacationDays)
+    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<Data.Entities.VacationDay> vacationDays, int workDaysBitmask)
     {
         int workingDays = 0;
         var currentDate = startDate;
 
         while (currentDate <= endDate)
         {
-            // Check if it's a weekday (Monday-Friday)
-            var dayOfWeek = currentDate.DayOfWeek;
-            if (dayOfWeek != DayOfWeek.Saturday && dayOfWeek != DayOfWeek.Sunday)
+            // Check if this day is in the user's workdays bitmask
+            if (IsWorkDay(currentDate.DayOfWeek, workDaysBitmask))
             {
                 // Check if it's not a vacation day
                 if (!vacationDays.Any(v => v.Date == currentDate))
@@ -110,6 +111,39 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
         }
 
         return workingDays;
+    }
+
+    private bool IsWorkDay(DayOfWeek dayOfWeek, int workDaysBitmask)
+    {
+        // Convert DayOfWeek (Sunday=0, Monday=1, ...) to our bitmask (Monday=bit0, Tuesday=bit1, ...)
+        int bitPosition = dayOfWeek switch
+        {
+            DayOfWeek.Monday => 0,
+            DayOfWeek.Tuesday => 1,
+            DayOfWeek.Wednesday => 2,
+            DayOfWeek.Thursday => 3,
+            DayOfWeek.Friday => 4,
+            DayOfWeek.Saturday => 5,
+            DayOfWeek.Sunday => 6,
+            _ => -1
+        };
+
+        if (bitPosition < 0) return false;
+
+        return (workDaysBitmask & (1 << bitPosition)) != 0;
+    }
+
+    private int CountSelectedWorkDays(int workDaysBitmask)
+    {
+        int count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if ((workDaysBitmask & (1 << i)) != 0)
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     private string GetGermanMonthName(int month) => month switch
