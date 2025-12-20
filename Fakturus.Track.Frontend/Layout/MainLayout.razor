@@ -9,7 +9,6 @@
 @inject ILocalStorageService LocalStorageService
 @inject ISyncService SyncService
 @inject IToastService ToastService
-@inject IConfiguration Configuration
 @implements IDisposable
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -120,19 +119,7 @@
 
     private void BeginLogout()
     {
-        // IMPORTANT: First redirect to Azure B2C logout to end the session there
-        // Then redirect back to our /logout page which will complete the local logout
-        
-        var authority = Configuration["AzureAdB2C:Authority"];
-        var clientId = Configuration["AzureAdB2C:ClientId"];
-        var baseUri = Navigation.BaseUri;
-        var returnUrl = Uri.EscapeDataString($"{baseUri}logout");
-        
-        // Azure B2C logout URL format:
-        // https://{tenant}.b2clogin.com/{tenant}.onmicrosoft.com/{policy}/oauth2/v2.0/logout?post_logout_redirect_uri={returnUrl}
-        var logoutUrl = $"{authority}/oauth2/v2.0/logout?post_logout_redirect_uri={returnUrl}";
-        
-        Navigation.NavigateTo(logoutUrl, forceLoad: true);
+        Navigation.NavigateTo("authentication/logout", forceLoad: true);
     }
 
     public void Dispose()
