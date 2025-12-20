@@ -47,7 +47,8 @@
                          OnSave="HandleSave"
                          OnDelete="HandleDelete"
                          OnCancel="HandleCancel"
-                         OnNew="HandleNew"/>
+                         OnNew="HandleNew"
+                         OnTimeChanged="HandleTimeChanged"/>
     }
     else
     {
@@ -76,7 +77,8 @@
                                OnSave="HandleSave"
                                OnDelete="HandleDelete"
                                OnCancel="HandleCancel"
-                               OnNew="HandleNew" />
+                               OnNew="HandleNew"
+                               OnTimeChanged="HandleTimeChanged" />
             }
         }
         else
@@ -377,6 +379,21 @@
         await SyncService.StartPeriodicSyncAsync();
 
         ToastService.ShowSuccess("Session saved");
+    }
+
+    private async Task HandleTimeChanged(WorkSessionModel session)
+    {
+        // Save time changes for current session without marking as finished
+        // This keeps the session as current and doesn't trigger sync
+        session.IsFinished = false; // Keep as unfinished
+        session.IsPendingSync = true;
+        session.IsSynced = false;
+        await LocalStorageService.SaveWorkSessionAsync(session);
+
+        // Reload to refresh the display
+        await LoadWorkSessionsAsync();
+
+        // No toast message for time changes (too noisy)
     }
 
     private async Task HandleDelete(WorkSessionModel session)
