@@ -22,6 +22,21 @@ public class UpdateUserSettingsRequestValidator : AbstractValidator<UpdateUserSe
             .WithMessage("At least one workday must be selected")
             .LessThanOrEqualTo(127)
             .WithMessage("WorkDays must be a valid 7-bit bitmask (0-127)");
+
+        RuleFor(x => x.Bundesland)
+            .NotEmpty()
+            .WithMessage("Bundesland must be specified")
+            .Length(2)
+            .WithMessage("Bundesland must be a valid 2-letter code")
+            .Must(BeValidBundesland)
+            .WithMessage("Invalid Bundesland code");
+    }
+
+    private bool BeValidBundesland(string bundesland)
+    {
+        var validCodes = new[] { "BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", 
+                                 "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH" };
+        return validCodes.Contains(bundesland);
     }
 }
 

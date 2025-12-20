@@ -20,6 +20,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
                 VacationDaysPerYear = 30,
                 WorkHoursPerWeek = 40,
                 WorkDays = 31, // Mo-Fr
+                Bundesland = "NW",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -30,7 +31,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
         return new UserSettingsDto(
             user.VacationDaysPerYear,
             user.WorkHoursPerWeek,
-            user.WorkDays
+            user.WorkDays,
+            user.Bundesland
         );
     }
 
@@ -47,6 +49,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
                 VacationDaysPerYear = request.VacationDaysPerYear,
                 WorkHoursPerWeek = request.WorkHoursPerWeek,
                 WorkDays = request.WorkDays,
+                Bundesland = request.Bundesland,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -57,6 +60,7 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
             user.VacationDaysPerYear = request.VacationDaysPerYear;
             user.WorkHoursPerWeek = request.WorkHoursPerWeek;
             user.WorkDays = request.WorkDays;
+            user.Bundesland = request.Bundesland;
             user.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -65,7 +69,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
         return new UserSettingsDto(
             user.VacationDaysPerYear,
             user.WorkHoursPerWeek,
-            user.WorkDays
+            user.WorkDays,
+            user.Bundesland
         );
     }
 }

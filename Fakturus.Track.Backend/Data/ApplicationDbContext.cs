@@ -34,6 +34,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.VacationDaysPerYear).HasDefaultValue(30);
             entity.Property(e => e.WorkHoursPerWeek).HasDefaultValue(40).HasPrecision(5, 2);
             entity.Property(e => e.WorkDays).HasDefaultValue(31); // Mo-Fr (0b0011111)
+            entity.Property(e => e.Bundesland).HasMaxLength(2).HasDefaultValue("NW");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });

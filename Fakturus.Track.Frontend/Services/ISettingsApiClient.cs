@@ -20,5 +20,6 @@ public class UpdateUserSettingsRequest
     public int VacationDaysPerYear { get; set; }
     public decimal WorkHoursPerWeek { get; set; }
     public int WorkDays { get; set; }
+    public string Bundesland { get; set; } = "NW";
 }
 

@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace Fakturus.Track.Backend.Services;
 
-public class OvertimeCalculationService(ApplicationDbContext context) : IOvertimeCalculationService
+public class OvertimeCalculationService(ApplicationDbContext context, IHolidayService holidayService) : IOvertimeCalculationService
 {
     public async Task<OvertimeSummaryDto> CalculateOvertimeAsync(string userId, int? year = null)
     {
@@ -21,6 +21,10 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
         var workHoursPerWeek = user.WorkHoursPerWeek;
         var vacationDaysPerYear = user.VacationDaysPerYear;
         var workDays = user.WorkDays;
+        var bundesland = user.Bundesland;
+
+        // Get holidays for the year
+        var holidays = holidayService.GetHolidaysForYear(bundesland, targetYear);
 
         // Get all work sessions for the year
         var startDate = new DateOnly(targetYear, 1, 1);
@@ -63,7 +67,8 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
 
             // Calculate expected hours for the month
             // Count working days based on user's workday selection
-            var workingDays = CountWorkingDays(monthStart, monthEnd, vacationDays, workDays);
+            var monthHolidays = holidays.Where(h => h >= monthStart && h <= monthEnd).ToList();
+            var workingDays = CountWorkingDays(monthStart, monthEnd, vacationDays, workDays, monthHolidays);
             var selectedWorkDaysCount = CountSelectedWorkDays(workDays);
             var expectedHoursPerDay = selectedWorkDaysCount > 0 ? workHoursPerWeek / selectedWorkDaysCount : 0;
             var expectedHours = workingDays * expectedHoursPerDay;
@@ -82,16 +87,20 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
             ));
         }
 
+        // Count holidays that fall on workdays
+        var holidaysTaken = CountHolidaysOnWorkdays(holidays, workDays);
+
         return new OvertimeSummaryDto(
             Math.Round(totalOvertimeHours, 2),
             monthlyOvertime,
             vacationDays.Count,
             vacationDaysPerYear - vacationDays.Count,
-            vacationDaysPerYear
+            vacationDaysPerYear,
+            holidaysTaken
         );
     }
 
-    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<Data.Entities.VacationDay> vacationDays, int workDaysBitmask)
+    private int CountWorkingDays(DateOnly startDate, DateOnly endDate, List<Data.Entities.VacationDay> vacationDays, int workDaysBitmask, List<DateOnly> holidays)
     {
         int workingDays = 0;
         var currentDate = startDate;
@@ -101,8 +110,9 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
             // Check if this day is in the user's workdays bitmask
             if (IsWorkDay(currentDate.DayOfWeek, workDaysBitmask))
             {
-                // Check if it's not a vacation day
-                if (!vacationDays.Any(v => v.Date == currentDate))
+                // Check if it's not a vacation day or holiday
+                if (!vacationDays.Any(v => v.Date == currentDate) && 
+                    !holidays.Contains(currentDate))
                 {
                     workingDays++;
                 }
@@ -111,6 +121,11 @@ public class OvertimeCalculationService(ApplicationDbContext context) : IOvertim
         }
 
         return workingDays;
+    }
+
+    private int CountHolidaysOnWorkdays(List<DateOnly> holidays, int workDaysBitmask)
+    {
+        return holidays.Count(holiday => IsWorkDay(holiday.DayOfWeek, workDaysBitmask));
     }
 
     private bool IsWorkDay(DayOfWeek dayOfWeek, int workDaysBitmask)

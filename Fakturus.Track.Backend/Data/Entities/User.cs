@@ -7,6 +7,7 @@ public class User
     public int VacationDaysPerYear { get; set; } = 30; // Default 30 days per year
     public decimal WorkHoursPerWeek { get; set; } = 40; // Default 40 hours per week
     public int WorkDays { get; set; } = 31; // Default Mo-Fr (0b0011111 = 31)
+    public string Bundesland { get; set; } = "NW"; // Default: Nordrhein-Westfalen
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

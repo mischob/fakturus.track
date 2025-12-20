@@ -21,7 +21,7 @@
     else if (_summary != null)
     {
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <OvertimeCard 
                 Title="Gesamt Überstunden"
                 Value="@FormatHours(_summary.TotalOvertimeHours)"
@@ -34,6 +34,13 @@
                 Value="@($"{_summary.VacationDaysTaken} / {_summary.VacationDaysPerYear}")"
                 Subtitle="@($"{_summary.VacationDaysRemaining} Tage übrig")"
                 IconColor="text-blue-600"
+                ValueColor="text-gray-900"/>
+
+            <OvertimeCard 
+                Title="Feiertage"
+                Value="@_summary.HolidaysTaken.ToString()"
+                Subtitle="@($"Feiertage in {_selectedYear}")"
+                IconColor="text-purple-600"
                 ValueColor="text-gray-900"/>
         </div>
 

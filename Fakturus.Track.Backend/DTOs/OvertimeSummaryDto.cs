@@ -5,7 +5,8 @@ public record OvertimeSummaryDto(
     List<MonthlyOvertimeDto> MonthlyOvertime,
     int VacationDaysTaken,
     int VacationDaysRemaining,
-    int VacationDaysPerYear
+    int VacationDaysPerYear,
+    int HolidaysTaken
 );
 
 public record MonthlyOvertimeDto(

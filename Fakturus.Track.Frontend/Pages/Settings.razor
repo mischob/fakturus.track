@@ -82,6 +82,35 @@
                     </div>
                 </div>
 
+                <!-- Bundesland Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Bundesland
+                    </label>
+                    <select @bind="_settings.Bundesland"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="BW">Baden-Württemberg</option>
+                        <option value="BY">Bayern</option>
+                        <option value="BE">Berlin</option>
+                        <option value="BB">Brandenburg</option>
+                        <option value="HB">Bremen</option>
+                        <option value="HH">Hamburg</option>
+                        <option value="HE">Hessen</option>
+                        <option value="MV">Mecklenburg-Vorpommern</option>
+                        <option value="NI">Niedersachsen</option>
+                        <option value="NW">Nordrhein-Westfalen</option>
+                        <option value="RP">Rheinland-Pfalz</option>
+                        <option value="SL">Saarland</option>
+                        <option value="SN">Sachsen</option>
+                        <option value="ST">Sachsen-Anhalt</option>
+                        <option value="SH">Schleswig-Holstein</option>
+                        <option value="TH">Thüringen</option>
+                    </select>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Ihr Bundesland für die Berechnung von Feiertagen
+                    </p>
+                </div>
+
                 <!-- Save Button -->
                 <div class="flex gap-3">
                     <button @onclick="HandleSave"
@@ -115,8 +144,9 @@
                 <div>
                     <h3 class="font-semibold text-blue-900 mb-2">Überstunden-Berechnung</h3>
                     <p class="text-sm text-blue-800">
-                        Überstunden werden auf Wochenbasis berechnet. Die erwarteten Arbeitsstunden pro Woche werden auf die Arbeitstage (Mo-Fr) verteilt, 
-                        wobei Wochenenden und Urlaubstage ausgenommen sind. Wenn Sie mehr als die erwarteten Stunden arbeiten, werden diese als Überstunden gezählt.
+                        Überstunden werden auf Wochenbasis berechnet. Die erwarteten Arbeitsstunden pro Woche werden auf die ausgewählten Arbeitstage verteilt. 
+                        Wochenenden, Urlaubstage und Feiertage werden als gearbeitete Zeit gezählt. Wenn Sie mehr als die erwarteten Stunden arbeiten, 
+                        werden diese als Überstunden gezählt.
                     </p>
                 </div>
             </div>
@@ -153,7 +183,8 @@
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
                 WorkHoursPerWeek = _settings.WorkHoursPerWeek,
-                WorkDays = _settings.WorkDays
+                WorkDays = _settings.WorkDays,
+                Bundesland = _settings.Bundesland
             };
         }
         catch (Exception ex)
@@ -199,7 +230,8 @@
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
                 WorkHoursPerWeek = _settings.WorkHoursPerWeek,
-                WorkDays = _settings.WorkDays
+                WorkDays = _settings.WorkDays,
+                Bundesland = _settings.Bundesland
             };
 
             _settings = await SettingsApiClient.UpdateUserSettingsAsync(request);
@@ -208,7 +240,8 @@
             {
                 VacationDaysPerYear = _settings.VacationDaysPerYear,
                 WorkHoursPerWeek = _settings.WorkHoursPerWeek,
-                WorkDays = _settings.WorkDays
+                WorkDays = _settings.WorkDays,
+                Bundesland = _settings.Bundesland
             };
 
             ToastService.ShowSuccess("Einstellungen gespeichert");
@@ -231,6 +264,7 @@
             _settings.VacationDaysPerYear = _originalSettings.VacationDaysPerYear;
             _settings.WorkHoursPerWeek = _originalSettings.WorkHoursPerWeek;
             _settings.WorkDays = _originalSettings.WorkDays;
+            _settings.Bundesland = _originalSettings.Bundesland;
             StateHasChanged();
             ToastService.ShowInfo("Änderungen zurückgesetzt");
         }
