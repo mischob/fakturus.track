@@ -212,6 +212,12 @@
             .Where(s => _currentSession == null || s.Id != _currentSession.Id)
             .ToList();
 
+        // Store current expanded state before regrouping
+        var expandedMonths = _monthGroups
+            .Where(g => g.IsExpanded)
+            .Select(g => (g.Year, g.Month))
+            .ToHashSet();
+
         // Group by Year and Month
         _monthGroups = historySessions
             .GroupBy(s => new { s.Date.Year, s.Date.Month })
@@ -228,7 +234,7 @@
                 TotalDuration = TimeSpan.FromTicks(g
                     .Where(s => s.StartTime != default && s.StopTime.HasValue)
                     .Sum(s => CalculateDuration(s).Ticks)),
-                IsExpanded = false
+                IsExpanded = expandedMonths.Contains((g.Key.Year, g.Key.Month))
             })
             .OrderByDescending(g => g.Year)
             .ThenByDescending(g => g.Month)

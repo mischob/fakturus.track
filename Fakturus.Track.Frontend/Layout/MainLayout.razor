@@ -88,16 +88,38 @@
     {
         try
         {
+            // Load existing sessions to check for duplicates
+            var existingSessions = await LocalStorageService.GetWorkSessionsAsync();
+            
             var importedCount = 0;
+            var skippedCount = 0;
+            
             foreach (var evt in selectedEvents)
             {
+                var eventDate = DateOnly.FromDateTime(evt.StartTime.ToLocalTime());
+                var eventStartTime = evt.StartTime;
+                var eventEndTime = evt.EndTime;
+                
+                // Check if a session with the same date, start time, and end time already exists
+                var isDuplicate = existingSessions.Any(s => 
+                    s.Date == eventDate && 
+                    s.StartTime == eventStartTime && 
+                    s.StopTime == eventEndTime);
+                
+                if (isDuplicate)
+                {
+                    skippedCount++;
+                    Console.WriteLine($"Skipping duplicate calendar event: {evt.Summary} on {eventDate} at {eventStartTime.ToLocalTime():HH:mm}");
+                    continue;
+                }
+                
                 // Convert calendar event to work session
                 var workSession = new WorkSessionModel
                 {
                     Id = Guid.NewGuid(),
-                    Date = DateOnly.FromDateTime(evt.StartTime.ToLocalTime()),
-                    StartTime = evt.StartTime,
-                    StopTime = evt.EndTime,
+                    Date = eventDate,
+                    StartTime = eventStartTime,
+                    StopTime = eventEndTime,
                     IsPendingSync = true,
                     IsSynced = false
                 };
@@ -109,7 +131,19 @@
             // Trigger sync
             await SyncService.StartPeriodicSyncAsync();
 
-            ToastService.ShowSuccess($"Imported {importedCount} event(s) from calendar");
+            // Show appropriate message based on results
+            if (importedCount > 0 && skippedCount > 0)
+            {
+                ToastService.ShowSuccess($"Imported {importedCount} event(s), skipped {skippedCount} duplicate(s)");
+            }
+            else if (importedCount > 0)
+            {
+                ToastService.ShowSuccess($"Imported {importedCount} event(s) from calendar");
+            }
+            else if (skippedCount > 0)
+            {
+                ToastService.ShowInfo($"All {skippedCount} event(s) were duplicates and skipped");
+            }
         }
         catch (Exception ex)
         {
