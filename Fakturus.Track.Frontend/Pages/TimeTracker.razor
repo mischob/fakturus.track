@@ -3,6 +3,7 @@
 @attribute [Authorize]
 @using Blazored.Toast.Services
 @using Microsoft.AspNetCore.Authorization
+@using Fakturus.Track.Frontend.Models
 @implements IDisposable
 @inject ILocalStorageService LocalStorageService
 @inject IWorkSessionsApiClient ApiClient
@@ -62,35 +63,25 @@
     <!-- History -->
     <div class="space-y-4">
         <h2 class="text-2xl font-semibold text-gray-900">History</h2>
-        @{
-            // History: all sessions except the current one
-            // Current session is today's session (may have StopTime set but not finished)
-            var historySessions = _workSessions
-                .Where(s => _currentSession == null || s.Id != _currentSession.Id)
-                .OrderByDescending(s => s.Date)
-                .ThenByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
-                .ToList();
-        }
-        @if (historySessions.Any())
+        @if (_monthGroups.Any())
         {
-            @foreach (var session in historySessions)
+            @foreach (var group in _monthGroups)
             {
-                <WorkSessionCard WorkSession="session"
-                                 OnStart="HandleStart"
-                                 OnStop="HandleStop"
-                                 OnFinish="HandleFinish"
-                                 OnSave="HandleSave"
-                                 OnDelete="HandleDelete"
-                                 OnCancel="HandleCancel"
-                                 OnNew="HandleNew"
-                                 IsHistory="true"/>
+                <MonthGroupCard MonthGroup="group"
+                               OnToggle="HandleToggleGroup"
+                               OnStart="HandleStart"
+                               OnStop="HandleStop"
+                               OnFinish="HandleFinish"
+                               OnSave="HandleSave"
+                               OnDelete="HandleDelete"
+                               OnCancel="HandleCancel"
+                               OnNew="HandleNew" />
             }
         }
         else
         {
             <div class="card text-center py-8">
-                <p class="text-gray-600">Keine Einträge soweit
-                </p>
+                <p class="text-gray-600">Keine Eintr?ge soweit</p>
             </div>
         }
     </div>
@@ -98,6 +89,7 @@
 
 @code {
     private List<WorkSessionModel> _workSessions = [];
+    private List<MonthGroup> _monthGroups = [];
     private WorkSessionModel? _currentSession;
     private bool _isSyncing;
     private bool _isFinishing; // Flag to prevent re-loading finished session
@@ -207,7 +199,77 @@
             Console.WriteLine("LoadWorkSessionsAsync: No current session");
         }
 
+        // Group sessions by month
+        GroupSessionsByMonth();
+
         StateHasChanged();
+    }
+
+    private void GroupSessionsByMonth()
+    {
+        // Get history sessions (exclude current session)
+        var historySessions = _workSessions
+            .Where(s => _currentSession == null || s.Id != _currentSession.Id)
+            .ToList();
+
+        // Group by Year and Month
+        _monthGroups = historySessions
+            .GroupBy(s => new { s.Date.Year, s.Date.Month })
+            .Select(g => new MonthGroup
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                MonthName = GetGermanMonthName(g.Key.Month),
+                Sessions = g.OrderByDescending(s => s.Date)
+                           .ThenByDescending(s => s.StartTime != default ? s.StartTime : DateTime.MinValue)
+                           .ToList(),
+                TotalEntries = g.Count(),
+                CompletedEntries = g.Count(s => s.StartTime != default && s.StopTime.HasValue),
+                TotalDuration = TimeSpan.FromTicks(g
+                    .Where(s => s.StartTime != default && s.StopTime.HasValue)
+                    .Sum(s => CalculateDuration(s).Ticks)),
+                IsExpanded = false
+            })
+            .OrderByDescending(g => g.Year)
+            .ThenByDescending(g => g.Month)
+            .ToList();
+    }
+
+    private string GetGermanMonthName(int month) => month switch
+    {
+        1 => "Januar",
+        2 => "Februar",
+        3 => "Mï¿½rz",
+        4 => "April",
+        5 => "Mai",
+        6 => "Juni",
+        7 => "Juli",
+        8 => "August",
+        9 => "September",
+        10 => "Oktober",
+        11 => "November",
+        12 => "Dezember",
+        _ => ""
+    };
+
+    private void HandleToggleGroup(MonthGroup group)
+    {
+        group.IsExpanded = !group.IsExpanded;
+        StateHasChanged();
+    }
+
+    private TimeSpan CalculateDuration(WorkSessionModel session)
+    {
+        if (session.StartTime == default || !session.StopTime.HasValue)
+            return TimeSpan.Zero;
+        return session.StopTime.Value - session.StartTime;
+    }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        int hours = (int)duration.TotalHours;
+        int minutes = duration.Minutes;
+        return $"{hours:D2}:{minutes:D2}h";
     }
 
     private async Task HandleStart(WorkSessionModel session)

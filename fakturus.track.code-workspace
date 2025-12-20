@@ -8,9 +8,6 @@
 		},
 		{
 			"path": "../fakturus.poi"
-		},
-		{
-			"path": "../../Enpal/Domain_MSB/enpal.msb.core"
 		}
 	],
 	"settings": {}
