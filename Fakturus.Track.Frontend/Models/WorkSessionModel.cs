@@ -12,4 +12,5 @@ public class WorkSessionModel
     public DateTime? SyncedAt { get; set; }
     public bool IsSynced { get; set; }
     public bool IsPendingSync { get; set; }
+    public bool IsFinished { get; set; } = false;
 }

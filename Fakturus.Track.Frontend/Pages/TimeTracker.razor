@@ -172,18 +172,17 @@
             var existingCurrent = _workSessions.FirstOrDefault(s => s.Id == _currentSession.Id);
             if (existingCurrent != null)
             {
-                // Keep as current only if it's still pending (not synced yet)
-                // Once synced, it should move to history
-                if (existingCurrent.IsPendingSync && !existingCurrent.IsSynced)
+                // Keep as current only if it's not finished yet
+                if (!existingCurrent.IsFinished)
                 {
                     _currentSession = existingCurrent;
-                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {_currentSession.Id} (still pending)");
+                    Console.WriteLine($"LoadWorkSessionsAsync: Kept existing current session {_currentSession.Id}");
                 }
                 else
                 {
-                    // Session was synced, move to history
+                    // Session was finished, move to history
                     _currentSession = null;
-                    Console.WriteLine("LoadWorkSessionsAsync: Current session was synced, moved to history");
+                    Console.WriteLine("LoadWorkSessionsAsync: Current session was finished, moved to history");
                 }
             }
             else
@@ -208,8 +207,9 @@
 
     private void GroupSessionsByMonth()
     {
-        // Get history sessions (exclude current session)
+        // Get history sessions (exclude current session and unfinished sessions)
         var historySessions = _workSessions
+            .Where(s => s.IsFinished)  // Only show finished sessions in history
             .Where(s => _currentSession == null || s.Id != _currentSession.Id)
             .ToList();
 
@@ -283,13 +283,11 @@
     {
         session.StartTime = DateTime.UtcNow;
         session.Date = DateOnly.FromDateTime(DateTime.Now);
+        session.IsFinished = false; // Keep as unfinished (still in progress)
         session.IsPendingSync = true;
         session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
-
-        // Start background sync for pending session
-        await SyncService.StartPeriodicSyncAsync();
 
         ToastService.ShowSuccess("Start time recorded");
     }
@@ -298,13 +296,11 @@
     {
         // Set stop time but don't close the session
         session.StopTime = DateTime.UtcNow;
+        session.IsFinished = false; // Keep as unfinished (session stopped but not finished)
         session.IsPendingSync = true;
         session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
         await LoadWorkSessionsAsync();
-
-        // Start background sync for pending session
-        await SyncService.StartPeriodicSyncAsync();
 
         ToastService.ShowSuccess("Stop time recorded");
     }
@@ -315,6 +311,7 @@
         // Ensure StopTime is set
         session.StopTime ??= DateTime.UtcNow;
 
+        session.IsFinished = true; // Mark as finished for sync
         session.IsPendingSync = true;
         session.IsSynced = false; // Mark as not synced
         await LocalStorageService.SaveWorkSessionAsync(session);
@@ -325,7 +322,7 @@
         // Reload to refresh the list (finished session will appear in history)
         await LoadWorkSessionsAsync();
 
-        // Start background sync for pending session
+        // Start background sync for the now-finished session
         await SyncService.StartPeriodicSyncAsync();
 
         ToastService.ShowSuccess("Session finished");
@@ -339,15 +336,13 @@
             Date = DateOnly.FromDateTime(DateTime.Now),
             StartTime = default, // Don't set start time initially - let user set it
             StopTime = null,
+            IsFinished = false, // Initialize as unfinished (new session)
             IsPendingSync = true
         };
 
         await LocalStorageService.SaveWorkSessionAsync(newSession);
         _currentSession = newSession; // Set as current session immediately
         await LoadWorkSessionsAsync();
-
-        // Start background sync for new pending session
-        await SyncService.StartPeriodicSyncAsync();
 
         ToastService.ShowSuccess("New session created");
     }
@@ -369,6 +364,7 @@
 
     private async Task HandleSave(WorkSessionModel session)
     {
+        session.IsFinished = true; // Mark as finished for sync
         session.IsPendingSync = true;
         session.IsSynced = false; // Mark as not synced so it will be included in next sync
         await LocalStorageService.SaveWorkSessionAsync(session);
@@ -377,10 +373,10 @@
         // LoadWorkSessionsAsync will preserve the current session by ID
         await LoadWorkSessionsAsync();
 
-        // Start background sync for pending session
+        // Start background sync for the saved session
         await SyncService.StartPeriodicSyncAsync();
 
-        ToastService.ShowSuccess("Session updated");
+        ToastService.ShowSuccess("Session saved");
     }
 
     private async Task HandleDelete(WorkSessionModel session)

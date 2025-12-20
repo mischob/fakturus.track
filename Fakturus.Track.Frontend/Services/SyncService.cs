@@ -25,8 +25,9 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
             Console.WriteLine($"SyncService.SyncAsync: Found {localSessions.Count} local sessions");
 
             // Step 2: Identify pending sessions (need to be synced to backend)
+            // Only sync finished sessions - current/in-edit sessions should not be synced
             var pendingSessions = localSessions
-                .Where(s => s.IsPendingSync && !s.IsSynced)
+                .Where(s => s.IsPendingSync && !s.IsSynced && s.IsFinished)
                 .ToList();
 
             Console.WriteLine($"SyncService.SyncAsync: Found {pendingSessions.Count} pending sessions to sync");
@@ -63,7 +64,7 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
             // Step 4: Merge logic - Backend is source of truth
             var mergedSessions = new Dictionary<Guid, WorkSessionModel>();
 
-            // Add all backend sessions (marked as synced)
+            // Add all backend sessions (marked as synced and finished)
             foreach (var backendSession in backendSessions)
                 mergedSessions[backendSession.Id] = new WorkSessionModel
                 {
@@ -76,16 +77,26 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
                     UpdatedAt = backendSession.UpdatedAt,
                     SyncedAt = backendSession.SyncedAt,
                     IsSynced = true,
-                    IsPendingSync = false
+                    IsPendingSync = false,
+                    IsFinished = true  // Backend sessions are always finished
                 };
 
             // Add local pending sessions that failed to sync (keep for retry)
+            // Also preserve unfinished sessions (current/in-edit) in local storage
             foreach (var localSession in localSessions)
                 if (localSession is { IsPendingSync: true, IsSynced: false } &&
                     mergedSessions.TryAdd(localSession.Id, localSession))
                 {
-                    // Session is still pending and not in backend response (sync might have failed)
-                    Console.WriteLine($"SyncService.SyncAsync: Keeping pending session {localSession.Id} for retry");
+                    if (localSession.IsFinished)
+                    {
+                        // Session is finished but still pending (sync might have failed)
+                        Console.WriteLine($"SyncService.SyncAsync: Keeping pending finished session {localSession.Id} for retry");
+                    }
+                    else
+                    {
+                        // Session is unfinished (current/in-edit) - preserve in local storage
+                        Console.WriteLine($"SyncService.SyncAsync: Keeping unfinished session {localSession.Id} in local storage");
+                    }
                 }
 
             // Step 5: Save merged sessions to local storage
@@ -95,8 +106,8 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
 
             await localStorageService.SaveWorkSessionsAsync(finalSessions);
 
-            // Step 6: Check if we still have pending sessions and manage background sync
-            var stillPending = finalSessions.Any(s => s.IsPendingSync && !s.IsSynced);
+            // Step 6: Check if we still have pending finished sessions and manage background sync
+            var stillPending = finalSessions.Any(s => s.IsPendingSync && !s.IsSynced && s.IsFinished);
             if (!stillPending && _syncTimer != null)
             {
                 Console.WriteLine("SyncService.SyncAsync: No pending sessions, stopping background sync");
@@ -117,7 +128,7 @@ public class SyncService(ILocalStorageService localStorageService, IWorkSessions
     public async Task<bool> HasPendingSyncsAsync()
     {
         var localSessions = await localStorageService.GetWorkSessionsAsync();
-        return localSessions.Any(s => s.IsPendingSync && !s.IsSynced);
+        return localSessions.Any(s => s.IsPendingSync && !s.IsSynced && s.IsFinished);
     }
 
     public async Task StartPeriodicSyncAsync()
