@@ -131,6 +131,9 @@
             // Trigger sync
             await SyncService.StartPeriodicSyncAsync();
 
+            // Notify TimeTracker to reload sessions
+            CalendarModalService.NotifyImport(selectedEvents);
+
             // Show appropriate message based on results
             if (importedCount > 0 && skippedCount > 0)
             {
