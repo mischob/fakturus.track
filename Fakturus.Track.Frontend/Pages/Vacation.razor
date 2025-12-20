@@ -28,8 +28,8 @@
         </button>
     </div>
 
-    <!-- Calendar for selecting vacation days -->
-    <VacationCalendar SelectedDates="_selectedDates" SelectedDatesChanged="OnSelectedDatesChanged"/>
+    <!-- Date picker for selecting vacation days -->
+    <VacationCalendar OnDateSelected="OnDateSelected"/>
 
     <!-- Selected vacation days list -->
     <div class="card">
@@ -71,7 +71,6 @@
 
 @code {
     private List<VacationDayModel> _vacationDays = new();
-    private List<DateOnly> _selectedDates = new();
     private bool _isSyncing;
 
     protected override async Task OnInitializedAsync()
@@ -104,51 +103,35 @@
     private async Task LoadVacationDaysAsync()
     {
         _vacationDays = await VacationSyncService.GetVacationDaysAsync();
-        _selectedDates = _vacationDays.Select(v => v.Date).ToList();
         StateHasChanged();
     }
 
-    private async Task OnSelectedDatesChanged(List<DateOnly> selectedDates)
+    private async Task OnDateSelected(DateOnly selectedDate)
     {
-        // Find newly added dates
-        var newDates = selectedDates.Except(_selectedDates).ToList();
+        // Check if date already exists
+        if (_vacationDays.Any(v => v.Date == selectedDate))
+        {
+            ToastService.ShowWarning("Dieser Tag ist bereits als Urlaubstag markiert");
+            return;
+        }
+
+        // Add new vacation day
+        var vacationDay = new VacationDayModel
+        {
+            Id = Guid.NewGuid(),
+            Date = selectedDate,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            IsPendingSync = true,
+            IsSynced = false
+        };
         
-        // Find removed dates
-        var removedDates = _selectedDates.Except(selectedDates).ToList();
-
-        // Add new vacation days
-        foreach (var date in newDates)
-        {
-            var vacationDay = new VacationDayModel
-            {
-                Id = Guid.NewGuid(),
-                Date = date,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsPendingSync = true,
-                IsSynced = false
-            };
-            await VacationSyncService.SaveVacationDayAsync(vacationDay);
-        }
-
-        // Remove vacation days
-        foreach (var date in removedDates)
-        {
-            var vacationDay = _vacationDays.FirstOrDefault(v => v.Date == date);
-            if (vacationDay != null)
-            {
-                await HandleDelete(vacationDay);
-            }
-        }
-
+        await VacationSyncService.SaveVacationDayAsync(vacationDay);
         await LoadVacationDaysAsync();
 
-        // Start sync for new vacation days
-        if (newDates.Any())
-        {
-            await VacationSyncService.StartPeriodicSyncAsync();
-            ToastService.ShowSuccess($"{newDates.Count} Urlaubstag(e) hinzugefügt");
-        }
+        // Start sync for new vacation day
+        await VacationSyncService.StartPeriodicSyncAsync();
+        ToastService.ShowSuccess("Urlaubstag hinzugefügt");
     }
 
     private async Task HandleDelete(VacationDayModel vacationDay)
