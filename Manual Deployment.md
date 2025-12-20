@@ -307,18 +307,44 @@ docker-compose exec fakturus-track-api /bin/bash
 
 ## Update Deployment
 
-### 1. Update Application
+### 1. Update Application (Recommended: Use Deploy Script)
+
+**Option A: Using the Deploy Script (Recommended)**
+
+```bash
+cd /opt/fakturus-track
+./deploy.sh
+```
+
+This ensures atomic deployment with rolling updates.
+
+**Option B: Manual Update (Not Recommended)**
+
+⚠️ **Warning**: Manual updates can cause cache/version mismatch issues. Use the deploy script instead.
 
 ```bash
 # Pull latest images
 docker-compose pull
 
-# Recreate containers with new images
-docker-compose up -d --force-recreate
+# WRONG: This can cause "mixed version" issues
+# docker-compose down && docker-compose up -d
+
+# CORRECT: Rolling update
+docker-compose up -d --no-deps --force-recreate fakturus-track-api
+sleep 15
+docker-compose up -d --no-deps --force-recreate fakturus-track-ui
 
 # Remove old images
 docker image prune -f
 ```
+
+**Why Rolling Updates Matter**:
+- Blazor WASM uses content-hashed filenames (e.g., `System.Private.CoreLib.abc123.wasm`)
+- If clients load during a non-atomic deployment, they may get:
+  - Old `blazor.boot.json` pointing to old file names
+  - New files on the server (old names return 404)
+- Result: 404 errors on framework files, app won't load
+- Solution: Update containers atomically, one at a time
 
 ### 2. Update Secrets in Key Vault
 
@@ -380,7 +406,40 @@ openssl s_client -connect track.fakturus.com:443 -servername track.fakturus.com
    docker-compose logs [service-name]
    ```
 
-2. **Key Vault authentication fails**:
+2. **404 errors on `*.wasm` or `*.dll` files after deployment**:
+   - **Symptom**: Browser console shows 404 errors for framework files like `System.Private.CoreLib.*.wasm`
+   - **Cause**: Cache/version mismatch - browser cached old `blazor.boot.json` that references old file names
+   - **Immediate Fix**: 
+     ```bash
+     # Clear browser cache and hard reload
+     # Chrome/Edge: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)
+     # Or: DevTools → Application → Clear storage → Clear site data
+     ```
+   - **Prevention**:
+     - Always use the `deploy.sh` script for atomic deployment
+     - Verify nginx cache headers are correct (see `CACHE_STRATEGY.md`)
+     - Check that boot files have `Cache-Control: no-cache, no-store`
+   - **Verification**:
+     ```bash
+     # Boot files should NOT be cached
+     curl -I https://track.fakturus.com/_framework/blazor.boot.json | grep Cache-Control
+     # Should return: Cache-Control: no-cache, no-store, must-revalidate
+     
+     # Framework files should be cached long-term
+     curl -I https://track.fakturus.com/_framework/System.Private.CoreLib.*.wasm | grep Cache-Control
+     # Should return: Cache-Control: public, max-age=31536000, immutable
+     ```
+
+3. **Changes not visible after deployment**:
+   - **Symptom**: Deployed new version but users still see old version
+   - **Cause**: `index.html` or boot files are cached
+   - **Fix**: 
+     - Verify nginx configuration has correct cache headers
+     - Users must hard reload (Ctrl+Shift+R)
+     - Check nginx logs to ensure new files are being served
+   - **Prevention**: Ensure `index.html` has `Cache-Control: no-cache, no-store`
+
+4. **Key Vault authentication fails**:
    - Verify service principal credentials in `.env` file
    - **Check RBAC role assignments** (if using Azure RBAC):
      ```bash
@@ -408,28 +467,28 @@ openssl s_client -connect track.fakturus.com:443 -servername track.fakturus.com
    - Verify secrets exist: `az keyvault secret list --vault-name fakturus`
    - Wait a few minutes after granting permissions for propagation
 
-3. **Database connection issues**:
+5. **Database connection issues**:
    - Verify connection string in Key Vault: `az keyvault secret show --vault-name fakturus --name "TrackPostgresConnectionString"`
    - Check Azure PostgreSQL firewall rules allow Hetzner server IP (91.99.65.63)
    - Test connection from server: `psql -h <postgres-server> -U <username> -d Track`
    - Verify SSL is enabled in connection string: `Ssl Mode=Require;`
 
-4. **Missing PostgreSQL client libraries**:
+6. **Missing PostgreSQL client libraries**:
    - **Error**: `Cannot load library libgssapi_krb5.so.2`
    - **Solution**: Rebuild the Docker image with the updated Dockerfile that includes required libraries
    - The Dockerfile has been updated to install `libgssapi-krb5-2`, `libkrb5-3`, and `libssl3`
 
-5. **API not accessible**:
+7. **API not accessible**:
    - Verify Traefik routing rules
    - Check if API container is healthy: `docker-compose ps`
    - Test internal connectivity: `docker-compose exec fakturus-track-ui curl http://fakturus-track-api`
 
-6. **SSL certificate issues**:
+8. **SSL certificate issues**:
    - Check Traefik configuration
    - Verify DNS propagation: `nslookup track.fakturus.com`
    - Check Let's Encrypt rate limits
 
-7. **CORS errors**:
+9. **CORS errors**:
    - Verify CORS configuration in `Program.cs` includes `https://track.fakturus.com`
    - Check browser console for specific CORS error messages
    - Verify API is accessible from the frontend domain
@@ -468,7 +527,7 @@ openssl s_client -connect track.fakturus.com:443 -servername track.fakturus.com
 
 ## Automation Scripts
 
-### Deploy Script
+### Deploy Script (Atomic Deployment)
 
 Create `/opt/fakturus-track/deploy.sh`:
 
@@ -478,14 +537,27 @@ set -e
 
 echo "Starting Fakturus.Track deployment..."
 
+# Set APP_VERSION from git commit hash
+export APP_VERSION=$(git rev-parse --short HEAD 2>/dev/null || echo "1.0.0")
+echo "Deploying version: $APP_VERSION"
+
 # Pull latest images
+echo "Pulling latest Docker images..."
 docker-compose pull
 
-# Stop services
-docker-compose down
+# IMPORTANT: Use rolling update strategy to avoid downtime and cache issues
+# Stop and start services one by one to ensure atomic deployment
+echo "Performing rolling update..."
 
-# Start services
-docker-compose up -d
+# Update API first (backend can handle brief downtime)
+docker-compose up -d --no-deps --force-recreate fakturus-track-api
+
+# Wait for API to be healthy
+echo "Waiting for API to be ready..."
+sleep 15
+
+# Update UI (this is critical - must be atomic)
+docker-compose up -d --no-deps --force-recreate fakturus-track-ui
 
 # Wait for services to be ready
 sleep 30
@@ -513,6 +585,27 @@ Make it executable:
 chmod +x /opt/fakturus-track/deploy.sh
 ```
 
+**Important Notes on Atomic Deployment**:
+
+1. **Rolling Updates**: The script uses `--no-deps --force-recreate` to update services one at a time, ensuring:
+   - No "mixed version" state where some files are old and some are new
+   - Containers are recreated atomically
+   - Old containers stay running until new ones are ready
+
+2. **Why Not `docker-compose down && up`**: 
+   - `down` stops all services simultaneously
+   - During the gap, clients might load partial old/new file combinations
+   - This causes 404 errors on hashed framework files (`.wasm`, `.dll`)
+
+3. **Service Order**:
+   - API first: Backend changes are usually backward-compatible
+   - UI second: Frontend must match the framework files exactly
+
+4. **Cache Invalidation**: 
+   - The nginx configuration ensures boot files (`blazor.boot.json`) are never cached
+   - Framework files with content hashes can be cached indefinitely
+   - See `CACHE_STRATEGY.md` for detailed caching strategy
+
 ## Notes
 
 - Replace `registry.fakturus.com` with your actual registry URL if different
@@ -523,6 +616,34 @@ chmod +x /opt/fakturus-track/deploy.sh
 - Set up log rotation to prevent disk space issues
 - Consider implementing automated backups for database
 - For any issues during deployment, check the container logs and Traefik dashboard for routing information
+
+## Blazor WASM Cache Strategy
+
+**CRITICAL**: Blazor WebAssembly apps require special cache handling to avoid version mismatch issues.
+
+### Key Points:
+
+1. **Boot files must NEVER be cached**:
+   - `index.html`
+   - `/_framework/blazor.boot.json`
+   - `/_framework/blazor.webassembly.js`
+   - These files tell the browser which versioned files to load
+
+2. **Framework files can be cached forever**:
+   - `/_framework/*.wasm`, `*.dll`, `*.dat`
+   - These have content hashes in their names (e.g., `System.Private.CoreLib.abc123.wasm`)
+   - When content changes, filename changes → automatic cache busting
+
+3. **Atomic deployment is essential**:
+   - Always use rolling updates (`--no-deps --force-recreate`)
+   - Never use `docker-compose down && up` (causes mixed version state)
+   - Update services one at a time
+
+4. **SPA fallback must not catch framework files**:
+   - `/_framework/` paths must return 404 if file is missing
+   - Never rewrite framework paths to `index.html`
+
+For detailed information, see `CACHE_STRATEGY.md` in the project root.
 
 ## Azure AD B2C Configuration
 

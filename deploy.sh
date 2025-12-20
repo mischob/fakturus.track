@@ -8,13 +8,22 @@ export APP_VERSION=$(git rev-parse --short HEAD 2>/dev/null || echo "1.0.0")
 echo "Deploying version: $APP_VERSION"
 
 # Pull latest images
+echo "Pulling latest Docker images..."
 docker-compose -f docker-compose.prod.yml pull
 
-# Stop services
-docker-compose -f docker-compose.prod.yml down
+# IMPORTANT: Use rolling update strategy to avoid downtime and cache issues
+# Stop and start services one by one to ensure atomic deployment
+echo "Performing rolling update..."
 
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
+# Update API first (backend can handle brief downtime)
+docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate fakturus-track-api
+
+# Wait for API to be healthy
+echo "Waiting for API to be ready..."
+sleep 15
+
+# Update UI (this is critical - must be atomic)
+docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate fakturus-track-ui
 
 # Wait for services to be ready
 sleep 30
