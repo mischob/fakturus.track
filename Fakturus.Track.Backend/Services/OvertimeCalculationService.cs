@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Backend.Services;
 
-public class OvertimeCalculationService(ApplicationDbContext context, IHolidayService holidayService)
+public class OvertimeCalculationService(ApplicationDbContext context, IHolidayService holidayService, ISchoolHolidayService schoolHolidayService)
     : IOvertimeCalculationService
 {
     public async Task<OvertimeSummaryDto> CalculateOvertimeAsync(string userId, int? year = null)
@@ -86,13 +86,19 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
         // Count holidays that fall on workdays
         var holidaysTaken = CountHolidaysOnWorkdays(holidays, workDays);
 
+        // Calculate school holiday hours not worked
+        var schoolHolidayPeriods = await schoolHolidayService.GetSchoolHolidayPeriodsAsync(userId, targetYear);
+        var schoolHolidayHoursNotWorked = CalculateSchoolHolidayHoursNotWorked(
+            startDate, endDate, schoolHolidayPeriods, vacationDays, workDays, holidays, workHoursPerWeek);
+
         return new OvertimeSummaryDto(
             Math.Round(totalOvertimeHours, 2),
             monthlyOvertime,
             vacationDays.Count,
             vacationDaysPerYear - vacationDays.Count,
             vacationDaysPerYear,
-            holidaysTaken
+            holidaysTaken,
+            Math.Round(schoolHolidayHoursNotWorked, 2)
         );
     }
 
@@ -170,5 +176,56 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
             12 => "Dezember",
             _ => ""
         };
+    }
+
+    private decimal CalculateSchoolHolidayHoursNotWorked(
+        DateOnly startDate,
+        DateOnly endDate,
+        List<DTOs.SchoolHolidayPeriodDto> schoolHolidayPeriods,
+        List<VacationDay> vacationDays,
+        int workDaysBitmask,
+        List<DateOnly> holidays,
+        decimal workHoursPerWeek)
+    {
+        if (!schoolHolidayPeriods.Any())
+        {
+            return 0;
+        }
+
+        var selectedWorkDaysCount = CountSelectedWorkDays(workDaysBitmask);
+        if (selectedWorkDaysCount == 0)
+        {
+            return 0;
+        }
+
+        var expectedHoursPerDay = workHoursPerWeek / selectedWorkDaysCount;
+        decimal totalHours = 0;
+
+        var currentDate = startDate;
+        while (currentDate <= endDate)
+        {
+            // Check if date is in a school holiday period
+            if (schoolHolidayService.IsDateInSchoolHoliday(currentDate, schoolHolidayPeriods))
+            {
+                // Check if it's a workday
+                if (IsWorkDay(currentDate.DayOfWeek, workDaysBitmask))
+                {
+                    // Check if it's NOT a vacation day
+                    if (!vacationDays.Any(v => v.Date == currentDate))
+                    {
+                        // Check if it's NOT a public holiday
+                        if (!holidays.Contains(currentDate))
+                        {
+                            // This is a workday in school holidays that was not worked
+                            totalHours += expectedHoursPerDay;
+                        }
+                    }
+                }
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return totalHours;
     }
 }

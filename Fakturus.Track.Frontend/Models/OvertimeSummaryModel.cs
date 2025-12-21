@@ -8,6 +8,7 @@ public class OvertimeSummaryModel
     public int VacationDaysRemaining { get; set; }
     public int VacationDaysPerYear { get; set; }
     public int HolidaysTaken { get; set; }
+    public decimal SchoolHolidayHoursNotWorked { get; set; }
 }
 
 public class MonthlyOvertimeModel

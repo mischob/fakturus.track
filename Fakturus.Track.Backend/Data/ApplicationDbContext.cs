@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WorkSession> WorkSessions { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<VacationDay> VacationDays { get; set; }
+    public DbSet<SchoolHolidayPeriod> SchoolHolidayPeriods { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +47,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => new { e.UserId, e.Date }).IsUnique();
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.Date);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        // Configure SchoolHolidayPeriod entity
+        modelBuilder.Entity<SchoolHolidayPeriod>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.Year });
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });

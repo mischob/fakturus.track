@@ -64,6 +64,13 @@ builder.Services.AddRefitClient<ISettingsApiClient>()
     })
     .AddHttpMessageHandler<TrackAuthMessageHandler>();
 
+builder.Services.AddRefitClient<ISchoolHolidayApiClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7067");
+    })
+    .AddHttpMessageHandler<TrackAuthMessageHandler>();
+
 // Register the authorization message handler
 builder.Services.AddScoped<TrackAuthMessageHandler>();
 

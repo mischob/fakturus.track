@@ -24,7 +24,7 @@
             <OvertimeCard
                 Title="Gesamt Überstunden"
                 Value="@FormatHours(_summary.TotalOvertimeHours)"
-                Subtitle="@GetOvertimeSubtitle(_summary.TotalOvertimeHours)"
+                Subtitle="@GetOvertimeSubtitleWithSchoolHolidays(_summary)"
                 IconColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"
                 ValueColor="@(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")"/>
 
@@ -164,6 +164,16 @@
         if (hours < 0)
             return "Weniger gearbeitet als erwartet";
         return "Genau wie erwartet gearbeitet";
+    }
+
+    private string GetOvertimeSubtitleWithSchoolHolidays(OvertimeSummaryModel summary)
+    {
+        var baseText = GetOvertimeSubtitle(summary.TotalOvertimeHours);
+        if (summary.SchoolHolidayHoursNotWorked > 0)
+        {
+            return $"{baseText} (davon {FormatHours(summary.SchoolHolidayHoursNotWorked)} in Schulferien)";
+        }
+        return baseText;
     }
 
     private string GetShortMonthName(string fullMonthName)
