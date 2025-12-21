@@ -110,9 +110,20 @@
 
                 if (isDuplicate)
                 {
-                    skippedCount++;
-                    Console.WriteLine($"Skipping duplicate calendar event: {evt.Summary} on {eventDate} at {eventStartTime.ToLocalTime():HH:mm}");
-                    continue;
+                    var duplicate = existingSessions.FirstOrDefault(s =>
+                        s.Date == eventDate &&
+                        s.StartTime == eventStartTime &&
+                        s.StopTime == eventEndTime);
+
+                    if (duplicate is { IsFinished: true })
+                    {
+                        skippedCount++;
+                        Console.WriteLine($"Skipping duplicate calendar event: {evt.Summary} on {eventDate} at {eventStartTime.ToLocalTime():HH:mm}");
+                        continue;
+                    }
+
+                    duplicate?.IsFinished = true;
+                    if (duplicate != null) await LocalStorageService.SaveWorkSessionAsync(duplicate);
                 }
 
                 // Convert calendar event to work session
@@ -123,7 +134,8 @@
                     StartTime = eventStartTime,
                     StopTime = eventEndTime,
                     IsPendingSync = true,
-                    IsSynced = false
+                    IsSynced = false,
+                    IsFinished = true
                 };
 
                 await LocalStorageService.SaveWorkSessionAsync(workSession);
