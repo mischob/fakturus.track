@@ -35,51 +35,101 @@ public class VacationSyncService(
         {
             logger.LogInformation("Starting vacation days sync...");
 
-            // Get local vacation days
+            // Step 1: Get local vacation days
             var localVacationDays = await GetVacationDaysAsync();
-            var pendingVacationDays = localVacationDays.Where(v => v.IsPendingSync && !v.IsSynced).ToList();
+            logger.LogInformation("VacationSyncService.SyncAsync: Found {Count} local vacation days", localVacationDays.Count);
 
-            if (!pendingVacationDays.Any())
+            // Step 2: Identify pending vacation days (need to be synced to backend)
+            var pendingVacationDays = localVacationDays
+                .Where(v => v.IsPendingSync && !v.IsSynced)
+                .ToList();
+
+            logger.LogInformation("VacationSyncService.SyncAsync: Found {Count} pending vacation days to sync", pendingVacationDays.Count);
+
+            // Step 3: Push ALL local vacation days to backend (if any) and get all backend vacation days
+            // Note: Backend uses this list to determine what exists - anything not in the list gets deleted
+            List<VacationDayModel> backendVacationDays;
+
+            if (localVacationDays.Any())
             {
-                logger.LogInformation("No pending vacation days to sync");
-                return;
-            }
-
-            logger.LogInformation("Found {Count} pending vacation days to sync", pendingVacationDays.Count);
-
-            // Prepare sync request
-            var syncRequest = new SyncVacationDaysRequest
-            {
-                VacationDays = pendingVacationDays.Select(v => new VacationDayDto
+                // Prepare sync request with ALL local vacation days (not just pending)
+                // This prevents backend from deleting already-synced items
+                var syncRequest = new SyncVacationDaysRequest
                 {
-                    Id = v.Id,
-                    Date = v.Date,
-                    CreatedAt = v.CreatedAt,
-                    UpdatedAt = v.UpdatedAt,
-                    SyncedAt = v.SyncedAt
-                }).ToList()
-            };
+                    VacationDays = localVacationDays.Select(v => new VacationDayDto
+                    {
+                        Id = v.Id,
+                        Date = v.Date,
+                        CreatedAt = v.CreatedAt,
+                        UpdatedAt = v.UpdatedAt,
+                        SyncedAt = v.SyncedAt
+                    }).ToList()
+                };
 
-            // Call sync endpoint
-            var response = await vacationApiClient.SyncVacationDaysAsync(syncRequest);
-
-            logger.LogInformation(
-                "Sync response received: {ServerCount} vacation days from server, {DeletedCount} deleted",
-                response.ServerVacationDays.Count, response.DeletedIds.Count);
-
-            // Update local storage with server response
-            var updatedVacationDays = new List<VacationDayModel>();
-
-            // Add all server vacation days (marked as synced)
-            foreach (var serverVacationDay in response.ServerVacationDays)
+                // Backend will upsert and return ALL user's vacation days
+                var response = await vacationApiClient.SyncVacationDaysAsync(syncRequest);
+                backendVacationDays = response.ServerVacationDays;
+                logger.LogInformation(
+                    "VacationSyncService.SyncAsync: Synced {Total} vacation days ({Pending} pending), received {Count} vacation days from backend",
+                    localVacationDays.Count, pendingVacationDays.Count, backendVacationDays.Count);
+            }
+            else
             {
-                serverVacationDay.IsSynced = true;
-                serverVacationDay.IsPendingSync = false;
-                updatedVacationDays.Add(serverVacationDay);
+                // No local vacation days, just fetch all from backend
+                backendVacationDays = await vacationApiClient.GetVacationDaysAsync();
+                logger.LogInformation(
+                    "VacationSyncService.SyncAsync: No local vacation days, fetched {Count} vacation days from backend",
+                    backendVacationDays.Count);
             }
 
-            // Save updated vacation days to local storage
-            await SaveVacationDaysAsync(updatedVacationDays);
+            // Step 4: Merge logic - Backend is source of truth
+            var mergedVacationDays = new Dictionary<Guid, VacationDayModel>();
+
+            // Add all backend vacation days (marked as synced)
+            foreach (var backendVacationDay in backendVacationDays)
+            {
+                mergedVacationDays[backendVacationDay.Id] = new VacationDayModel
+                {
+                    Id = backendVacationDay.Id,
+                    Date = backendVacationDay.Date,
+                    CreatedAt = backendVacationDay.CreatedAt,
+                    UpdatedAt = backendVacationDay.UpdatedAt,
+                    SyncedAt = backendVacationDay.SyncedAt,
+                    IsSynced = true,
+                    IsPendingSync = false
+                };
+            }
+
+            // Add local pending vacation days that aren't in backend (keep for retry)
+            foreach (var localVacationDay in localVacationDays)
+            {
+                if (localVacationDay is { IsPendingSync: true, IsSynced: false } &&
+                    mergedVacationDays.TryAdd(localVacationDay.Id, localVacationDay))
+                {
+                    // Vacation day is pending but still not in backend (sync might have failed)
+                    logger.LogInformation(
+                        "VacationSyncService.SyncAsync: Keeping pending vacation day {Id} for retry",
+                        localVacationDay.Id);
+                }
+            }
+
+            // Step 5: Save merged vacation days to local storage
+            var finalVacationDays = mergedVacationDays.Values
+                .OrderBy(v => v.Date)
+                .ToList();
+            logger.LogInformation(
+                "VacationSyncService.SyncAsync: Saving {Count} merged vacation days to local storage",
+                finalVacationDays.Count);
+
+            await SaveVacationDaysAsync(finalVacationDays);
+
+            // Step 6: Check if we still have pending vacation days and manage background sync
+            var stillPending = finalVacationDays.Any(v => v.IsPendingSync && !v.IsSynced);
+            if (!stillPending && _syncTimer != null)
+            {
+                logger.LogInformation("VacationSyncService.SyncAsync: No pending vacation days, stopping background sync");
+                StopPeriodicSync();
+            }
 
             logger.LogInformation("Vacation days sync completed successfully");
 
