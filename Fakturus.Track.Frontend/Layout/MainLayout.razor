@@ -5,9 +5,12 @@
 @inject ILocalStorageService LocalStorageService
 @inject ISyncService SyncService
 @inject IToastService ToastService
+@inject IBetaAccessService BetaAccessService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @using Blazored.Toast.Services
 @using Fakturus.Track.Frontend.Components.Calendar
 @using Fakturus.Track.Frontend.Components.Navigation
+@using Fakturus.Track.Frontend.Services.BetaAccess
 @implements IDisposable
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -29,7 +32,14 @@
             <!-- Main Content -->
             <main class="pb-20 pt-16">
                 <div class="max-w-4xl mx-auto px-4">
-                    @Body
+                    @if (showBetaAccessDenied)
+                    {
+                        <BetaAccessRequired ContactEmail="support@fakturus.com" />
+                    }
+                    else
+                    {
+                        @Body
+                    }
                 </div>
             </main>
 
@@ -61,6 +71,7 @@
 
 @code {
     private bool _showCalendarModal;
+    private bool showBetaAccessDenied;
 
     protected override async Task OnInitializedAsync()
     {
@@ -72,6 +83,15 @@
 
         // Start periodic check
         await VersionCheckService.StartPeriodicCheckAsync();
+
+        // Check beta access
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            showBetaAccessDenied = !BetaAccessService.HasBetaAccess(user);
+        }
     }
 
     private void OnModalVisibilityChanged(object? sender, bool isVisible)

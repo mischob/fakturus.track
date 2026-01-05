@@ -1,0 +1,83 @@
+<PageTitle>Beta Access Required - Fakturus</PageTitle>
+
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <!-- Lock Icon -->
+            <div class="flex justify-center mb-6">
+                <svg class="w-24 h-24 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                Beta Access Required
+            </h1>
+
+            <!-- Description -->
+            <div class="space-y-4 text-gray-600">
+                <p class="text-lg">
+                    This app is currently in Beta and for Beta Users only.
+                </p>
+                <p>
+                    Access is currently only available to selected beta testers. 
+                    If you are interested in participating in our Beta Program, 
+                    please contact us.
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+            <!-- Contact Button -->
+            <a href="mailto:@ContactEmail?subject=Beta%20Access%20Request" 
+               class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                Request Beta Access
+            </a>
+
+            @if (!string.IsNullOrEmpty(MainAppUrl))
+            {
+                <!-- Main App Link -->
+                <a href="@MainAppUrl" 
+                   class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Go to Main Page
+                </a>
+            }
+
+            <!-- Sign Out Button -->
+            <a href="authentication/logout" 
+               class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                Sign Out
+            </a>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-500">
+                Already have Beta access? Make sure you are signed in with the correct account.
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ContactEmail { get; set; } = "support@fakturus.com";
+    
+    [Parameter]
+    public string? MainAppUrl { get; set; }
+}

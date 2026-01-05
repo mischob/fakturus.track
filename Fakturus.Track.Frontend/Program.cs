@@ -1,6 +1,7 @@
 using Blazored.Toast;
 using Fakturus.Track.Frontend;
 using Fakturus.Track.Frontend.Services;
+using Fakturus.Track.Frontend.Services.BetaAccess;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
@@ -98,6 +99,7 @@ builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<IVacationSyncService, VacationSyncService>();
 builder.Services.AddSingleton<ICalendarModalService, CalendarModalService>();
+builder.Services.AddScoped<IBetaAccessService, BetaAccessService>();
 
 // Add Toast notifications
 builder.Services.AddBlazoredToast();
