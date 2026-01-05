@@ -11,6 +11,8 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
     public async Task<OvertimeSummaryDto> CalculateOvertimeAsync(string userId, int? year = null)
     {
         var targetYear = year ?? DateTime.UtcNow.Year;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var isCurrentYear = targetYear == today.Year;
 
         // Get user settings
         var user = await context.Users.FindAsync(userId);
@@ -42,10 +44,19 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
         var monthlyOvertime = new List<MonthlyOvertimeDto>();
         decimal totalOvertimeHours = 0;
 
-        for (var month = 1; month <= 12; month++)
+        // For current year, only calculate up to current month; for past years, calculate all 12 months
+        var maxMonth = isCurrentYear ? today.Month : 12;
+
+        for (var month = 1; month <= maxMonth; month++)
         {
             var monthStart = new DateOnly(targetYear, month, 1);
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+            // For current month in current year: limit to today
+            if (isCurrentYear && month == today.Month)
+            {
+                monthEnd = today;
+            }
 
             // Get sessions for this month
             var monthSessions = workSessions
@@ -87,9 +98,11 @@ public class OvertimeCalculationService(ApplicationDbContext context, IHolidaySe
         var holidaysTaken = CountHolidaysOnWorkdays(holidays, workDays);
 
         // Calculate school holiday hours not worked
+        // For current year, limit calculation to today; for past years, use full year
+        var schoolHolidayEndDate = isCurrentYear ? today : endDate;
         var schoolHolidayPeriods = await schoolHolidayService.GetSchoolHolidayPeriodsAsync(userId, targetYear);
         var schoolHolidayHoursNotWorked = CalculateSchoolHolidayHoursNotWorked(
-            startDate, endDate, schoolHolidayPeriods, vacationDays, workDays, holidays, workHoursPerWeek);
+            startDate, schoolHolidayEndDate, schoolHolidayPeriods, vacationDays, workDays, holidays, workHoursPerWeek);
 
         return new OvertimeSummaryDto(
             Math.Round(totalOvertimeHours, 2),
