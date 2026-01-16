@@ -1,0 +1,27 @@
+@if (!NetworkMonitor.IsConnected)
+{
+    <div class="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 z-50">
+        <span class="text-sm">Offline Mode - Daten werden lokal gespeichert</span>
+    </div>
+}
+
+@implements IDisposable
+
+@code {
+    [Inject] public INetworkMonitor NetworkMonitor { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        NetworkMonitor.ConnectivityChanged += OnConnectivityChanged;
+    }
+
+    private void OnConnectivityChanged(object? sender, bool isConnected)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NetworkMonitor.ConnectivityChanged -= OnConnectivityChanged;
+    }
+}
