@@ -6,26 +6,26 @@
 <OfflineIndicator />
 
 <div class="page">
-    <div class="sidebar">
+    <div class="sidebar desktop-only">
         <NavMenu />
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <div class="flex items-center gap-4">
+    <main class="main-content">
+        <div class="top-row desktop-only">
+            <div class="top-row-content">
                 <SyncStatusIndicator />
                 @if (AuthService.IsAnonymousMode)
                 {
-                    <button @onclick="HandleLogin" class="btn-primary text-sm">Anmelden</button>
+                    <button @onclick="HandleLogin" class="btn-primary">Anmelden</button>
                 }
                 else
                 {
-                    <button @onclick="HandleLogout" class="btn-secondary text-sm">Abmelden</button>
+                    <button @onclick="HandleLogout" class="btn-secondary">Abmelden</button>
                 }
             </div>
         </div>
 
-        <article class="content px-4">
+        <article class="content">
             @Body
         </article>
     </main>

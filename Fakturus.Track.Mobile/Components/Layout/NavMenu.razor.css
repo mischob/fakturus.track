@@ -89,6 +89,17 @@
     display: block;
 }
 
+/* Hide sidebar on mobile */
+@media (max-width: 640px) {
+    .top-row {
+        display: none;
+    }
+
+    .nav-scrollable {
+        display: none;
+    }
+}
+
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;

@@ -1,19 +1,64 @@
 @if (SyncService.IsSyncing)
 {
-    <div class="flex items-center gap-2 text-blue-600">
-        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <div class="ios-sync-indicator">
+        <svg class="ios-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="ios-spinner-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+            <path class="ios-spinner-path" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span class="text-sm">Synchronisiere...</span>
+        <span class="ios-sync-text">Synchronisiere...</span>
     </div>
 }
 else if (HasPendingSyncs)
 {
-    <button @onclick="HandleSync" class="btn-primary text-sm">
+    <button @onclick="HandleSync" class="ios-sync-button">
         Sync (@PendingCount)
     </button>
 }
+
+<style>
+    .ios-sync-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #007AFF;
+        font-size: 15px;
+    }
+
+    .ios-spinner {
+        width: 16px;
+        height: 16px;
+        animation: ios-spinner-rotate 1s linear infinite;
+    }
+
+    .ios-spinner-circle {
+        opacity: 0.25;
+    }
+
+    .ios-spinner-path {
+        opacity: 0.75;
+    }
+
+    .ios-sync-text {
+        font-size: 15px;
+        color: #007AFF;
+    }
+
+    .ios-sync-button {
+        background-color: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .ios-sync-button:active {
+        opacity: 0.7;
+    }
+</style>
 
 @implements IDisposable
 

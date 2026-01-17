@@ -1,9 +1,30 @@
 @if (!NetworkMonitor.IsConnected)
 {
-    <div class="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 z-50">
-        <span class="text-sm">Offline Mode - Daten werden lokal gespeichert</span>
+    <div class="ios-offline-banner">
+        <span class="ios-offline-text">Offline Mode - Daten werden lokal gespeichert</span>
     </div>
 }
+
+<style>
+    .ios-offline-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #FF9500;
+        color: white;
+        text-align: center;
+        padding: 0.5rem;
+        z-index: 1000;
+        font-size: 13px;
+        font-weight: 500;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+    }
+
+    .ios-offline-text {
+        display: block;
+    }
+</style>
 
 @implements IDisposable
 

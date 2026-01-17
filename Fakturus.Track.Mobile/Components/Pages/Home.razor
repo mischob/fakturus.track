@@ -1,18 +1,13 @@
 @page "/"
 @page "/home"
+@inject NavigationManager Navigation
 
 <PageTitle>Home - Fakturus Track</PageTitle>
 
-<div class="py-6 space-y-6">
-    <h1 class="text-3xl font-bold text-gray-900">Fakturus Track</h1>
-    <p class="text-gray-600">Willkommen zur Time Tracking App</p>
-    
-    <div class="card">
-        <h2 class="text-xl font-semibold mb-4">Schnellstart</h2>
-        <p class="text-gray-600 mb-4">Die App funktioniert vollständig offline. Alle Daten werden lokal gespeichert und automatisch synchronisiert, wenn Sie angemeldet sind.</p>
-        <div class="flex gap-4">
-            <a href="/zeiten" class="btn-primary">Zeiten erfassen</a>
-            <a href="/urlaub" class="btn-secondary">Urlaub verwalten</a>
-        </div>
-    </div>
-</div>
+@code {
+    protected override void OnInitialized()
+    {
+        // Redirect to /zeiten as the main page
+        Navigation.NavigateTo("/zeiten");
+    }
+}
