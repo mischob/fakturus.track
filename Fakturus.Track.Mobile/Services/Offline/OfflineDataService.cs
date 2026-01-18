@@ -4,16 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 
-public class OfflineDataService<T> : IOfflineDataService<T> where T : class
+public class OfflineDataService<T>(MobileDbContext context) : IOfflineDataService<T>
+    where T : class
 {
-    protected readonly MobileDbContext Context;
-    protected readonly DbSet<T> DbSet;
-
-    public OfflineDataService(MobileDbContext context)
-    {
-        Context = context;
-        DbSet = context.Set<T>();
-    }
+    protected readonly MobileDbContext Context = context;
+    protected readonly DbSet<T> DbSet = context.Set<T>();
 
     public virtual async Task<T?> GetByIdAsync(object id)
     {
@@ -47,10 +42,7 @@ public class OfflineDataService<T> : IOfflineDataService<T> where T : class
     public virtual async Task DeleteAsync(object id)
     {
         var entity = await GetByIdAsync(id);
-        if (entity != null)
-        {
-            await DeleteAsync(entity);
-        }
+        if (entity != null) await DeleteAsync(entity);
     }
 
     public virtual async Task DeleteAsync(T entity)
@@ -63,7 +55,7 @@ public class OfflineDataService<T> : IOfflineDataService<T> where T : class
     {
         if (predicate == null)
             return await DbSet.CountAsync();
-        
+
         return await DbSet.CountAsync(predicate);
     }
 

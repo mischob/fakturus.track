@@ -9,6 +9,6 @@ public class SchoolHolidayPeriodEntity
     public DateOnly EndDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    
+
     // Read-only cache, no sync fields needed
 }

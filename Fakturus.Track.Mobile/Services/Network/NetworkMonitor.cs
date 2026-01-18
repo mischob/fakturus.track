@@ -1,14 +1,8 @@
-using Microsoft.Maui.Networking;
-
 namespace Fakturus.Track.Mobile.Services.Network;
 
 public class NetworkMonitor : INetworkMonitor, IDisposable
 {
     private bool _isMonitoring;
-    
-    public bool IsConnected { get; private set; }
-    
-    public event EventHandler<bool>? ConnectivityChanged;
 
     public NetworkMonitor()
     {
@@ -17,17 +11,26 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
         Connectivity.Current.ConnectivityChanged += OnConnectivityChanged;
     }
 
+    public void Dispose()
+    {
+        StopMonitoring();
+    }
+
+    public bool IsConnected { get; private set; }
+
+    public event EventHandler<bool>? ConnectivityChanged;
+
     public async Task<bool> CheckConnectivityAsync()
     {
         var currentAccess = Connectivity.Current.NetworkAccess;
         var isConnected = currentAccess == NetworkAccess.Internet;
-        
+
         if (IsConnected != isConnected)
         {
             IsConnected = isConnected;
             ConnectivityChanged?.Invoke(this, isConnected);
         }
-        
+
         return isConnected;
     }
 
@@ -35,7 +38,7 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
     {
         if (_isMonitoring)
             return;
-            
+
         _isMonitoring = true;
         Connectivity.Current.ConnectivityChanged += OnConnectivityChanged;
     }
@@ -44,7 +47,7 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
     {
         if (!_isMonitoring)
             return;
-            
+
         _isMonitoring = false;
         Connectivity.Current.ConnectivityChanged -= OnConnectivityChanged;
     }
@@ -52,16 +55,11 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
         var isConnected = e.NetworkAccess == NetworkAccess.Internet;
-        
+
         if (IsConnected != isConnected)
         {
             IsConnected = isConnected;
             ConnectivityChanged?.Invoke(this, isConnected);
         }
-    }
-
-    public void Dispose()
-    {
-        StopMonitoring();
     }
 }

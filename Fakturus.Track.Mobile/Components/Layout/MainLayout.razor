@@ -3,17 +3,17 @@
 @inject IOfflineAuthService AuthService
 @inject INetworkMonitor NetworkMonitor
 
-<OfflineIndicator />
+<OfflineIndicator/>
 
 <div class="page">
     <div class="sidebar desktop-only">
-        <NavMenu />
+        <NavMenu/>
     </div>
 
     <main class="main-content">
         <div class="top-row desktop-only">
             <div class="top-row-content">
-                <SyncStatusIndicator />
+                <SyncStatusIndicator/>
                 @if (AuthService.IsAnonymousMode)
                 {
                     <button @onclick="HandleLogin" class="btn-primary">Anmelden</button>
@@ -31,9 +31,10 @@
     </main>
 </div>
 
-<TrackBottomNavigation />
+<TrackBottomNavigation/>
 
 @code {
+
     protected override void OnInitialized()
     {
         AuthService.AuthenticationStateChanged += OnAuthenticationStateChanged;
@@ -67,4 +68,5 @@
         AuthService.AuthenticationStateChanged -= OnAuthenticationStateChanged;
         NetworkMonitor.ConnectivityChanged -= OnConnectivityChanged;
     }
+
 }

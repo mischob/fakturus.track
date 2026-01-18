@@ -14,7 +14,7 @@ public class ConflictResolver : IConflictResolver
     }
 
     public Task<WorkSessionEntity> ResolveWorkSessionConflictAsync(
-        WorkSessionEntity localEntity, 
+        WorkSessionEntity localEntity,
         WorkSessionModel backendModel)
     {
         // WorkSessions are UUID-based, so conflicts shouldn't happen
@@ -38,7 +38,7 @@ public class ConflictResolver : IConflictResolver
     }
 
     public Task<VacationDayEntity> ResolveVacationDayConflictAsync(
-        VacationDayEntity localEntity, 
+        VacationDayEntity localEntity,
         VacationDayModel backendModel)
     {
         // VacationDays are UUID-based, so conflicts shouldn't happen
@@ -59,13 +59,13 @@ public class ConflictResolver : IConflictResolver
     }
 
     public Task<UserSettingsEntity> ResolveUserSettingsConflictAsync(
-        UserSettingsEntity localEntity, 
+        UserSettingsEntity localEntity,
         UserSettingsModel backendModel)
     {
         // Last-Write-Wins: Compare UpdatedAt timestamps
         // If backend is newer, use backend; otherwise keep local
         var backendUpdatedAt = DateTime.UtcNow; // Backend model doesn't have UpdatedAt, assume now
-        
+
         if (localEntity.UpdatedAt > backendUpdatedAt)
         {
             // Local is newer, keep local but mark as pending sync

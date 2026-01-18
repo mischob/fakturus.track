@@ -1,8 +1,6 @@
-using System.Linq;
-using Microsoft.Identity.Client;
-using Microsoft.Maui.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 
 namespace Fakturus.Track.Mobile.Services.Auth;
 
@@ -16,12 +14,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
     private readonly IConfiguration _configuration;
     private readonly IDeviceIdService _deviceIdService;
     private readonly ILogger<OfflineAuthService> _logger;
-    private IPublicClientApplication? _publicClientApp;
     private string? _cachedUserId;
-    private bool _isAnonymousMode = true;
-
-    public bool IsAnonymousMode => _isAnonymousMode;
-    public event EventHandler<bool>? AuthenticationStateChanged;
+    private IPublicClientApplication? _publicClientApp;
 
     public OfflineAuthService(
         IConfiguration configuration,
@@ -33,25 +27,14 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         _logger = logger;
     }
 
-    private IPublicClientApplication GetPublicClientApp()
+    public void Dispose()
     {
-        if (_publicClientApp != null)
-            return _publicClientApp;
-
-        var clientId = _configuration["AzureAdB2C:ClientId"];
-        var authority = _configuration["AzureAdB2C:Authority"];
-
-        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(authority))
-            throw new InvalidOperationException("Azure AD B2C configuration is missing");
-
-        var builder = PublicClientApplicationBuilder
-            .Create(clientId)
-            .WithB2CAuthority(authority)
-            .WithRedirectUri($"msal{clientId}://auth");
-
-        _publicClientApp = builder.Build();
-        return _publicClientApp;
+        _publicClientApp = null;
     }
+
+    public bool IsAnonymousMode { get; private set; } = true;
+
+    public event EventHandler<bool>? AuthenticationStateChanged;
 
     public async Task<bool> IsAuthenticatedAsync()
     {
@@ -68,10 +51,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             if (DateTime.TryParse(expiry, out var expiryDate))
             {
                 if (expiryDate <= DateTime.UtcNow.AddMinutes(5))
-                {
                     // Token expires soon, try to refresh
                     return await RefreshTokenAsync();
-                }
                 return true;
             }
 
@@ -92,10 +73,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         try
         {
             _cachedUserId = await SecureStorage.GetAsync(UserIdKey);
-            if (!string.IsNullOrEmpty(_cachedUserId))
-            {
-                _isAnonymousMode = false;
-            }
+            if (!string.IsNullOrEmpty(_cachedUserId)) IsAnonymousMode = false;
         }
         catch (Exception ex)
         {
@@ -128,14 +106,12 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
                 return null;
 
             if (DateTime.TryParse(expiry, out var expiryDate))
-            {
                 if (expiryDate <= DateTime.UtcNow.AddMinutes(5))
                 {
                     // Token expires soon, try to refresh
                     await RefreshTokenAsync();
                     return await SecureStorage.GetAsync(AccessTokenKey);
                 }
-            }
 
             return token;
         }
@@ -161,7 +137,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             {
                 await SaveTokensAsync(result);
                 _cachedUserId = result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "";
-                _isAnonymousMode = false;
+                IsAnonymousMode = false;
                 AuthenticationStateChanged?.Invoke(this, true);
                 return true;
             }
@@ -186,15 +162,12 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         {
             var app = GetPublicClientApp();
             var accounts = await app.GetAccountsAsync();
-            
-            foreach (var account in accounts)
-            {
-                await app.RemoveAsync(account);
-            }
+
+            foreach (var account in accounts) await app.RemoveAsync(account);
 
             await ClearTokensAsync();
             _cachedUserId = null;
-            _isAnonymousMode = true;
+            IsAnonymousMode = true;
             AuthenticationStateChanged?.Invoke(this, false);
         }
         catch (Exception ex)
@@ -209,7 +182,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         {
             var app = GetPublicClientApp();
             var accounts = await app.GetAccountsAsync();
-            
+
             if (accounts == null || !accounts.Any())
                 return false;
 
@@ -237,13 +210,34 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
     }
 
+    private IPublicClientApplication GetPublicClientApp()
+    {
+        if (_publicClientApp != null)
+            return _publicClientApp;
+
+        var clientId = _configuration["AzureAdB2C:ClientId"];
+        var authority = _configuration["AzureAdB2C:Authority"];
+
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(authority))
+            throw new InvalidOperationException("Azure AD B2C configuration is missing");
+
+        var builder = PublicClientApplicationBuilder
+            .Create(clientId)
+            .WithB2CAuthority(authority)
+            .WithRedirectUri($"msal{clientId}://auth");
+
+        _publicClientApp = builder.Build();
+        return _publicClientApp;
+    }
+
     private async Task SaveTokensAsync(AuthenticationResult result)
     {
         try
         {
             await SecureStorage.SetAsync(AccessTokenKey, result.AccessToken);
-            await SecureStorage.SetAsync(UserIdKey, result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "");
-            
+            await SecureStorage.SetAsync(UserIdKey,
+                result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "");
+
             await SecureStorage.SetAsync(TokenExpiryKey, result.ExpiresOn.ToString("O"));
         }
         catch (Exception ex)
@@ -266,10 +260,5 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         {
             _logger.LogError(ex, "Error clearing tokens");
         }
-    }
-
-    public void Dispose()
-    {
-        _publicClientApp = null;
     }
 }

@@ -6,14 +6,14 @@ namespace Fakturus.Track.Mobile.Services.Offline;
 public interface IConflictResolver
 {
     Task<WorkSessionEntity> ResolveWorkSessionConflictAsync(
-        WorkSessionEntity localEntity, 
+        WorkSessionEntity localEntity,
         WorkSessionModel backendModel);
-    
+
     Task<VacationDayEntity> ResolveVacationDayConflictAsync(
-        VacationDayEntity localEntity, 
+        VacationDayEntity localEntity,
         VacationDayModel backendModel);
-    
+
     Task<UserSettingsEntity> ResolveUserSettingsConflictAsync(
-        UserSettingsEntity localEntity, 
+        UserSettingsEntity localEntity,
         UserSettingsModel backendModel);
 }

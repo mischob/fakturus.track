@@ -12,7 +12,8 @@ public interface ISchoolHolidayApiClient
     Task<SchoolHolidayPeriodModel> CreateSchoolHolidayPeriodAsync([Body] CreateSchoolHolidayPeriodRequest request);
 
     [Put("/v1/school-holidays/{id}")]
-    Task<SchoolHolidayPeriodModel> UpdateSchoolHolidayPeriodAsync(Guid id, [Body] UpdateSchoolHolidayPeriodRequest request);
+    Task<SchoolHolidayPeriodModel> UpdateSchoolHolidayPeriodAsync(Guid id,
+        [Body] UpdateSchoolHolidayPeriodRequest request);
 
     [Delete("/v1/school-holidays/{id}")]
     Task DeleteSchoolHolidayPeriodAsync(Guid id);

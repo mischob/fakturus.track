@@ -1,18 +1,10 @@
 using Fakturus.Track.Mobile.Data.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Maui.Storage;
 
 namespace Fakturus.Track.Mobile.Data;
 
 public class MobileDbContext : DbContext
 {
-    public DbSet<WorkSessionEntity> WorkSessions { get; set; }
-    public DbSet<VacationDayEntity> VacationDays { get; set; }
-    public DbSet<UserSettingsEntity> UserSettings { get; set; }
-    public DbSet<SchoolHolidayPeriodEntity> SchoolHolidayPeriods { get; set; }
-    public DbSet<CalendarEventEntity> CalendarEvents { get; set; }
-    public DbSet<SyncQueueEntity> SyncQueue { get; set; }
-
     private readonly string? _databasePath;
 
     public MobileDbContext()
@@ -30,6 +22,13 @@ public class MobileDbContext : DbContext
     {
         _databasePath = databasePath;
     }
+
+    public DbSet<WorkSessionEntity> WorkSessions { get; set; }
+    public DbSet<VacationDayEntity> VacationDays { get; set; }
+    public DbSet<UserSettingsEntity> UserSettings { get; set; }
+    public DbSet<SchoolHolidayPeriodEntity> SchoolHolidayPeriods { get; set; }
+    public DbSet<CalendarEventEntity> CalendarEvents { get; set; }
+    public DbSet<SyncQueueEntity> SyncQueue { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

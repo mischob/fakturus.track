@@ -1,4 +1,4 @@
-using System.Net.Http;
+using System.Net;
 using System.Net.Http.Headers;
 using Fakturus.Track.Mobile.Services.Auth;
 
@@ -18,16 +18,14 @@ public class TrackAuthMessageHandler : DelegatingHandler
         CancellationToken cancellationToken)
     {
         var token = await _authService.GetAccessTokenAsync();
-        
+
         if (!string.IsNullOrEmpty(token))
-        {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
 
         var response = await base.SendAsync(request, cancellationToken);
 
         // If we get a 401, try to refresh token and retry once
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             var refreshed = await _authService.RefreshTokenAsync();
             if (refreshed)

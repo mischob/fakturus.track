@@ -8,11 +8,11 @@ public class MobileDbContextFactory : IDesignTimeDbContextFactory<MobileDbContex
     public MobileDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<MobileDbContext>();
-        
+
         // For design-time, use a temporary database path
         var tempPath = Path.Combine(Path.GetTempPath(), "fakturus_track_design.db");
         optionsBuilder.UseSqlite($"Data Source={tempPath}");
-        
+
         return new MobileDbContext(optionsBuilder.Options);
     }
 }

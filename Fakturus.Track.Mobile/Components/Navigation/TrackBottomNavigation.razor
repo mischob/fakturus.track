@@ -55,6 +55,7 @@
 </style>
 
 @code {
+
     private bool IsCurrentRoute(string route)
     {
         var currentRoute = Navigation.ToBaseRelativePath(Navigation.Uri);
@@ -67,4 +68,5 @@
 
         return currentRoute.StartsWith(route.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
     }
+
 }

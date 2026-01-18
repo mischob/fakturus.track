@@ -4,12 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 
-public class SyncQueueService : OfflineDataService<SyncQueueEntity>, ISyncQueueService
+public class SyncQueueService(MobileDbContext context) : OfflineDataService<SyncQueueEntity>(context), ISyncQueueService
 {
-    public SyncQueueService(MobileDbContext context) : base(context)
-    {
-    }
-
     public async Task<List<SyncQueueEntity>> GetPendingAsync(string userId)
     {
         return await Context.SyncQueue
@@ -21,9 +17,9 @@ public class SyncQueueService : OfflineDataService<SyncQueueEntity>, ISyncQueueS
     public async Task<SyncQueueEntity?> GetByEntityAsync(string entityType, Guid entityId, string userId)
     {
         return await Context.SyncQueue
-            .FirstOrDefaultAsync(sq => sq.EntityType == entityType && 
-                                      sq.EntityId == entityId && 
-                                      sq.UserId == userId);
+            .FirstOrDefaultAsync(sq => sq.EntityType == entityType &&
+                                       sq.EntityId == entityId &&
+                                       sq.UserId == userId);
     }
 
     public async Task AddToQueueAsync(string entityType, Guid entityId, string operation, string userId)
@@ -56,10 +52,7 @@ public class SyncQueueService : OfflineDataService<SyncQueueEntity>, ISyncQueueS
     public async Task RemoveFromQueueAsync(string entityType, Guid entityId, string userId)
     {
         var queueItem = await GetByEntityAsync(entityType, entityId, userId);
-        if (queueItem != null)
-        {
-            await DeleteAsync(queueItem);
-        }
+        if (queueItem != null) await DeleteAsync(queueItem);
     }
 
     public async Task IncrementRetryAsync(Guid queueId, string? errorMessage = null)

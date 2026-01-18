@@ -2,6 +2,7 @@ namespace Fakturus.Track.Mobile.Services.Auth;
 
 public interface IOfflineAuthService
 {
+    bool IsAnonymousMode { get; }
     Task<bool> IsAuthenticatedAsync();
     Task<string?> GetUserIdAsync();
     Task<string> GetUserIdOrAnonymousAsync();
@@ -9,6 +10,5 @@ public interface IOfflineAuthService
     Task<bool> LoginAsync();
     Task LogoutAsync();
     Task<bool> RefreshTokenAsync();
-    bool IsAnonymousMode { get; }
     event EventHandler<bool>? AuthenticationStateChanged;
 }

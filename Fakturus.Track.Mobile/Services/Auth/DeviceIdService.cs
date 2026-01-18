@@ -1,5 +1,3 @@
-using Microsoft.Maui.Storage;
-
 namespace Fakturus.Track.Mobile.Services.Auth;
 
 public class DeviceIdService : IDeviceIdService

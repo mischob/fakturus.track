@@ -8,7 +8,7 @@ public class VacationDayEntity
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? SyncedAt { get; set; }
-    
+
     // Mobile-specific fields for offline sync
     public bool IsSynced { get; set; }
     public bool IsPendingSync { get; set; }

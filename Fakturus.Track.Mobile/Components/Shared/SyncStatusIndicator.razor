@@ -64,7 +64,7 @@ else if (HasPendingSyncs)
 
 @code {
     [Inject] public ISyncService SyncService { get; set; } = null!;
-    
+
     private bool HasPendingSyncs { get; set; }
     private int PendingCount { get; set; }
 
@@ -104,4 +104,5 @@ else if (HasPendingSyncs)
         SyncService.SyncCompleted -= OnSyncCompleted;
         SyncService.SyncError -= OnSyncError;
     }
+
 }
