@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Refit;
+using Serilog;
+using Serilog.Events;
+using Serilog.Extensions.Logging;
 
 namespace Fakturus.Track.Mobile;
 
@@ -23,9 +26,23 @@ public static class MauiProgram
 
         builder.Services.AddMauiBlazorWebView();
 
+        // Configure Serilog
+        var loggerConfig = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Application", "Fakturus.Track.Mobile")
+            .WriteTo.Console(outputTemplate: "[{Level:u3}] {Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Debug(outputTemplate: "[{Level:u3}] {Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+
+        Log.Logger = loggerConfig.CreateLogger();
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog(Log.Logger, dispose: true);
+
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
-        builder.Logging.AddDebug();
 #endif
 
         // Configuration
@@ -50,7 +67,14 @@ public static class MauiProgram
         // Database
         var databasePath = Path.Combine(FileSystem.AppDataDirectory, "fakturus_track.db");
         builder.Services.AddDbContext<MobileDbContext>(options =>
-            options.UseSqlite($"Data Source={databasePath}"));
+        {
+            options.UseSqlite($"Data Source={databasePath}");
+#if DEBUG
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
+            options.LogTo(message => Log.Logger.Debug("[Database] {Message}", message), LogLevel.Debug);
+#endif
+        });
 
         // Offline Data Services
         builder.Services.AddScoped<IWorkSessionService, WorkSessionService>();

@@ -1,11 +1,14 @@
 using Fakturus.Track.Mobile.Data;
 using Fakturus.Track.Mobile.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 
-public class SyncQueueService(MobileDbContext context) : OfflineDataService<SyncQueueEntity>(context), ISyncQueueService
+public class SyncQueueService(MobileDbContext context, ILogger<SyncQueueService> logger) 
+    : OfflineDataService<SyncQueueEntity>(context, logger), ISyncQueueService
 {
+    private readonly ILogger<SyncQueueService> _logger = logger;
     public async Task<List<SyncQueueEntity>> GetPendingAsync(string userId)
     {
         return await Context.SyncQueue
