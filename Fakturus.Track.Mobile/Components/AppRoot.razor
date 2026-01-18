@@ -1,4 +1,22 @@
 @using Blazored.Toast.Configuration
+@using Microsoft.Extensions.Logging
+@inject ILogger<AppRoot> Logger
+
+@code {
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("[UI] [AppRoot] OnInitialized - App root component initialized");
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Logger.LogInformation("[UI] [AppRoot] First render completed");
+        }
+    }
+}
+
 <Routes/>
 
 <BlazoredToasts Position="ToastPosition.BottomRight"

@@ -1,6 +1,34 @@
+@page "/"
 @page "/zeiten"
+@using Microsoft.Extensions.Logging
+@inject ILogger<Zeiten> Logger
 
 <PageTitle>Zeiten - Fakturus Track</PageTitle>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("[UI] [Zeiten] OnInitialized - START");
+        base.OnInitialized();
+        Logger.LogInformation("[UI] [Zeiten] OnInitialized - END");
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("[UI] [Zeiten] OnAfterRender called - firstRender: {FirstRender}", firstRender);
+        base.OnAfterRender(firstRender);
+        if (firstRender)
+        {
+            Logger.LogInformation("[UI] [Zeiten] First render completed");
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        Logger.LogInformation("[UI] [Zeiten] OnParametersSet called");
+        base.OnParametersSet();
+    }
+}
 
 <div class="ios-page">
     <div class="ios-page-header">

@@ -7,42 +7,9 @@
 
 <OfflineIndicator/>
 
-<div class="page">
-    <div class="sidebar desktop-only">
-        <NavMenu/>
-    </div>
-
-    <main class="main-content">
-        <div class="top-row desktop-only">
-            <div class="top-row-content">
-                <SyncStatusIndicator/>
-                @if (AuthService.IsAnonymousMode)
-                {
-                    <button @onclick="HandleLogin" class="btn-primary">Anmelden</button>
-                }
-                else
-                {
-                    <button @onclick="HandleLogout" class="btn-secondary">Abmelden</button>
-                }
-            </div>
-        </div>
-
-        <ErrorBoundary @ref="errorBoundary" OnErrorAsync="OnErrorAsync">
-            <ChildContent>
-                <article class="content">
-                    @Body
-                </article>
-            </ChildContent>
-            <ErrorContent>
-                <div class="error-container">
-                    <h2>Ein Fehler ist aufgetreten</h2>
-                    <p>Die Anwendung konnte nicht geladen werden. Bitte versuchen Sie es erneut.</p>
-                    <button @onclick="Recover" class="btn-primary">Erneut versuchen</button>
-                </div>
-            </ErrorContent>
-        </ErrorBoundary>
-    </main>
-</div>
+<main>
+    @Body
+</main>
 
 <TrackBottomNavigation/>
 
@@ -58,9 +25,10 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
+        Logger.LogInformation("[UI] [MainLayout] OnAfterRender called - firstRender: {FirstRender}", firstRender);
         if (firstRender)
         {
-            Logger.LogDebug("[UI] [MainLayout] First render completed");
+            Logger.LogInformation("[UI] [MainLayout] First render completed");
         }
         errorBoundary?.Recover();
     }
