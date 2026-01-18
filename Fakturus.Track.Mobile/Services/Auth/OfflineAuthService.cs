@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
+#if IOS
+using UIKit;
+#endif
 
 namespace Fakturus.Track.Mobile.Services.Auth;
 
@@ -192,9 +195,34 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
 
             _logger.LogDebug("[Auth] Initiating interactive token acquisition");
             var loginStartTime = DateTime.UtcNow;
-            var result = await app.AcquireTokenInteractive(scopes)
-                .WithPrompt(Prompt.SelectAccount)
-                .ExecuteAsync();
+            
+            var builder = app.AcquireTokenInteractive(scopes)
+                .WithPrompt(Prompt.SelectAccount);
+            
+#if IOS
+            // On iOS, we need to provide the parent view controller
+            // Try to get the topmost view controller
+            var window = UIApplication.SharedApplication.KeyWindow;
+            var rootViewController = window?.RootViewController;
+            
+            // Navigate to the topmost view controller (handles navigation controllers, tab controllers, etc.)
+            while (rootViewController?.PresentedViewController != null)
+            {
+                rootViewController = rootViewController.PresentedViewController;
+            }
+            
+            if (rootViewController != null)
+            {
+                _logger.LogDebug("[Auth] Using view controller for iOS parent: {ViewControllerType}", rootViewController.GetType().Name);
+                builder = builder.WithParentActivityOrWindow(rootViewController);
+            }
+            else
+            {
+                _logger.LogWarning("[Auth] No view controller found, MSAL may not work correctly on iOS");
+            }
+#endif
+            
+            var result = await builder.ExecuteAsync();
             var loginDuration = (DateTime.UtcNow - loginStartTime).TotalMilliseconds;
 
             if (result != null && !string.IsNullOrEmpty(result.AccessToken))
@@ -352,6 +380,14 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             .Create(clientId)
             .WithB2CAuthority(authority)
             .WithRedirectUri(redirectUri);
+
+#if IOS
+        // Set the iOS keychain security group to match the app's bundle identifier
+        // This must match the keychain-access-groups in Entitlements.plist
+        var keychainSecurityGroup = "com.fakturus.track.mobile";
+        _logger.LogDebug("[Auth] Setting iOS keychain security group: {KeychainGroup}", keychainSecurityGroup);
+        builder = builder.WithIosKeychainSecurityGroup(keychainSecurityGroup);
+#endif
 
         _publicClientApp = builder.Build();
         _logger.LogDebug("[Auth] PublicClientApplication created successfully");

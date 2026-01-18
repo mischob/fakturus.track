@@ -22,18 +22,28 @@
     <div class="ios-page-header">
         <div class="zeiten-header">
             <h1 class="ios-page-title">Zeiten</h1>
-            <button @onclick="HandleSync"
-                    class="btn-primary zeiten-sync-btn @(_isSyncing ? "syncing" : "")"
-                    disabled="@_isSyncing">
-                @if (_isSyncing)
+            <div class="zeiten-header-actions">
+                @if (!_isAuthenticated)
                 {
-                    <span>Syncing...</span>
+                    <span class="ios-badge ios-badge-yellow">Nicht angemeldet</span>
                 }
-                else
-                {
-                    <span>Sync</span>
-                }
-            </button>
+                <button @onclick="HandleSync"
+                        class="btn-primary zeiten-sync-btn @(_isSyncing ? "syncing" : "") @(!_isAuthenticated ? "needs-login" : "")"
+                        disabled="@_isSyncing">
+                    @if (_isSyncing)
+                    {
+                        <span>Syncing...</span>
+                    }
+                    else if (!_isAuthenticated)
+                    {
+                        <span>Anmelden & Sync</span>
+                    }
+                    else
+                    {
+                        <span>Sync</span>
+                    }
+                </button>
+            </div>
         </div>
     </div>
 
@@ -135,6 +145,12 @@
         align-items: center;
     }
 
+    .zeiten-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     .zeiten-sync-btn {
         font-size: 15px;
         padding: 0.5rem 1rem;
@@ -143,6 +159,22 @@
     .zeiten-sync-btn.syncing {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    .zeiten-sync-btn.needs-login {
+        opacity: 0.8;
+    }
+
+    .ios-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .ios-badge-yellow {
+        background-color: #FF9500;
+        color: white;
     }
 
     .zeiten-empty-state {
@@ -176,10 +208,18 @@
     private WorkSessionModel? _currentSession;
     private bool _isSyncing;
     private bool _isFinishing; // Flag to prevent re-loading finished session
+    private bool _isAuthenticated;
 
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("[UI] [Zeiten] OnInitializedAsync - START");
+
+        // Check authentication status
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        Logger.LogInformation("[UI] [Zeiten] Authentication status: {IsAuthenticated}", _isAuthenticated);
+
+        // Subscribe to authentication state changes
+        AuthService.AuthenticationStateChanged += OnAuthenticationStateChanged;
 
         // Subscribe to sync completed event
         SyncService.SyncCompleted += OnSyncCompleted;
@@ -211,6 +251,13 @@
         Logger.LogInformation("[UI] [Zeiten] OnInitializedAsync - END");
     }
 
+    private void OnAuthenticationStateChanged(object? sender, bool isAuthenticated)
+    {
+        _isAuthenticated = isAuthenticated;
+        Logger.LogInformation("[UI] [Zeiten] Authentication state changed: {IsAuthenticated}", isAuthenticated);
+        InvokeAsync(StateHasChanged);
+    }
+
     private async void OnSyncCompleted(object? sender, EventArgs e)
     {
         Logger.LogInformation("[UI] [Zeiten] Sync completed, reloading sessions...");
@@ -223,6 +270,9 @@
 
     public void Dispose()
     {
+        // Unsubscribe from authentication state changes
+        AuthService.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+
         // Unsubscribe from sync completed event
         SyncService.SyncCompleted -= OnSyncCompleted;
 
@@ -675,6 +725,45 @@
     private async Task HandleSync()
     {
         if (_isSyncing) return;
+
+        // Check authentication first
+        if (!_isAuthenticated)
+        {
+            var wasAuthenticated = await AuthService.IsAuthenticatedAsync();
+            if (!wasAuthenticated)
+            {
+                ToastService.ShowInfo("Bitte melden Sie sich an, um zu synchronisieren");
+                try
+                {
+                    Logger.LogInformation("[UI] [Zeiten] User not authenticated, starting login process");
+                    var loginSuccess = await AuthService.LoginAsync();
+                    if (loginSuccess)
+                    {
+                        _isAuthenticated = true;
+                        Logger.LogInformation("[UI] [Zeiten] Login successful, continuing with sync");
+                        ToastService.ShowSuccess("Erfolgreich angemeldet");
+                        // Continue with sync after successful login
+                    }
+                    else
+                    {
+                        Logger.LogWarning("[UI] [Zeiten] Login failed");
+                        ToastService.ShowError("Anmeldung fehlgeschlagen");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "[UI] [Zeiten] Error during login");
+                    ToastService.ShowError($"Anmeldung fehlgeschlagen: {ex.Message}");
+                    return;
+                }
+            }
+            else
+            {
+                _isAuthenticated = true;
+                Logger.LogInformation("[UI] [Zeiten] Authentication status updated, user is authenticated");
+            }
+        }
 
         _isSyncing = true;
         StateHasChanged(); // Update UI to show syncing state

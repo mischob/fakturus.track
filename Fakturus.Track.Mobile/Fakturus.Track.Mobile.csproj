@@ -23,7 +23,7 @@
 		<ApplicationTitle>Fakturus.Track.Mobile</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.fakturus.track.mobile</ApplicationId>
+		<ApplicationId>com.fakturus.track.mobile</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -67,6 +67,10 @@
 			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+		<CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
