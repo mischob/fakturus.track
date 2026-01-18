@@ -19,11 +19,15 @@
     .ios-page {
         min-height: 100%;
         background-color: #f2f2f7;
+        display: flex;
+        flex-direction: column;
     }
 
     .ios-page-header {
         background-color: white;
         padding: 1rem;
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
         border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
         position: sticky;
         top: 0;
@@ -39,7 +43,13 @@
     }
 
     .ios-page-content {
+        flex: 1;
         padding: 1rem;
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .ios-card {

@@ -1,0 +1,126 @@
+@using Fakturus.Track.Mobile.Shared.Models
+
+<div class="ios-card">
+    <!-- Collapsible Header -->
+    <div class="month-group-header"
+         @onclick="() => OnToggle.InvokeAsync(MonthGroup)">
+        <div class="month-group-header-content">
+            <!-- Chevron Icon -->
+            <span class="month-group-chevron @(MonthGroup.IsExpanded ? "expanded" : "")">
+                ▶
+            </span>
+            <!-- Month Info -->
+            <div class="month-group-info">
+                <h3 class="ios-text-primary month-group-title">
+                    @MonthGroup.MonthName @MonthGroup.Year
+                </h3>
+                <p class="ios-text-secondary month-group-subtitle">
+                    @MonthGroup.TotalEntries @(MonthGroup.TotalEntries == 1 ? "Eintrag" : "Einträge") - @FormatDuration(MonthGroup.TotalDuration)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expanded Content -->
+    @if (MonthGroup.IsExpanded)
+    {
+        <div class="month-group-sessions">
+            @foreach (var session in MonthGroup.Sessions)
+            {
+                <WorkSessionCard WorkSession="session"
+                                 OnStart="OnStart"
+                                 OnStop="OnStop"
+                                 OnFinish="OnFinish"
+                                 OnSave="OnSave"
+                                 OnDelete="OnDelete"
+                                 OnCancel="OnCancel"
+                                 OnNew="OnNew"
+                                 OnTimeChanged="OnTimeChanged"
+                                 IsHistory="true"/>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .month-group-header {
+        cursor: pointer;
+        padding: 1rem;
+        border-radius: 10px;
+        transition: background-color 0.2s;
+    }
+
+    .month-group-header:active {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .month-group-header-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .month-group-chevron {
+        color: var(--ios-gray);
+        font-size: 12px;
+        transition: transform 0.2s;
+        display: inline-block;
+    }
+
+    .month-group-chevron.expanded {
+        transform: rotate(90deg);
+    }
+
+    .month-group-info {
+        flex: 1;
+    }
+
+    .month-group-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 0.25rem 0;
+    }
+
+    .month-group-subtitle {
+        font-size: 15px;
+        margin: 0;
+    }
+
+    .month-group-sessions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+</style>
+
+@code {
+    [Parameter] public MonthGroup MonthGroup { get; set; } = null!;
+
+    [Parameter] public EventCallback<MonthGroup> OnToggle { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnStart { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnCancel { get; set; }
+
+    [Parameter] public EventCallback OnNew { get; set; }
+
+    [Parameter] public EventCallback<WorkSessionModel> OnTimeChanged { get; set; }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
+        return $"{hours:D2}:{minutes:D2}h";
+    }
+}

@@ -1,0 +1,378 @@
+@using Fakturus.Track.Mobile.Shared.Models
+
+<div class="ios-card @(IsHistory ? "ios-card-history" : "ios-card-current")">
+    <div class="work-session-header">
+        <div class="work-session-title-section">
+            <h3 class="ios-text-primary work-session-date">
+                @WorkSession.Date.ToString("dd.MM.yyyy")
+            </h3>
+            @if (!IsHistory)
+            {
+                @if (WorkSession.StopTime == null)
+                {
+                    <span class="ios-badge ios-badge-active">Aktiv</span>
+                }
+                else
+                {
+                    <span class="ios-badge ios-badge-warning">Fertig?</span>
+                }
+            }
+        </div>
+        @if (!WorkSession.IsSynced && WorkSession.IsPendingSync)
+        {
+            <span class="ios-badge ios-badge-pending">Pending Sync</span>
+        }
+    </div>
+
+    @if (IsHistory && !_isEditing)
+    {
+        <!-- Read-only view for history -->
+        <div class="work-session-info">
+            <div class="work-session-info-row">
+                <span class="ios-text-secondary">Start:</span>
+                <span class="ios-text-primary">
+                    @(WorkSession.StartTime != default ? WorkSession.StartTime.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "offen")
+                </span>
+            </div>
+            <div class="work-session-info-row">
+                <span class="ios-text-secondary">Ende:</span>
+                <span class="ios-text-primary">
+                    @(WorkSession.StopTime.HasValue ? WorkSession.StopTime.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "offen")
+                </span>
+            </div>
+            @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
+            {
+                <div class="work-session-info-row">
+                    <span class="ios-text-secondary">Dauer:</span>
+                    <span class="ios-text-primary work-session-duration">@CalculateDuration(WorkSession.StartTime, WorkSession.StopTime.Value)</span>
+                </div>
+            }
+        </div>
+        <div class="work-session-actions">
+            <button @onclick="() => { _isEditing = true; }"
+                    class="btn-secondary work-session-action-btn">
+                Bearbeiten
+            </button>
+            <button @onclick="() => OnDelete.InvokeAsync(WorkSession)"
+                    class="btn-danger work-session-action-btn">
+                Löschen
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Editable view for active sessions or when editing history -->
+        <div class="work-session-form">
+            <div class="work-session-form-field">
+                <label class="ios-text-secondary work-session-label">Start Time</label>
+                <div class="work-session-input-group">
+                    <input type="datetime-local"
+                           value="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")"
+                           @onchange="@(e => HandleTimeChange(e, "start"))"
+                           class="ios-input"/>
+                    <button @onclick="() => OnStart.InvokeAsync(WorkSession)"
+                            class="btn-secondary work-session-now-btn">
+                        Jetzt
+                    </button>
+                </div>
+            </div>
+
+            <div class="work-session-form-field">
+                <label class="ios-text-secondary work-session-label">Stop Time</label>
+                <div class="work-session-input-group">
+                    <input type="datetime-local"
+                           value="@(WorkSession.StopTime.HasValue ? FormatDateTimeLocal(WorkSession.StopTime.Value) : "")"
+                           @onchange="@(e => HandleTimeChange(e, "stop"))"
+                           min="@(WorkSession.StartTime != default ? FormatDateTimeLocal(WorkSession.StartTime) : "")"
+                           class="ios-input"/>
+                    <button @onclick="() => OnStop.InvokeAsync(WorkSession)"
+                            class="btn-secondary work-session-now-btn">
+                        Jetzt
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (WorkSession.StartTime != default && WorkSession.StopTime.HasValue && WorkSession.StartTime != DateTime.MinValue)
+        {
+            <div class="work-session-duration-section">
+                <span class="ios-text-secondary">Dauer: </span>
+                <span class="ios-text-primary work-session-duration">@CalculateDuration(WorkSession.StartTime, WorkSession.StopTime.Value)</span>
+            </div>
+        }
+
+        <div class="work-session-actions">
+            @if (!IsHistory)
+            {
+                <!-- Current session: Show Finish button when StopTime is set, otherwise show New Session -->
+                @if (WorkSession.StopTime.HasValue && WorkSession.StartTime != default)
+                {
+                    <button @onclick="() => OnFinish.InvokeAsync(WorkSession)"
+                            class="btn-primary work-session-action-btn">
+                        Fertig
+                    </button>
+                    <button @onclick="() => OnCancel.InvokeAsync(WorkSession)"
+                            class="btn-secondary work-session-action-btn">
+                        Abbruch
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="() => OnNew.InvokeAsync()"
+                            class="btn-secondary work-session-action-btn">
+                        Neuer Eintrag
+                    </button>
+                }
+            }
+            else
+            {
+                <!-- History session in edit mode: Show Save and Cancel buttons -->
+                <button @onclick="() => { _isEditing = false; OnSave.InvokeAsync(WorkSession); }"
+                        class="btn-primary work-session-action-btn">
+                    Speichern
+                </button>
+                <button @onclick="() => { _isEditing = false; }"
+                        class="btn-secondary work-session-action-btn">
+                    Abbrechen
+                </button>
+                <button @onclick="() => OnDelete.InvokeAsync(WorkSession)"
+                        class="btn-danger work-session-action-btn">
+                    Löschen
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .ios-card-current {
+        border: 2px solid var(--ios-blue);
+    }
+
+    .ios-card-history {
+        opacity: 0.9;
+    }
+
+    .work-session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .work-session-title-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .work-session-date {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .ios-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .ios-badge-active {
+        background-color: rgba(52, 199, 89, 0.2);
+        color: #34C759;
+    }
+
+    .ios-badge-warning {
+        background-color: rgba(255, 149, 0, 0.2);
+        color: #FF9500;
+    }
+
+    .ios-badge-pending {
+        background-color: rgba(255, 149, 0, 0.2);
+        color: #FF9500;
+    }
+
+    .work-session-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .work-session-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .work-session-duration {
+        font-weight: 600;
+    }
+
+    .work-session-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .work-session-form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .work-session-label {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    .work-session-input-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .ios-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        font-size: 17px;
+        background-color: white;
+    }
+
+    .ios-input:focus {
+        outline: none;
+        border-color: var(--ios-blue);
+    }
+
+    .work-session-now-btn {
+        white-space: nowrap;
+        padding: 0.5rem 1rem;
+        font-size: 15px;
+    }
+
+    .work-session-duration-section {
+        padding-top: 1rem;
+        border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+
+    .work-session-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding-top: 1rem;
+        border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .work-session-action-btn {
+        flex: 1;
+        font-size: 15px;
+        padding: 0.75rem;
+    }
+
+    .btn-danger {
+        background-color: var(--ios-red);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.75rem;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .btn-danger:active {
+        opacity: 0.7;
+    }
+</style>
+
+@code {
+    [Parameter] public WorkSessionModel WorkSession { get; set; } = null!;
+    [Parameter] public EventCallback<WorkSessionModel> OnStart { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnStop { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnFinish { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnSave { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnDelete { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnCancel { get; set; }
+    [Parameter] public EventCallback OnNew { get; set; }
+    [Parameter] public EventCallback<WorkSessionModel> OnTimeChanged { get; set; }
+    [Parameter] public bool IsHistory { get; set; }
+
+    private bool _isEditing;
+
+    private string FormatDateTimeLocal(DateTime dateTime)
+    {
+        // Handle default/empty DateTime
+        if (dateTime == default || dateTime == DateTime.MinValue)
+            return "";
+
+        // Convert UTC to local time for display
+        var localTime = dateTime.ToLocalTime();
+        return localTime.ToString("yyyy-MM-ddTHH:mm");
+    }
+
+    private async Task HandleTimeChange(ChangeEventArgs e, string type)
+    {
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
+            return;
+
+        if (DateTime.TryParse(e.Value.ToString(), out var parsedTime))
+        {
+            var utcTime = parsedTime.ToUniversalTime();
+
+            if (type == "start")
+            {
+                WorkSession.StartTime = utcTime;
+                WorkSession.Date = DateOnly.FromDateTime(parsedTime);
+
+                // If stop time is set and is now before start time, clear it
+                if (WorkSession.StopTime.HasValue && WorkSession.StopTime.Value < utcTime)
+                {
+                    WorkSession.StopTime = null;
+                }
+            }
+            else if (type == "stop")
+            {
+                // Validate that stop time is not before start time
+                if (WorkSession.StartTime != default && utcTime < WorkSession.StartTime)
+                {
+                    // Don't set the stop time if it's before start time
+                    return;
+                }
+
+                WorkSession.StopTime = utcTime;
+            }
+
+            // For history sessions in edit mode: call OnSave to persist changes
+            // For current sessions: call OnTimeChanged to save locally without finishing
+            if (IsHistory)
+            {
+                // History session: Save will mark as finished and sync
+                WorkSession.IsPendingSync = true;
+                WorkSession.IsSynced = false;
+                await OnSave.InvokeAsync(WorkSession);
+            }
+            else
+            {
+                // Current session: Just save locally without finishing
+                WorkSession.IsPendingSync = true;
+                WorkSession.IsSynced = false;
+                WorkSession.IsFinished = false; // Ensure it stays unfinished
+                await OnTimeChanged.InvokeAsync(WorkSession);
+            }
+        }
+    }
+
+    private string CalculateDuration(DateTime start, DateTime stop)
+    {
+        var duration = stop - start;
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
+        return $"{hours}h {minutes}m";
+    }
+}
