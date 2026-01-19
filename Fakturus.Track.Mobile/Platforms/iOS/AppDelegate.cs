@@ -15,7 +15,7 @@ public class AppDelegate : MauiUIApplicationDelegate
             AuthenticationContinuationHelper.SetBrokerContinuationEventArgs(url);
             return true;
         }
-        
+
         return base.OpenUrl(application, url, options);
     }
 

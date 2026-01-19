@@ -25,7 +25,7 @@ public class TrackAuthMessageHandler : DelegatingHandler
         var requestStartTime = DateTime.UtcNow;
         var method = request.Method.Method;
         var uri = request.RequestUri?.ToString() ?? "Unknown";
-        
+
         _logger.LogDebug("[API] {Method} {Uri} - Preparing request", method, uri);
 
         // Get access token
@@ -37,52 +37,58 @@ public class TrackAuthMessageHandler : DelegatingHandler
         }
         else
         {
-            _logger.LogWarning("[API] {Method} {Uri} - No access token available, request will be unauthenticated", method, uri);
+            _logger.LogWarning("[API] {Method} {Uri} - No access token available, request will be unauthenticated",
+                method, uri);
         }
 
         // Send request
         _logger.LogDebug("[API] {Method} {Uri} - Sending request", method, uri);
         var response = await base.SendAsync(request, cancellationToken);
         var requestDuration = (DateTime.UtcNow - requestStartTime).TotalMilliseconds;
-        
+
         _logger.LogInformation("[API] {Method} {Uri} - Response: {StatusCode} ({StatusCodeInt}) in {Duration}ms",
             method, uri, response.StatusCode, (int)response.StatusCode, requestDuration);
 
         // If we get a 401, try to refresh token and retry once
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _logger.LogWarning("[API] {Method} {Uri} - Received 401 Unauthorized, attempting token refresh", method, uri);
-            
+            _logger.LogWarning("[API] {Method} {Uri} - Received 401 Unauthorized, attempting token refresh", method,
+                uri);
+
             var refreshStartTime = DateTime.UtcNow;
             var refreshed = await _authService.RefreshTokenAsync();
             var refreshDuration = (DateTime.UtcNow - refreshStartTime).TotalMilliseconds;
-            
+
             if (refreshed)
             {
-                _logger.LogInformation("[API] {Method} {Uri} - Token refreshed successfully in {Duration}ms, retrying request", 
+                _logger.LogInformation(
+                    "[API] {Method} {Uri} - Token refreshed successfully in {Duration}ms, retrying request",
                     method, uri, refreshDuration);
-                
+
                 token = await _authService.GetAccessTokenAsync();
                 if (!string.IsNullOrEmpty(token))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                     _logger.LogDebug("[API] {Method} {Uri} - Retry request with new token", method, uri);
-                    
+
                     var retryStartTime = DateTime.UtcNow;
                     response = await base.SendAsync(request, cancellationToken);
                     var retryDuration = (DateTime.UtcNow - retryStartTime).TotalMilliseconds;
-                    
-                    _logger.LogInformation("[API] {Method} {Uri} - Retry response: {StatusCode} ({StatusCodeInt}) in {Duration}ms",
+
+                    _logger.LogInformation(
+                        "[API] {Method} {Uri} - Retry response: {StatusCode} ({StatusCodeInt}) in {Duration}ms",
                         method, uri, response.StatusCode, (int)response.StatusCode, retryDuration);
                 }
                 else
                 {
-                    _logger.LogError("[API] {Method} {Uri} - Token refresh succeeded but no token available for retry", method, uri);
+                    _logger.LogError("[API] {Method} {Uri} - Token refresh succeeded but no token available for retry",
+                        method, uri);
                 }
             }
             else
             {
-                _logger.LogError("[API] {Method} {Uri} - Token refresh failed after {Duration}ms, request will fail with 401", 
+                _logger.LogError(
+                    "[API] {Method} {Uri} - Token refresh failed after {Duration}ms, request will fail with 401",
                     method, uri, refreshDuration);
             }
         }

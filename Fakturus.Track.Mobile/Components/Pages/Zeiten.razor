@@ -1,12 +1,5 @@
 @page "/"
 @page "/zeiten"
-@using Fakturus.Track.Mobile.Shared.Models
-@using Fakturus.Track.Mobile.Shared.Extensions
-@using Fakturus.Track.Mobile.Components.WorkSessions
-@using Fakturus.Track.Mobile.Services.Offline
-@using Fakturus.Track.Mobile.Services.Auth
-@using Fakturus.Track.Mobile.Services.Api
-@using Blazored.Toast.Services
 @using Microsoft.Extensions.Logging
 @implements IDisposable
 @inject IWorkSessionService WorkSessionService
@@ -444,7 +437,7 @@
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
                 entity.UserId = session.UserId;
-                
+
                 await WorkSessionService.UpdateAsync(entity);
             }
             else
@@ -453,7 +446,7 @@
                 entity = session.ToEntity();
                 await WorkSessionService.AddAsync(entity);
             }
-            
+
             await LoadWorkSessionsAsync();
 
             ToastService.ShowSuccess("Start time recorded");
@@ -486,10 +479,10 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-                
+
                 await WorkSessionService.UpdateAsync(entity);
             }
-            
+
             await LoadWorkSessionsAsync();
 
             ToastService.ShowSuccess("Stop time recorded");
@@ -524,7 +517,7 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-                
+
                 await WorkSessionService.UpdateAsync(entity);
             }
 
@@ -623,7 +616,7 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-                
+
                 await WorkSessionService.UpdateAsync(entity);
             }
 
@@ -666,7 +659,7 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-                
+
                 await WorkSessionService.UpdateAsync(entity);
             }
 
@@ -713,6 +706,7 @@
             {
                 await WorkSessionService.DeleteAsync(entity);
             }
+
             await LoadWorkSessionsAsync();
         }
         catch (Exception ex)
@@ -792,4 +786,5 @@
             StateHasChanged(); // Update UI to hide syncing state
         }
     }
+
 }

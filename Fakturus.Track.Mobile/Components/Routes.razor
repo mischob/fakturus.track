@@ -1,12 +1,11 @@
 @using Microsoft.Extensions.Logging
-@using Microsoft.AspNetCore.Components.Routing
 @inject ILogger<Routes> Logger
 @inject NavigationManager Navigation
 
 <Router AppAssembly="@typeof(MauiProgram).Assembly" OnNavigateAsync="OnNavigateAsync">
     <Found Context="routeData">
         @{
-            Logger.LogInformation("[Router] Route found - Path: {Path}, Page: {PageType}", 
+            Logger.LogInformation("[Router] Route found - Path: {Path}, Page: {PageType}",
                 Navigation.Uri, routeData.PageType?.Name ?? "Unknown");
         }
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
@@ -24,9 +23,11 @@
 </Router>
 
 @code {
+
     private Task OnNavigateAsync(NavigationContext context)
     {
         Logger.LogInformation("[Router] Navigating to: {Path}", context.Path);
         return Task.CompletedTask;
     }
+
 }

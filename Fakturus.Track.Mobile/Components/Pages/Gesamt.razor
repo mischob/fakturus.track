@@ -1,7 +1,4 @@
 @page "/gesamt"
-@using Fakturus.Track.Mobile.Shared.Models
-@using Fakturus.Track.Mobile.Services.Api
-@using Blazored.Toast.Services
 @using Microsoft.Extensions.Logging
 @inject ISettingsApiClient SettingsApiClient
 @inject IToastService ToastService
@@ -68,35 +65,35 @@
                 <div class="table-wrapper">
                     <table class="overtime-table">
                         <thead>
-                            <tr>
-                                <th class="table-header table-header-month">Monat</th>
-                                <th class="table-header table-header-right">Gearbeitet</th>
-                                <th class="table-header table-header-right">Erwartet</th>
-                                <th class="table-header table-header-right">Überstunden</th>
-                            </tr>
+                        <tr>
+                            <th class="table-header table-header-month">Monat</th>
+                            <th class="table-header table-header-right">Gearbeitet</th>
+                            <th class="table-header table-header-right">Erwartet</th>
+                            <th class="table-header table-header-right">Überstunden</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            @foreach (var month in _summary.MonthlyOvertime)
-                            {
-                                <tr class="table-row">
-                                    <td class="table-cell table-cell-month">@GetShortMonthName(month.MonthName)</td>
-                                    <td class="table-cell table-cell-right">@FormatHours(month.WorkedHours)</td>
-                                    <td class="table-cell table-cell-right">@FormatHours(month.ExpectedHours)</td>
-                                    <td class="table-cell table-cell-right table-cell-overtime @(month.OvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
-                                        @FormatHours(month.OvertimeHours)
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-footer">
-                                <td class="table-cell table-cell-month table-footer-cell">Gesamt</td>
-                                <td class="table-cell table-cell-right table-footer-cell">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.WorkedHours))</td>
-                                <td class="table-cell table-cell-right table-footer-cell">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.ExpectedHours))</td>
-                                <td class="table-cell table-cell-right table-footer-cell @(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
-                                    @FormatHours(_summary.TotalOvertimeHours)
+                        @foreach (var month in _summary.MonthlyOvertime)
+                        {
+                            <tr class="table-row">
+                                <td class="table-cell table-cell-month">@GetShortMonthName(month.MonthName)</td>
+                                <td class="table-cell table-cell-right">@FormatHours(month.WorkedHours)</td>
+                                <td class="table-cell table-cell-right">@FormatHours(month.ExpectedHours)</td>
+                                <td class="table-cell table-cell-right table-cell-overtime @(month.OvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                                    @FormatHours(month.OvertimeHours)
                                 </td>
                             </tr>
+                        }
+                        </tbody>
+                        <tfoot>
+                        <tr class="table-footer">
+                            <td class="table-cell table-cell-month table-footer-cell">Gesamt</td>
+                            <td class="table-cell table-cell-right table-footer-cell">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.WorkedHours))</td>
+                            <td class="table-cell table-cell-right table-footer-cell">@FormatHours(_summary.MonthlyOvertime.Sum(m => m.ExpectedHours))</td>
+                            <td class="table-cell table-cell-right table-footer-cell @(_summary.TotalOvertimeHours >= 0 ? "text-green-600" : "text-red-600")">
+                                @FormatHours(_summary.TotalOvertimeHours)
+                            </td>
+                        </tr>
                         </tfoot>
                     </table>
                 </div>
@@ -394,6 +391,7 @@
         {
             return $"{baseText} (davon {FormatHours(summary.SchoolHolidayHoursNotWorked)} in Schulferien)";
         }
+
         return baseText;
     }
 
@@ -416,4 +414,5 @@
             _ => fullMonthName
         };
     }
+
 }

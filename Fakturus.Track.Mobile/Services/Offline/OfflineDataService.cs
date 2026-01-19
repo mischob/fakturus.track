@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Linq.Expressions;
 using Fakturus.Track.Mobile.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 
-public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataService<T>> logger) : IOfflineDataService<T>
+public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataService<T>> logger)
+    : IOfflineDataService<T>
     where T : class
 {
     protected readonly MobileDbContext Context = context;
@@ -25,7 +25,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
             {
                 // Fallback to FindAsync if no Id property
                 var findResult = await DbSet.FindAsync(id);
-                Logger.LogDebug("[Database] [{EntityType}] GetByIdAsync completed - Found: {Found}", typeof(T).Name, findResult != null);
+                Logger.LogDebug("[Database] [{EntityType}] GetByIdAsync completed - Found: {Found}", typeof(T).Name,
+                    findResult != null);
                 return findResult;
             }
 
@@ -37,7 +38,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
             var lambda = Expression.Lambda<Func<T, bool>>(equals, parameter);
 
             var entity = await DbSet.AsNoTracking().FirstOrDefaultAsync(lambda);
-            Logger.LogDebug("[Database] [{EntityType}] GetByIdAsync completed - Found: {Found}", typeof(T).Name, entity != null);
+            Logger.LogDebug("[Database] [{EntityType}] GetByIdAsync completed - Found: {Found}", typeof(T).Name,
+                entity != null);
             return entity;
         }
         catch (Exception ex)
@@ -53,7 +55,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
         try
         {
             var result = await DbSet.AsNoTracking().ToListAsync();
-            Logger.LogDebug("[Database] [{EntityType}] GetAllAsync completed - Count: {Count}", typeof(T).Name, result.Count);
+            Logger.LogDebug("[Database] [{EntityType}] GetAllAsync completed - Count: {Count}", typeof(T).Name,
+                result.Count);
             return result;
         }
         catch (Exception ex)
@@ -69,7 +72,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
         try
         {
             var result = await DbSet.AsNoTracking().Where(predicate).ToListAsync();
-            Logger.LogDebug("[Database] [{EntityType}] FindAsync completed - Count: {Count}", typeof(T).Name, result.Count);
+            Logger.LogDebug("[Database] [{EntityType}] FindAsync completed - Count: {Count}", typeof(T).Name,
+                result.Count);
             return result;
         }
         catch (Exception ex)
@@ -115,13 +119,9 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
         {
             var entry = Context.Entry(entity);
             if (entry.State == EntityState.Detached)
-            {
                 DbSet.Update(entity);
-            }
             else if (entry.State != EntityState.Modified && entry.State != EntityState.Added)
-            {
                 entry.State = EntityState.Modified;
-            }
 
             await Context.SaveChangesAsync();
             Logger.LogInformation("[Database] [{EntityType}] UpdateAsync completed successfully", typeof(T).Name);
@@ -141,13 +141,10 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
         {
             var entity = await GetByIdAsync(id);
             if (entity != null)
-            {
                 await DeleteAsync(entity);
-            }
             else
-            {
-                Logger.LogWarning("[Database] [{EntityType}] DeleteAsync - Entity with Id {Id} not found", typeof(T).Name, id);
-            }
+                Logger.LogWarning("[Database] [{EntityType}] DeleteAsync - Entity with Id {Id} not found",
+                    typeof(T).Name, id);
         }
         catch (Exception ex)
         {
@@ -164,14 +161,12 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
             // Check if entity is tracked
             var entry = Context.Entry(entity);
             if (entry.State == EntityState.Detached)
-            {
                 // Attach entity for deletion
                 DbSet.Attach(entity);
-            }
-            
+
             DbSet.Remove(entity);
             await Context.SaveChangesAsync();
-            
+
             // Entity is removed, no need to detach
             Logger.LogInformation("[Database] [{EntityType}] DeleteAsync completed successfully", typeof(T).Name);
         }
@@ -184,7 +179,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
 
     public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
     {
-        Logger.LogDebug("[Database] [{EntityType}] CountAsync - HasPredicate: {HasPredicate}", typeof(T).Name, predicate != null);
+        Logger.LogDebug("[Database] [{EntityType}] CountAsync - HasPredicate: {HasPredicate}", typeof(T).Name,
+            predicate != null);
         try
         {
             int count;
@@ -192,7 +188,7 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
                 count = await DbSet.AsNoTracking().CountAsync();
             else
                 count = await DbSet.AsNoTracking().CountAsync(predicate);
-            
+
             Logger.LogDebug("[Database] [{EntityType}] CountAsync completed - Count: {Count}", typeof(T).Name, count);
             return count;
         }
@@ -209,7 +205,8 @@ public class OfflineDataService<T>(MobileDbContext context, ILogger<OfflineDataS
         try
         {
             var exists = await DbSet.AsNoTracking().AnyAsync(predicate);
-            Logger.LogDebug("[Database] [{EntityType}] ExistsAsync completed - Exists: {Exists}", typeof(T).Name, exists);
+            Logger.LogDebug("[Database] [{EntityType}] ExistsAsync completed - Exists: {Exists}", typeof(T).Name,
+                exists);
             return exists;
         }
         catch (Exception ex)

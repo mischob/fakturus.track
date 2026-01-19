@@ -9,7 +9,7 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
 {
     private readonly ILogger<WorkSessionService> _logger;
 
-    public WorkSessionService(MobileDbContext context, ILogger<WorkSessionService> logger) 
+    public WorkSessionService(MobileDbContext context, ILogger<WorkSessionService> logger)
         : base(context, logger)
     {
         _logger = logger;
@@ -38,7 +38,8 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
 
     public async Task<List<WorkSessionEntity>> GetByDateRangeAsync(string userId, DateOnly startDate, DateOnly endDate)
     {
-        _logger.LogDebug("[Database] [WorkSession] GetByDateRangeAsync - UserId: {UserId}, StartDate: {StartDate}, EndDate: {EndDate}",
+        _logger.LogDebug(
+            "[Database] [WorkSession] GetByDateRangeAsync - UserId: {UserId}, StartDate: {StartDate}, EndDate: {EndDate}",
             userId, startDate, endDate);
         try
         {
@@ -53,7 +54,8 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Database] [WorkSession] Error in GetByDateRangeAsync - UserId: {UserId}, StartDate: {StartDate}, EndDate: {EndDate}",
+            _logger.LogError(ex,
+                "[Database] [WorkSession] Error in GetByDateRangeAsync - UserId: {UserId}, StartDate: {StartDate}, EndDate: {EndDate}",
                 userId, startDate, endDate);
             throw;
         }
@@ -110,7 +112,8 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Database] [WorkSession] Error in GetByDateAsync - UserId: {UserId}, Date: {Date}", userId, date);
+            _logger.LogError(ex, "[Database] [WorkSession] Error in GetByDateAsync - UserId: {UserId}, Date: {Date}",
+                userId, date);
             throw;
         }
     }

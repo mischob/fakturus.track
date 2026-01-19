@@ -9,7 +9,7 @@ public class UserSettingsService : OfflineDataService<UserSettingsEntity>, IUser
 {
     private readonly ILogger<UserSettingsService> _logger;
 
-    public UserSettingsService(MobileDbContext context, ILogger<UserSettingsService> logger) 
+    public UserSettingsService(MobileDbContext context, ILogger<UserSettingsService> logger)
         : base(context, logger)
     {
         _logger = logger;

@@ -9,7 +9,7 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
 {
     private readonly ILogger<VacationDayService> _logger;
 
-    public VacationDayService(MobileDbContext context, ILogger<VacationDayService> logger) 
+    public VacationDayService(MobileDbContext context, ILogger<VacationDayService> logger)
         : base(context, logger)
     {
         _logger = logger;
@@ -50,7 +50,8 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Database] [VacationDay] Error in GetByYearAsync - UserId: {UserId}, Year: {Year}", userId, year);
+            _logger.LogError(ex, "[Database] [VacationDay] Error in GetByYearAsync - UserId: {UserId}, Year: {Year}",
+                userId, year);
             throw;
         }
     }
@@ -106,7 +107,8 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Database] [VacationDay] Error in GetByDateAsync - UserId: {UserId}, Date: {Date}", userId, date);
+            _logger.LogError(ex, "[Database] [VacationDay] Error in GetByDateAsync - UserId: {UserId}, Date: {Date}",
+                userId, date);
             throw;
         }
     }

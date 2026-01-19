@@ -5,10 +5,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 
-public class SyncQueueService(MobileDbContext context, ILogger<SyncQueueService> logger) 
+public class SyncQueueService(MobileDbContext context, ILogger<SyncQueueService> logger)
     : OfflineDataService<SyncQueueEntity>(context, logger), ISyncQueueService
 {
     private readonly ILogger<SyncQueueService> _logger = logger;
+
     public async Task<List<SyncQueueEntity>> GetPendingAsync(string userId)
     {
         return await Context.SyncQueue

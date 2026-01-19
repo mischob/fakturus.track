@@ -47,7 +47,8 @@ public static class WorkSessionExtensions
         return entities.Select(e => e.ToModel()).ToList();
     }
 
-    public static List<WorkSessionEntity> ToEntities(this IEnumerable<WorkSessionModel> models, string? calendarEventId = null)
+    public static List<WorkSessionEntity> ToEntities(this IEnumerable<WorkSessionModel> models,
+        string? calendarEventId = null)
     {
         return models.Select(m => m.ToEntity(calendarEventId)).ToList();
     }

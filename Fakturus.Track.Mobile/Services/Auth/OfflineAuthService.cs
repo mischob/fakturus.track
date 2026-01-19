@@ -61,17 +61,19 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             if (DateTime.TryParse(expiry, out var expiryDate))
             {
                 var timeUntilExpiry = expiryDate - DateTime.UtcNow;
-                _logger.LogDebug("[Auth] Token expiry: {ExpiryDate}, Time until expiry: {TimeUntilExpiry}", expiryDate, timeUntilExpiry);
-                
+                _logger.LogDebug("[Auth] Token expiry: {ExpiryDate}, Time until expiry: {TimeUntilExpiry}", expiryDate,
+                    timeUntilExpiry);
+
                 if (expiryDate <= DateTime.UtcNow.AddMinutes(5))
                 {
-                    _logger.LogInformation("[Auth] Token expires soon ({TimeUntilExpiry}), attempting refresh", timeUntilExpiry);
+                    _logger.LogInformation("[Auth] Token expires soon ({TimeUntilExpiry}), attempting refresh",
+                        timeUntilExpiry);
                     // Token expires soon, try to refresh
                     var refreshed = await RefreshTokenAsync();
                     _logger.LogDebug("[Auth] Token refresh result: {Refreshed}", refreshed);
                     return refreshed;
                 }
-                
+
                 _logger.LogDebug("[Auth] Token is valid - user authenticated");
                 return true;
             }
@@ -81,7 +83,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error checking authentication status - Exception: {ExceptionType}, Message: {Message}",
+            _logger.LogError(ex,
+                "[Auth] Error checking authentication status - Exception: {ExceptionType}, Message: {Message}",
                 ex.GetType().Name, ex.Message);
             return false;
         }
@@ -102,16 +105,19 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             if (!string.IsNullOrEmpty(_cachedUserId))
             {
                 IsAnonymousMode = false;
-                _logger.LogDebug("[Auth] User ID retrieved: {UserId} (AnonymousMode: {IsAnonymous})", _cachedUserId, IsAnonymousMode);
+                _logger.LogDebug("[Auth] User ID retrieved: {UserId} (AnonymousMode: {IsAnonymous})", _cachedUserId,
+                    IsAnonymousMode);
             }
             else
             {
-                _logger.LogDebug("[Auth] No user ID found in SecureStorage - AnonymousMode: {IsAnonymous}", IsAnonymousMode);
+                _logger.LogDebug("[Auth] No user ID found in SecureStorage - AnonymousMode: {IsAnonymous}",
+                    IsAnonymousMode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error getting user ID from SecureStorage - Exception: {ExceptionType}, Message: {Message}",
+            _logger.LogError(ex,
+                "[Auth] Error getting user ID from SecureStorage - Exception: {ExceptionType}, Message: {Message}",
                 ex.GetType().Name, ex.Message);
         }
 
@@ -150,11 +156,13 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             if (DateTime.TryParse(expiry, out var expiryDate))
             {
                 var timeUntilExpiry = expiryDate - DateTime.UtcNow;
-                _logger.LogDebug("[Auth] Token expiry: {ExpiryDate}, Time until expiry: {TimeUntilExpiry}", expiryDate, timeUntilExpiry);
-                
+                _logger.LogDebug("[Auth] Token expiry: {ExpiryDate}, Time until expiry: {TimeUntilExpiry}", expiryDate,
+                    timeUntilExpiry);
+
                 if (expiryDate <= DateTime.UtcNow.AddMinutes(5))
                 {
-                    _logger.LogInformation("[Auth] Token expires soon ({TimeUntilExpiry}), refreshing token", timeUntilExpiry);
+                    _logger.LogInformation("[Auth] Token expires soon ({TimeUntilExpiry}), refreshing token",
+                        timeUntilExpiry);
                     // Token expires soon, try to refresh
                     var refreshed = await RefreshTokenAsync();
                     if (refreshed)
@@ -166,6 +174,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
                     {
                         _logger.LogWarning("[Auth] Token refresh failed");
                     }
+
                     return token;
                 }
 
@@ -178,7 +187,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error getting access token from SecureStorage - Exception: {ExceptionType}, Message: {Message}",
+            _logger.LogError(ex,
+                "[Auth] Error getting access token from SecureStorage - Exception: {ExceptionType}, Message: {Message}",
                 ex.GetType().Name, ex.Message);
             return null;
         }
@@ -195,10 +205,10 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
 
             _logger.LogDebug("[Auth] Initiating interactive token acquisition");
             var loginStartTime = DateTime.UtcNow;
-            
+
             var builder = app.AcquireTokenInteractive(scopes)
                 .WithPrompt(Prompt.SelectAccount);
-            
+
 #if IOS
             // On iOS, we need to provide the parent view controller
             // Try to get the topmost view controller
@@ -221,7 +231,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
                 _logger.LogWarning("[Auth] No view controller found, MSAL may not work correctly on iOS");
             }
 #endif
-            
+
             var result = await builder.ExecuteAsync();
             var loginDuration = (DateTime.UtcNow - loginStartTime).TotalMilliseconds;
 
@@ -230,12 +240,13 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
                 _logger.LogInformation("[Auth] Login successful in {Duration}ms", loginDuration);
                 _logger.LogDebug("[Auth] Token details - ExpiresOn: {ExpiresOn}, Account: {AccountId}",
                     result.ExpiresOn, result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "Unknown");
-                
+
                 await SaveTokensAsync(result);
                 _cachedUserId = result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "";
                 IsAnonymousMode = false;
-                _logger.LogInformation("[Auth] User ID set: {UserId}, AnonymousMode: {IsAnonymous}", _cachedUserId, IsAnonymousMode);
-                
+                _logger.LogInformation("[Auth] User ID set: {UserId}, AnonymousMode: {IsAnonymous}", _cachedUserId,
+                    IsAnonymousMode);
+
                 AuthenticationStateChanged?.Invoke(this, true);
                 _logger.LogInformation("[Auth] ===== Login process completed successfully =====");
                 return true;
@@ -246,7 +257,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
         catch (MsalException ex)
         {
-            _logger.LogError(ex, "[Auth] MSAL error during login - ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}, CorrelationId: {CorrelationId}",
+            _logger.LogError(ex,
+                "[Auth] MSAL error during login - ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}, CorrelationId: {CorrelationId}",
                 ex.ErrorCode, ex.Message, ex.CorrelationId);
             _logger.LogError(ex, "[Auth] MSAL exception details - Type: {ExceptionType}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.StackTrace);
@@ -254,7 +266,8 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error during login - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
+            _logger.LogError(ex,
+                "[Auth] Error during login - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, ex.StackTrace);
             return false;
         }
@@ -270,25 +283,26 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             _logger.LogDebug("[Auth] Found {AccountCount} accounts to remove", accounts?.Count() ?? 0);
 
             if (accounts != null && accounts.Any())
-            {
                 foreach (var account in accounts)
                 {
-                    _logger.LogDebug("[Auth] Removing account: {AccountId}", account.HomeAccountId?.ObjectId ?? account.Username ?? "Unknown");
+                    _logger.LogDebug("[Auth] Removing account: {AccountId}",
+                        account.HomeAccountId?.ObjectId ?? account.Username ?? "Unknown");
                     await app.RemoveAsync(account);
                 }
-            }
 
             await ClearTokensAsync();
             _cachedUserId = null;
             IsAnonymousMode = true;
-            _logger.LogInformation("[Auth] Tokens cleared, UserId reset, AnonymousMode: {IsAnonymous}", IsAnonymousMode);
-            
+            _logger.LogInformation("[Auth] Tokens cleared, UserId reset, AnonymousMode: {IsAnonymous}",
+                IsAnonymousMode);
+
             AuthenticationStateChanged?.Invoke(this, false);
             _logger.LogInformation("[Auth] ===== Logout process completed successfully =====");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error during logout - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
+            _logger.LogError(ex,
+                "[Auth] Error during logout - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, ex.StackTrace);
         }
     }
@@ -313,7 +327,7 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
 
             var scopes = new[] { _configuration["AzureAdB2C:ApiScope"] ?? "" };
             _logger.LogDebug("[Auth] Acquiring token silently with scopes: {Scopes}", string.Join(", ", scopes));
-            
+
             var refreshStartTime = DateTime.UtcNow;
             var result = await app.AcquireTokenSilent(scopes, account)
                 .ExecuteAsync();
@@ -339,13 +353,15 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         }
         catch (MsalException ex)
         {
-            _logger.LogError(ex, "[Auth] MSAL error during token refresh - ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}, CorrelationId: {CorrelationId}",
+            _logger.LogError(ex,
+                "[Auth] MSAL error during token refresh - ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}, CorrelationId: {CorrelationId}",
                 ex.ErrorCode, ex.Message, ex.CorrelationId);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error refreshing token - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
+            _logger.LogError(ex,
+                "[Auth] Error refreshing token - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, ex.StackTrace);
             return false;
         }
@@ -365,14 +381,15 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
 
         if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(authority))
         {
-            _logger.LogError("[Auth] Azure AD B2C configuration is missing - ClientId: {HasClientId}, Authority: {HasAuthority}",
+            _logger.LogError(
+                "[Auth] Azure AD B2C configuration is missing - ClientId: {HasClientId}, Authority: {HasAuthority}",
                 !string.IsNullOrEmpty(clientId), !string.IsNullOrEmpty(authority));
             throw new InvalidOperationException("Azure AD B2C configuration is missing");
         }
 
         _logger.LogDebug("[Auth] Building PublicClientApplication - ClientId: {ClientId}, Authority: {Authority}",
             clientId, authority);
-        
+
         var redirectUri = $"msal{clientId}://auth";
         _logger.LogDebug("[Auth] Using redirect URI: {RedirectUri}", redirectUri);
 
@@ -401,21 +418,22 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             _logger.LogDebug("[Auth] Saving tokens to SecureStorage");
             var userId = result.Account?.HomeAccountId?.ObjectId ?? result.Account?.Username ?? "";
             var expiry = result.ExpiresOn.ToString("O");
-            
+
             await SecureStorage.SetAsync(AccessTokenKey, result.AccessToken);
             _logger.LogDebug("[Auth] Access token saved to SecureStorage");
-            
+
             await SecureStorage.SetAsync(UserIdKey, userId);
             _logger.LogDebug("[Auth] User ID saved to SecureStorage: {UserId}", userId);
 
             await SecureStorage.SetAsync(TokenExpiryKey, expiry);
             _logger.LogDebug("[Auth] Token expiry saved to SecureStorage: {Expiry}", expiry);
-            
+
             _logger.LogInformation("[Auth] All tokens saved successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error saving tokens to SecureStorage - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
+            _logger.LogError(ex,
+                "[Auth] Error saving tokens to SecureStorage - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, ex.StackTrace);
             throw;
         }
@@ -428,21 +446,22 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
             _logger.LogDebug("[Auth] Clearing tokens from SecureStorage");
             SecureStorage.Remove(AccessTokenKey);
             _logger.LogDebug("[Auth] Access token removed");
-            
+
             SecureStorage.Remove(RefreshTokenKey);
             _logger.LogDebug("[Auth] Refresh token removed");
-            
+
             SecureStorage.Remove(UserIdKey);
             _logger.LogDebug("[Auth] User ID removed");
-            
+
             SecureStorage.Remove(TokenExpiryKey);
             _logger.LogDebug("[Auth] Token expiry removed");
-            
+
             _logger.LogInformation("[Auth] All tokens cleared successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Auth] Error clearing tokens from SecureStorage - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
+            _logger.LogError(ex,
+                "[Auth] Error clearing tokens from SecureStorage - Exception: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, ex.StackTrace);
         }
     }

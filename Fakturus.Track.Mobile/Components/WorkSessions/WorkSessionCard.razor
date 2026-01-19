@@ -1,5 +1,3 @@
-@using Fakturus.Track.Mobile.Shared.Models
-
 <div class="ios-card @(IsHistory ? "ios-card-history" : "ios-card-current")">
     <div class="work-session-header">
         <div class="work-session-title-section">
@@ -375,4 +373,5 @@
         var minutes = duration.Minutes;
         return $"{hours}h {minutes}m";
     }
+
 }

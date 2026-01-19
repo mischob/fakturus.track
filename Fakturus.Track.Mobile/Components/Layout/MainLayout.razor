@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
-@implements IDisposable
 @using Microsoft.Extensions.Logging
+@implements IDisposable
 @inject IOfflineAuthService AuthService
 @inject INetworkMonitor NetworkMonitor
 @inject ILogger<MainLayout> Logger
@@ -30,6 +30,7 @@
         {
             Logger.LogInformation("[UI] [MainLayout] First render completed");
         }
+
         errorBoundary?.Recover();
     }
 
@@ -77,7 +78,7 @@
 
     private Task OnErrorAsync(Exception exception)
     {
-        Logger.LogError(exception, 
+        Logger.LogError(exception,
             "[UI] [MainLayout] ErrorBoundary caught exception - Type: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
             exception.GetType().Name, exception.Message, exception.StackTrace);
         return Task.CompletedTask;

@@ -3,6 +3,7 @@
 @inject ILogger<AppRoot> Logger
 
 @code {
+
     protected override void OnInitialized()
     {
         Logger.LogInformation("[UI] [AppRoot] OnInitialized - App root component initialized");
@@ -15,6 +16,7 @@
             Logger.LogInformation("[UI] [AppRoot] First render completed");
         }
     }
+
 }
 
 <Routes/>
