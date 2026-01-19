@@ -17,8 +17,8 @@ public class ConflictResolver : IConflictResolver
         WorkSessionEntity localEntity,
         WorkSessionModel backendModel)
     {
-        // WorkSessions are UUID-based, so conflicts shouldn't happen
-        // Backend upserts, so backend is always source of truth
+        // Backend is source of truth - use backend data
+        // Preserve mobile-specific fields (CalendarEventId) from local entity
         var resolved = new WorkSessionEntity
         {
             Id = backendModel.Id,
@@ -26,14 +26,16 @@ public class ConflictResolver : IConflictResolver
             Date = backendModel.Date,
             StartTime = backendModel.StartTime,
             StopTime = backendModel.StopTime,
+            CalendarEventId = localEntity.CalendarEventId, // Preserve mobile-specific field
             CreatedAt = backendModel.CreatedAt,
             UpdatedAt = backendModel.UpdatedAt,
             SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow,
             IsSynced = true,
             IsPendingSync = false,
-            IsFinished = backendModel.StopTime.HasValue // Backend sessions are finished if StopTime is set
+            IsFinished = backendModel.StopTime.HasValue
         };
 
+        _logger.LogDebug("Resolved WorkSession conflict - Backend is source of truth, preserved CalendarEventId");
         return Task.FromResult(resolved);
     }
 
@@ -41,12 +43,12 @@ public class ConflictResolver : IConflictResolver
         VacationDayEntity localEntity,
         VacationDayModel backendModel)
     {
-        // VacationDays are UUID-based, so conflicts shouldn't happen
-        // Backend merges, so backend is source of truth
+        // Backend is source of truth - use backend data
+        // Keep local userId in case of anonymous mode
         var resolved = new VacationDayEntity
         {
             Id = backendModel.Id,
-            UserId = localEntity.UserId, // Keep local userId in case of anonymous mode
+            UserId = localEntity.UserId, // Preserve local userId
             Date = backendModel.Date,
             CreatedAt = backendModel.CreatedAt,
             UpdatedAt = backendModel.UpdatedAt,
@@ -55,6 +57,7 @@ public class ConflictResolver : IConflictResolver
             IsPendingSync = false
         };
 
+        _logger.LogDebug("Resolved VacationDay conflict - Backend is source of truth");
         return Task.FromResult(resolved);
     }
 

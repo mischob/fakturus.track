@@ -21,6 +21,7 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         try
         {
             var result = await Context.VacationDays
+                .AsNoTracking()
                 .Where(v => v.UserId == userId)
                 .OrderBy(v => v.Date)
                 .ToListAsync();
@@ -40,6 +41,7 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         try
         {
             var result = await Context.VacationDays
+                .AsNoTracking()
                 .Where(v => v.UserId == userId && v.Date.Year == year)
                 .OrderBy(v => v.Date)
                 .ToListAsync();
@@ -59,6 +61,7 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         try
         {
             var result = await Context.VacationDays
+                .AsNoTracking()
                 .Where(v => v.UserId == userId && v.IsPendingSync && !v.IsSynced)
                 .ToListAsync();
             _logger.LogDebug("[Database] [VacationDay] GetPendingSyncAsync completed - Count: {Count}", result.Count);
@@ -71,12 +74,32 @@ public class VacationDayService : OfflineDataService<VacationDayEntity>, IVacati
         }
     }
 
+    public async Task<List<VacationDayEntity>> GetSyncedAsync(string userId)
+    {
+        _logger.LogDebug("[Database] [VacationDay] GetSyncedAsync - UserId: {UserId}", userId);
+        try
+        {
+            var result = await Context.VacationDays
+                .AsNoTracking()
+                .Where(v => v.UserId == userId && v.IsSynced)
+                .ToListAsync();
+            _logger.LogDebug("[Database] [VacationDay] GetSyncedAsync completed - Count: {Count}", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Database] [VacationDay] Error in GetSyncedAsync - UserId: {UserId}", userId);
+            throw;
+        }
+    }
+
     public async Task<VacationDayEntity?> GetByDateAsync(string userId, DateOnly date)
     {
         _logger.LogDebug("[Database] [VacationDay] GetByDateAsync - UserId: {UserId}, Date: {Date}", userId, date);
         try
         {
             var result = await Context.VacationDays
+                .AsNoTracking()
                 .FirstOrDefaultAsync(v => v.UserId == userId && v.Date == date);
             _logger.LogDebug("[Database] [VacationDay] GetByDateAsync completed - Found: {Found}", result != null);
             return result;

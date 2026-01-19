@@ -1,0 +1,62 @@
+<div class="ios-card overtime-card">
+    <div class="overtime-card-header">
+        <svg class="overtime-card-icon @IconColor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="ios-text-primary overtime-card-title">@Title</h3>
+    </div>
+
+    <div class="overtime-card-value @ValueColor">
+        @Value
+    </div>
+
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="ios-text-tertiary overtime-card-subtitle">@Subtitle</p>
+    }
+</div>
+
+<style>
+    .overtime-card {
+        margin-bottom: 1rem;
+    }
+
+    .overtime-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .overtime-card-icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .overtime-card-title {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .overtime-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+
+    .overtime-card-subtitle {
+        font-size: 15px;
+        margin: 0;
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public string IconColor { get; set; } = "text-blue-600";
+    [Parameter] public string ValueColor { get; set; } = "text-gray-900";
+}

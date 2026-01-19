@@ -239,12 +239,12 @@ public class SyncService : ISyncService, IDisposable
         {
             _logger.LogDebug("[Sync] [WorkSessions] Starting sync for user {UserId}", userId);
             
-            // Get local pending sessions
+            // Step 1: Get local pending sessions
             var pendingSessions = await _workSessionService.GetPendingSyncAsync(userId);
             _logger.LogInformation("[Sync] [WorkSessions] Found {Count} pending work sessions", pendingSessions.Count);
 
+            // Step 2 & 3: Sync pending or fetch all from backend
             List<WorkSessionModel> backendSessions;
-
             if (pendingSessions.Any())
             {
                 _logger.LogDebug("[Sync] [WorkSessions] Preparing sync request with {Count} sessions", pendingSessions.Count);
@@ -276,13 +276,30 @@ public class SyncService : ISyncService, IDisposable
                     apiDuration, backendSessions.Count);
             }
 
-            // Merge backend sessions into local database
-            _logger.LogDebug("[Sync] [WorkSessions] Merging backend sessions into local database");
-            var localSessions = await _workSessionService.GetByUserIdAsync(userId);
-            var localDict = localSessions.ToDictionary(s => s.Id);
-            _logger.LogDebug("[Sync] [WorkSessions] Found {LocalCount} local sessions", localSessions.Count);
+            // Step 4: Get all local synced sessions
+            var localSyncedSessions = await _workSessionService.GetSyncedAsync(userId);
+            _logger.LogDebug("[Sync] [WorkSessions] Found {Count} local synced sessions", localSyncedSessions.Count);
 
-            int conflictsResolved = 0;
+            // Step 5: Create set of backend IDs
+            var backendIds = backendSessions.Select(b => b.Id).ToHashSet();
+
+            // Step 6: Delete local synced sessions that no longer exist in backend
+            var toDelete = localSyncedSessions.Where(l => !backendIds.Contains(l.Id)).ToList();
+            int deletedCount = 0;
+            foreach (var session in toDelete)
+            {
+                _logger.LogDebug("[Sync] [WorkSessions] Deleting session {SessionId} - no longer exists in backend", session.Id);
+                await _workSessionService.DeleteAsync(session.Id);
+                deletedCount++;
+            }
+            _logger.LogInformation("[Sync] [WorkSessions] Deleted {Count} local sessions that no longer exist in backend", deletedCount);
+
+            // Step 7: Merge backend data into local database
+            _logger.LogDebug("[Sync] [WorkSessions] Merging backend sessions into local database");
+            var localAllSessions = await _workSessionService.GetByUserIdAsync(userId);
+            var localDict = localAllSessions.ToDictionary(s => s.Id);
+            _logger.LogDebug("[Sync] [WorkSessions] Found {LocalCount} total local sessions", localAllSessions.Count);
+
             int newSessionsAdded = 0;
             int sessionsUpdated = 0;
 
@@ -290,55 +307,95 @@ public class SyncService : ISyncService, IDisposable
             {
                 if (localDict.TryGetValue(backendModel.Id, out var localEntity))
                 {
-                    // Resolve conflict
-                    _logger.LogDebug("[Sync] [WorkSessions] Conflict detected for session {SessionId} - resolving", backendModel.Id);
-                    var resolved = await _conflictResolver.ResolveWorkSessionConflictAsync(localEntity, backendModel);
-                    await _workSessionService.UpdateAsync(resolved);
-                    conflictsResolved++;
+                    // Update existing entity - backend is source of truth
+                    _logger.LogDebug("[Sync] [WorkSessions] Updating existing session {SessionId}", backendModel.Id);
+                    localEntity.UserId = backendModel.UserId;
+                    localEntity.Date = backendModel.Date;
+                    localEntity.StartTime = backendModel.StartTime;
+                    localEntity.StopTime = backendModel.StopTime;
+                    localEntity.CreatedAt = backendModel.CreatedAt;
+                    localEntity.UpdatedAt = backendModel.UpdatedAt;
+                    localEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                    localEntity.IsSynced = true;
+                    localEntity.IsPendingSync = false;
+                    localEntity.IsFinished = backendModel.StopTime.HasValue;
+                    // Preserve CalendarEventId - it's mobile-specific and not synced from backend
+                    
+                    await _workSessionService.UpdateAsync(localEntity);
                     sessionsUpdated++;
                 }
                 else
                 {
-                    // New session from backend
-                    _logger.LogDebug("[Sync] [WorkSessions] Adding new session {SessionId} from backend", backendModel.Id);
-                    var entity = new WorkSessionEntity
+                    // Not in localDict (filtered by userId) - may exist with different userId (e.g. after login)
+                    var existingEntity = await _workSessionService.GetByIdAsync(backendModel.Id);
+                    if (existingEntity != null)
                     {
-                        Id = backendModel.Id,
-                        UserId = userId,
-                        Date = backendModel.Date,
-                        StartTime = backendModel.StartTime,
-                        StopTime = backendModel.StopTime,
-                        CreatedAt = backendModel.CreatedAt,
-                        UpdatedAt = backendModel.UpdatedAt,
-                        SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow,
-                        IsSynced = true,
-                        IsPendingSync = false,
-                        IsFinished = backendModel.StopTime.HasValue // Backend sessions are finished if StopTime is set
-                    };
-                    await _workSessionService.AddAsync(entity);
-                    newSessionsAdded++;
+                        // Exists with different/old userId - update to backend state and correct userId
+                        _logger.LogDebug("[Sync] [WorkSessions] Updating session {SessionId} (existed with different userId)", backendModel.Id);
+                        existingEntity.UserId = userId;
+                        existingEntity.Date = backendModel.Date;
+                        existingEntity.StartTime = backendModel.StartTime;
+                        existingEntity.StopTime = backendModel.StopTime;
+                        existingEntity.CreatedAt = backendModel.CreatedAt;
+                        existingEntity.UpdatedAt = backendModel.UpdatedAt;
+                        existingEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                        existingEntity.IsSynced = true;
+                        existingEntity.IsPendingSync = false;
+                        existingEntity.IsFinished = backendModel.StopTime.HasValue;
+                        await _workSessionService.UpdateAsync(existingEntity);
+                        sessionsUpdated++;
+                    }
+                    else
+                    {
+                        // Truly new - insert
+                        _logger.LogDebug("[Sync] [WorkSessions] Adding new session {SessionId} from backend", backendModel.Id);
+                        var entity = new WorkSessionEntity
+                        {
+                            Id = backendModel.Id,
+                            UserId = userId,
+                            Date = backendModel.Date,
+                            StartTime = backendModel.StartTime,
+                            StopTime = backendModel.StopTime,
+                            CreatedAt = backendModel.CreatedAt,
+                            UpdatedAt = backendModel.UpdatedAt,
+                            SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow,
+                            IsSynced = true,
+                            IsPendingSync = false,
+                            IsFinished = backendModel.StopTime.HasValue,
+                            CalendarEventId = null // CalendarEventId is not synced from backend
+                        };
+                        await _workSessionService.AddAsync(entity);
+                        newSessionsAdded++;
+                    }
                 }
             }
 
-            _logger.LogInformation("[Sync] [WorkSessions] Merge completed - Conflicts resolved: {Conflicts}, New sessions: {New}, Updated: {Updated}",
-                conflictsResolved, newSessionsAdded, sessionsUpdated);
+            _logger.LogInformation("[Sync] [WorkSessions] Merge completed - New sessions: {New}, Updated: {Updated}",
+                newSessionsAdded, sessionsUpdated);
 
-            // Mark pending sessions as synced
+            // Step 8: Mark pending sessions as synced
             int markedAsSynced = 0;
             foreach (var pending in pendingSessions)
             {
-                if (backendSessions.Any(b => b.Id == pending.Id))
+                if (backendIds.Contains(pending.Id))
                 {
                     _logger.LogDebug("[Sync] [WorkSessions] Marking session {SessionId} as synced", pending.Id);
-                    pending.IsSynced = true;
-                    pending.IsPendingSync = false;
-                    pending.SyncedAt = DateTime.UtcNow;
-                    await _workSessionService.UpdateAsync(pending);
-                    markedAsSynced++;
+                    // Get fresh entity from database to update
+                    var pendingEntity = await _workSessionService.GetByIdAsync(pending.Id);
+                    if (pendingEntity != null)
+                    {
+                        pendingEntity.IsSynced = true;
+                        pendingEntity.IsPendingSync = false;
+                        pendingEntity.SyncedAt = DateTime.UtcNow;
+                        await _workSessionService.UpdateAsync(pendingEntity);
+                        markedAsSynced++;
+                    }
                 }
             }
 
             _logger.LogInformation("[Sync] [WorkSessions] Marked {Count} pending sessions as synced", markedAsSynced);
+            _logger.LogInformation("[Sync] [WorkSessions] Sync completed - Deleted: {Deleted}, Added: {Added}, Updated: {Updated}, MarkedSynced: {Synced}",
+                deletedCount, newSessionsAdded, sessionsUpdated, markedAsSynced);
         }
         catch (Exception ex)
         {
@@ -354,46 +411,32 @@ public class SyncService : ISyncService, IDisposable
         {
             _logger.LogDebug("[Sync] [VacationDays] Starting sync for user {UserId}", userId);
             
-            // Get local pending vacation days
+            // Step 1: Get local pending vacation days
             var pendingDays = await _vacationDayService.GetPendingSyncAsync(userId);
             _logger.LogInformation("[Sync] [VacationDays] Found {Count} pending vacation days", pendingDays.Count);
 
-            // Always fetch backend first
-            _logger.LogDebug("[Sync] [VacationDays] Fetching vacation days from backend");
-            var apiStartTime = DateTime.UtcNow;
-            var backendDays = await _vacationApiClient.GetVacationDaysAsync();
-            var apiDuration = (DateTime.UtcNow - apiStartTime).TotalMilliseconds;
-            _logger.LogInformation("[Sync] [VacationDays] API call completed in {Duration}ms - Fetched {Count} vacation days from backend",
-                apiDuration, backendDays.Count);
-
+            // Step 2 & 3: Sync pending or fetch all from backend
+            List<VacationDayModel> backendDays;
             if (pendingDays.Any())
             {
-                _logger.LogDebug("[Sync] [VacationDays] Preparing sync request with {PendingCount} pending days and {BackendCount} backend days",
-                    pendingDays.Count, backendDays.Count);
+                _logger.LogDebug("[Sync] [VacationDays] Preparing sync request with {Count} pending days", pendingDays.Count);
+                
+                // Get all local days to include in sync request
+                var localDaysForSync = await _vacationDayService.GetByUserIdAsync(userId);
                 var allDaysForSync = new List<VacationDayDto>();
 
-                // Add backend days
-                foreach (var backendDay in backendDays)
+                // Add all local days (both synced and pending) to sync request
+                foreach (var localDay in localDaysForSync)
+                {
                     allDaysForSync.Add(new VacationDayDto
                     {
-                        Id = backendDay.Id,
-                        Date = backendDay.Date,
-                        CreatedAt = backendDay.CreatedAt,
-                        UpdatedAt = backendDay.UpdatedAt,
-                        SyncedAt = backendDay.SyncedAt
+                        Id = localDay.Id,
+                        Date = localDay.Date,
+                        CreatedAt = localDay.CreatedAt,
+                        UpdatedAt = localDay.UpdatedAt,
+                        SyncedAt = localDay.SyncedAt
                     });
-
-                // Add local pending days
-                foreach (var pendingDay in pendingDays)
-                    if (!backendDays.Any(b => b.Id == pendingDay.Id))
-                        allDaysForSync.Add(new VacationDayDto
-                        {
-                            Id = pendingDay.Id,
-                            Date = pendingDay.Date,
-                            CreatedAt = pendingDay.CreatedAt,
-                            UpdatedAt = pendingDay.UpdatedAt,
-                            SyncedAt = pendingDay.SyncedAt
-                        });
+                }
 
                 var syncRequest = new SyncVacationDaysRequest
                 {
@@ -408,14 +451,40 @@ public class SyncService : ISyncService, IDisposable
                 _logger.LogInformation("[Sync] [VacationDays] Sync API call completed in {Duration}ms - Synced {PendingCount} pending days, received {BackendCount} from backend",
                     syncApiDuration, pendingDays.Count, backendDays.Count);
             }
+            else
+            {
+                _logger.LogDebug("[Sync] [VacationDays] No pending days, fetching all from backend");
+                var apiStartTime = DateTime.UtcNow;
+                backendDays = await _vacationApiClient.GetVacationDaysAsync();
+                var apiDuration = (DateTime.UtcNow - apiStartTime).TotalMilliseconds;
+                _logger.LogInformation("[Sync] [VacationDays] API call completed in {Duration}ms - Fetched {Count} vacation days from backend",
+                    apiDuration, backendDays.Count);
+            }
 
-            // Merge backend days into local database
+            // Step 4: Get all local synced vacation days
+            var localSyncedDays = await _vacationDayService.GetSyncedAsync(userId);
+            _logger.LogDebug("[Sync] [VacationDays] Found {Count} local synced vacation days", localSyncedDays.Count);
+
+            // Step 5: Create set of backend IDs
+            var backendIds = backendDays.Select(b => b.Id).ToHashSet();
+
+            // Step 6: Delete local synced days that no longer exist in backend
+            var toDelete = localSyncedDays.Where(l => !backendIds.Contains(l.Id)).ToList();
+            int deletedCount = 0;
+            foreach (var day in toDelete)
+            {
+                _logger.LogDebug("[Sync] [VacationDays] Deleting vacation day {DayId} ({Date}) - no longer exists in backend", day.Id, day.Date);
+                await _vacationDayService.DeleteAsync(day.Id);
+                deletedCount++;
+            }
+            _logger.LogInformation("[Sync] [VacationDays] Deleted {Count} local vacation days that no longer exist in backend", deletedCount);
+
+            // Step 7: Merge backend data into local database
             _logger.LogDebug("[Sync] [VacationDays] Merging backend days into local database");
-            var localDays = await _vacationDayService.GetByUserIdAsync(userId);
-            var localDict = localDays.ToDictionary(d => d.Id);
-            _logger.LogDebug("[Sync] [VacationDays] Found {LocalCount} local vacation days", localDays.Count);
+            var localAllDays = await _vacationDayService.GetByUserIdAsync(userId);
+            var localDict = localAllDays.ToDictionary(d => d.Id);
+            _logger.LogDebug("[Sync] [VacationDays] Found {LocalCount} total local vacation days", localAllDays.Count);
 
-            int conflictsResolved = 0;
             int newDaysAdded = 0;
             int daysUpdated = 0;
 
@@ -423,50 +492,82 @@ public class SyncService : ISyncService, IDisposable
             {
                 if (localDict.TryGetValue(backendModel.Id, out var localEntity))
                 {
-                    _logger.LogDebug("[Sync] [VacationDays] Conflict detected for day {DayId} ({Date}) - resolving", backendModel.Id, backendModel.Date);
-                    var resolved = await _conflictResolver.ResolveVacationDayConflictAsync(localEntity, backendModel);
-                    await _vacationDayService.UpdateAsync(resolved);
-                    conflictsResolved++;
+                    // Update existing entity - backend is source of truth
+                    _logger.LogDebug("[Sync] [VacationDays] Updating existing vacation day {DayId} ({Date})", backendModel.Id, backendModel.Date);
+                    localEntity.UserId = userId;
+                    localEntity.Date = backendModel.Date;
+                    localEntity.CreatedAt = backendModel.CreatedAt;
+                    localEntity.UpdatedAt = backendModel.UpdatedAt;
+                    localEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                    localEntity.IsSynced = true;
+                    localEntity.IsPendingSync = false;
+                    
+                    await _vacationDayService.UpdateAsync(localEntity);
                     daysUpdated++;
                 }
                 else
                 {
-                    _logger.LogDebug("[Sync] [VacationDays] Adding new vacation day {DayId} ({Date}) from backend", backendModel.Id, backendModel.Date);
-                    var entity = new VacationDayEntity
+                    // Not in localDict - may exist with different userId (e.g. after login)
+                    var existingEntity = await _vacationDayService.GetByIdAsync(backendModel.Id);
+                    if (existingEntity != null)
                     {
-                        Id = backendModel.Id,
-                        UserId = userId,
-                        Date = backendModel.Date,
-                        CreatedAt = backendModel.CreatedAt,
-                        UpdatedAt = backendModel.UpdatedAt,
-                        SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow,
-                        IsSynced = true,
-                        IsPendingSync = false
-                    };
-                    await _vacationDayService.AddAsync(entity);
-                    newDaysAdded++;
+                        _logger.LogDebug("[Sync] [VacationDays] Updating vacation day {DayId} ({Date}) (existed with different userId)", backendModel.Id, backendModel.Date);
+                        existingEntity.UserId = userId;
+                        existingEntity.Date = backendModel.Date;
+                        existingEntity.CreatedAt = backendModel.CreatedAt;
+                        existingEntity.UpdatedAt = backendModel.UpdatedAt;
+                        existingEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                        existingEntity.IsSynced = true;
+                        existingEntity.IsPendingSync = false;
+                        await _vacationDayService.UpdateAsync(existingEntity);
+                        daysUpdated++;
+                    }
+                    else
+                    {
+                        _logger.LogDebug("[Sync] [VacationDays] Adding new vacation day {DayId} ({Date}) from backend", backendModel.Id, backendModel.Date);
+                        var entity = new VacationDayEntity
+                        {
+                            Id = backendModel.Id,
+                            UserId = userId,
+                            Date = backendModel.Date,
+                            CreatedAt = backendModel.CreatedAt,
+                            UpdatedAt = backendModel.UpdatedAt,
+                            SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow,
+                            IsSynced = true,
+                            IsPendingSync = false
+                        };
+                        await _vacationDayService.AddAsync(entity);
+                        newDaysAdded++;
+                    }
                 }
             }
 
-            _logger.LogInformation("[Sync] [VacationDays] Merge completed - Conflicts resolved: {Conflicts}, New days: {New}, Updated: {Updated}",
-                conflictsResolved, newDaysAdded, daysUpdated);
+            _logger.LogInformation("[Sync] [VacationDays] Merge completed - New days: {New}, Updated: {Updated}",
+                newDaysAdded, daysUpdated);
 
-            // Mark pending days as synced
+            // Step 8: Mark pending days as synced
             int markedAsSynced = 0;
             foreach (var pending in pendingDays)
             {
-                if (backendDays.Any(b => b.Id == pending.Id))
+                if (backendIds.Contains(pending.Id))
                 {
                     _logger.LogDebug("[Sync] [VacationDays] Marking day {DayId} ({Date}) as synced", pending.Id, pending.Date);
-                    pending.IsSynced = true;
-                    pending.IsPendingSync = false;
-                    pending.SyncedAt = DateTime.UtcNow;
-                    await _vacationDayService.UpdateAsync(pending);
-                    markedAsSynced++;
+                    // Get fresh entity from database to update
+                    var pendingEntity = await _vacationDayService.GetByIdAsync(pending.Id);
+                    if (pendingEntity != null)
+                    {
+                        pendingEntity.IsSynced = true;
+                        pendingEntity.IsPendingSync = false;
+                        pendingEntity.SyncedAt = DateTime.UtcNow;
+                        await _vacationDayService.UpdateAsync(pendingEntity);
+                        markedAsSynced++;
+                    }
                 }
             }
 
             _logger.LogInformation("[Sync] [VacationDays] Marked {Count} pending days as synced", markedAsSynced);
+            _logger.LogInformation("[Sync] [VacationDays] Sync completed - Deleted: {Deleted}, Added: {Added}, Updated: {Updated}, MarkedSynced: {Synced}",
+                deletedCount, newDaysAdded, daysUpdated, markedAsSynced);
         }
         catch (Exception ex)
         {

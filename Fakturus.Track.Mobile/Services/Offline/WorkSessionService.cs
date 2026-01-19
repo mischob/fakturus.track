@@ -21,6 +21,7 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         try
         {
             var result = await Context.WorkSessions
+                .AsNoTracking()
                 .Where(ws => ws.UserId == userId)
                 .OrderByDescending(ws => ws.Date)
                 .ThenByDescending(ws => ws.StartTime)
@@ -42,6 +43,7 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         try
         {
             var result = await Context.WorkSessions
+                .AsNoTracking()
                 .Where(ws => ws.UserId == userId && ws.Date >= startDate && ws.Date <= endDate)
                 .OrderByDescending(ws => ws.Date)
                 .ThenByDescending(ws => ws.StartTime)
@@ -63,6 +65,7 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         try
         {
             var result = await Context.WorkSessions
+                .AsNoTracking()
                 .Where(ws => ws.UserId == userId && ws.IsPendingSync && !ws.IsSynced && ws.IsFinished)
                 .ToListAsync();
             _logger.LogDebug("[Database] [WorkSession] GetPendingSyncAsync completed - Count: {Count}", result.Count);
@@ -75,12 +78,32 @@ public class WorkSessionService : OfflineDataService<WorkSessionEntity>, IWorkSe
         }
     }
 
+    public async Task<List<WorkSessionEntity>> GetSyncedAsync(string userId)
+    {
+        _logger.LogDebug("[Database] [WorkSession] GetSyncedAsync - UserId: {UserId}", userId);
+        try
+        {
+            var result = await Context.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId && ws.IsSynced)
+                .ToListAsync();
+            _logger.LogDebug("[Database] [WorkSession] GetSyncedAsync completed - Count: {Count}", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Database] [WorkSession] Error in GetSyncedAsync - UserId: {UserId}", userId);
+            throw;
+        }
+    }
+
     public async Task<WorkSessionEntity?> GetByDateAsync(string userId, DateOnly date)
     {
         _logger.LogDebug("[Database] [WorkSession] GetByDateAsync - UserId: {UserId}, Date: {Date}", userId, date);
         try
         {
             var result = await Context.WorkSessions
+                .AsNoTracking()
                 .FirstOrDefaultAsync(ws => ws.UserId == userId && ws.Date == date);
             _logger.LogDebug("[Database] [WorkSession] GetByDateAsync completed - Found: {Found}", result != null);
             return result;
