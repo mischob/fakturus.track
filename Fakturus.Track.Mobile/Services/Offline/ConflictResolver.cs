@@ -78,22 +78,16 @@ public class ConflictResolver : IConflictResolver
         }
 
         // Backend is newer or equal, use backend
-        var resolved = new UserSettingsEntity
-        {
-            UserId = localEntity.UserId,
-            CalendarUrl = localEntity.CalendarUrl, // Keep local calendar URL
-            VacationDaysPerYear = backendModel.VacationDaysPerYear,
-            WorkHoursPerWeek = backendModel.WorkHoursPerWeek,
-            WorkDays = backendModel.WorkDays,
-            Bundesland = backendModel.Bundesland,
-            CreatedAt = localEntity.CreatedAt,
-            UpdatedAt = DateTime.UtcNow,
-            SyncedAt = DateTime.UtcNow,
-            IsSynced = true,
-            IsPendingSync = false
-        };
+        localEntity.VacationDaysPerYear = backendModel.VacationDaysPerYear;
+        localEntity.WorkHoursPerWeek = backendModel.WorkHoursPerWeek;
+        localEntity.WorkDays = backendModel.WorkDays;
+        localEntity.Bundesland = backendModel.Bundesland;
+        localEntity.UpdatedAt = DateTime.UtcNow;
+        localEntity.SyncedAt = DateTime.UtcNow;
+        localEntity.IsSynced = true;
+        localEntity.IsPendingSync = false;
 
         _logger.LogInformation("Backend UserSettings is newer, using backend version");
-        return Task.FromResult(resolved);
+        return Task.FromResult(localEntity);
     }
 }
