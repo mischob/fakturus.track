@@ -61,11 +61,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="appsettings.json">
-            <!-- Exclude from content processing to avoid iOS path warning -->
-            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </EmbeddedResource>
+        <EmbeddedResource Include="appsettings.json" />
     </ItemGroup>
 
     <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
@@ -83,6 +79,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="Refit" Version="9.0.2" />
         <PackageReference Include="Refit.HttpClientFactory" Version="9.0.2"/>
         <PackageReference Include="Microsoft.Identity.Client" Version="4.66.0"/>
         <PackageReference Include="Microsoft.Maui.Essentials" Version="$(MauiVersion)"/>

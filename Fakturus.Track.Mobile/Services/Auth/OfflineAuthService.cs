@@ -204,7 +204,10 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
 #if IOS
             // On iOS, we need to provide the parent view controller
             // Try to get the topmost view controller
-            var window = UIApplication.SharedApplication.KeyWindow;
+            var window = UIApplication.SharedApplication.ConnectedScenes
+                .OfType<UIWindowScene>()
+                .SelectMany(s => s.Windows)
+                .FirstOrDefault(w => w.IsKeyWindow);
             var rootViewController = window?.RootViewController;
             
             // Navigate to the topmost view controller (handles navigation controllers, tab controllers, etc.)

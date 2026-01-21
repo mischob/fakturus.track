@@ -6,9 +6,20 @@
 
 <OfflineIndicator/>
 
-<main class="main-content">
-    @Body
-</main>
+<ErrorBoundary @ref="errorBoundary">
+    <ChildContent>
+        <main class="main-content">
+            @Body
+        </main>
+    </ChildContent>
+    <ErrorContent>
+        <div class="error-container p-4 text-center">
+            <h3>Something went wrong</h3>
+            <p>An unexpected error occurred while rendering the page.</p>
+            <button class="btn btn-primary" @onclick="Recover">Try Again</button>
+        </div>
+    </ErrorContent>
+</ErrorBoundary>
 
 <TrackBottomNavigation/>
 
