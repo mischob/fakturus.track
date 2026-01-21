@@ -1,16 +1,8 @@
-using System.Reflection;
-using Blazored.Toast;
 using Fakturus.Track.Mobile.Data;
 using Fakturus.Track.Mobile.Services.Api;
 using Fakturus.Track.Mobile.Services.Auth;
 using Fakturus.Track.Mobile.Services.Network;
 using Fakturus.Track.Mobile.Services.Offline;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Refit;
-using Serilog;
-using Serilog.Events;
 
 namespace Fakturus.Track.Mobile;
 
@@ -79,12 +71,6 @@ public static class MauiProgram
 #endif
         });
 
-        // Offline Data Services
-        builder.Services.AddScoped<IWorkSessionService, WorkSessionService>();
-        builder.Services.AddScoped<IVacationDayService, VacationDayService>();
-        builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
-        builder.Services.AddScoped<ISyncQueueService, SyncQueueService>();
-
         // Auth Services
         builder.Services.AddSingleton<IDeviceIdService, DeviceIdService>();
         builder.Services.AddScoped<IOfflineAuthService, OfflineAuthService>();
@@ -135,6 +121,7 @@ public static class MauiProgram
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<MobileDbContext>();
             dbContext.Database.EnsureCreated();
+            dbContext.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS SyncQueue");
         }
 
         return app;

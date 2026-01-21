@@ -1,7 +1,4 @@
-﻿using Android.App;
-using Android.Runtime;
-
-namespace Fakturus.Track.Mobile;
+﻿namespace Fakturus.Track.Mobile;
 
 [Application]
 public class MainApplication : MauiApplication

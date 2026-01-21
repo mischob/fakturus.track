@@ -1,5 +1,4 @@
 using Fakturus.Track.Mobile.Shared.Models;
-using Refit;
 
 namespace Fakturus.Track.Mobile.Services.Api;
 

@@ -1,5 +1,3 @@
-using Serilog;
-
 namespace Fakturus.Track.Mobile;
 
 public partial class App : Application

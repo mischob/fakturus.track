@@ -1,8 +1,8 @@
 @page "/"
 @page "/zeiten"
-@using Microsoft.Extensions.Logging
+@using Fakturus.Track.Mobile.Data
 @implements IDisposable
-@inject IWorkSessionService WorkSessionService
+@inject MobileDbContext Db
 @inject ISyncService SyncService
 @inject IOfflineAuthService AuthService
 @inject IToastService ToastService
@@ -287,7 +287,12 @@
                 return;
             }
 
-            var entities = await WorkSessionService.GetByUserIdAsync(userId);
+            var entities = await Db.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId)
+                .OrderByDescending(ws => ws.Date)
+                .ThenByDescending(ws => ws.StartTime)
+                .ToListAsync();
             _workSessions = entities.ToModels();
             Logger.LogInformation("[UI] [Zeiten] LoadWorkSessionsAsync: Loaded {Count} sessions from database", _workSessions.Count);
 
@@ -425,11 +430,9 @@
             var userId = await AuthService.GetUserIdOrAnonymousAsync();
             session.UserId = userId;
 
-            // Get the tracked entity from the database and update it
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                // Update the tracked entity properties
                 entity.StartTime = session.StartTime;
                 entity.Date = session.Date;
                 entity.IsFinished = session.IsFinished;
@@ -437,14 +440,13 @@
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
                 entity.UserId = session.UserId;
-
-                await WorkSessionService.UpdateAsync(entity);
+                await Db.SaveChangesAsync();
             }
             else
             {
-                // Entity doesn't exist, create it
                 entity = session.ToEntity();
-                await WorkSessionService.AddAsync(entity);
+                await Db.WorkSessions.AddAsync(entity);
+                await Db.SaveChangesAsync();
             }
 
             await LoadWorkSessionsAsync();
@@ -469,18 +471,15 @@
             session.IsSynced = false; // Mark as not synced
             session.UpdatedAt = DateTime.UtcNow;
 
-            // Get the tracked entity from the database and update it
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                // Update the tracked entity properties
                 entity.StopTime = session.StopTime;
                 entity.IsFinished = session.IsFinished;
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-
-                await WorkSessionService.UpdateAsync(entity);
+                await Db.SaveChangesAsync();
             }
 
             await LoadWorkSessionsAsync();
@@ -507,27 +506,21 @@
             session.IsSynced = false; // Mark as not synced
             session.UpdatedAt = DateTime.UtcNow;
 
-            // Get the tracked entity from the database and update it
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                // Update the tracked entity properties
                 entity.StopTime = session.StopTime;
                 entity.IsFinished = session.IsFinished;
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-
-                await WorkSessionService.UpdateAsync(entity);
+                await Db.SaveChangesAsync();
             }
 
-            // Set flag to prevent re-loading the finished session
             _isFinishing = true;
 
-            // Reload to refresh the list (finished session will appear in history)
             await LoadWorkSessionsAsync();
 
-            // Start background sync for the now-finished session
             await SyncService.StartPeriodicSyncAsync();
 
             ToastService.ShowSuccess("Session finished");
@@ -559,8 +552,10 @@
             };
 
             var entity = newSession.ToEntity();
-            await WorkSessionService.AddAsync(entity);
-            _currentSession = newSession; // Set as current session immediately
+            Db.ChangeTracker.Clear();
+            await Db.WorkSessions.AddAsync(entity);
+            await Db.SaveChangesAsync();
+            _currentSession = newSession;
             await LoadWorkSessionsAsync();
 
             ToastService.ShowSuccess("New session created");
@@ -604,11 +599,9 @@
             session.IsSynced = false; // Mark as not synced so it will be included in next sync
             session.UpdatedAt = DateTime.UtcNow;
 
-            // Get the tracked entity from the database and update it
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                // Update the tracked entity properties
                 entity.Date = session.Date;
                 entity.StartTime = session.StartTime;
                 entity.StopTime = session.StopTime;
@@ -616,12 +609,9 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-
-                await WorkSessionService.UpdateAsync(entity);
+                await Db.SaveChangesAsync();
             }
 
-            // Reload to refresh the list
-            // LoadWorkSessionsAsync will preserve the current session by ID
             await LoadWorkSessionsAsync();
 
             // Start background sync for the saved session
@@ -647,11 +637,9 @@
             session.IsSynced = false;
             session.UpdatedAt = DateTime.UtcNow;
 
-            // Get the tracked entity from the database and update it
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                // Update the tracked entity properties
                 entity.Date = session.Date;
                 entity.StartTime = session.StartTime;
                 entity.StopTime = session.StopTime;
@@ -659,14 +647,10 @@
                 entity.IsPendingSync = session.IsPendingSync;
                 entity.IsSynced = session.IsSynced;
                 entity.UpdatedAt = session.UpdatedAt;
-
-                await WorkSessionService.UpdateAsync(entity);
+                await Db.SaveChangesAsync();
             }
 
-            // Reload to refresh the display
             await LoadWorkSessionsAsync();
-
-            // No toast message for time changes (too noisy)
         }
         catch (Exception ex)
         {
@@ -700,11 +684,11 @@
                 ToastService.ShowSuccess("Session deleted");
             }
 
-            // Delete from local database
-            var entity = await WorkSessionService.GetByIdAsync(session.Id);
+            var entity = await Db.WorkSessions.FindAsync(session.Id);
             if (entity != null)
             {
-                await WorkSessionService.DeleteAsync(entity);
+                Db.WorkSessions.Remove(entity);
+                await Db.SaveChangesAsync();
             }
 
             await LoadWorkSessionsAsync();

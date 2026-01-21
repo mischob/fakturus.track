@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-
 namespace Fakturus.Track.Mobile.Data;
 
 public class MobileDbContextFactory : IDesignTimeDbContextFactory<MobileDbContext>

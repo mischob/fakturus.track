@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Identity.Client;
 #if IOS
 using UIKit;
 #endif
@@ -28,11 +25,6 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
         _configuration = configuration;
         _deviceIdService = deviceIdService;
         _logger = logger;
-    }
-
-    public void Dispose()
-    {
-        _publicClientApp = null;
     }
 
     public bool IsAnonymousMode { get; private set; } = true;
@@ -365,6 +357,11 @@ public class OfflineAuthService : IOfflineAuthService, IDisposable
                 ex.GetType().Name, ex.Message, ex.StackTrace);
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        _publicClientApp = null;
     }
 
     private IPublicClientApplication GetPublicClientApp()

@@ -1,10 +1,9 @@
+using Fakturus.Track.Mobile.Data;
 using Fakturus.Track.Mobile.Data.Entities;
 using Fakturus.Track.Mobile.Services.Api;
 using Fakturus.Track.Mobile.Services.Auth;
 using Fakturus.Track.Mobile.Services.Network;
 using Fakturus.Track.Mobile.Shared.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Timer = System.Timers.Timer;
 using VacationDayDto = Fakturus.Track.Mobile.Services.Api.VacationDayDto;
 using CreateWorkSessionRequest = Fakturus.Track.Mobile.Services.Api.CreateWorkSessionRequest;
@@ -18,22 +17,18 @@ public class SyncService : ISyncService, IDisposable
     private readonly IOfflineAuthService _authService;
     private readonly IConfiguration _configuration;
     private readonly IConflictResolver _conflictResolver;
+    private readonly MobileDbContext _context;
     private readonly ILogger<SyncService> _logger;
     private readonly INetworkMonitor _networkMonitor;
     private readonly ISettingsApiClient _settingsApiClient;
     private readonly int _syncIntervalSeconds;
-    private readonly IUserSettingsService _userSettingsService;
     private readonly IVacationApiClient _vacationApiClient;
-    private readonly IVacationDayService _vacationDayService;
     private readonly IWorkSessionsApiClient _workSessionsApiClient;
-    private readonly IWorkSessionService _workSessionService;
 
     private Timer? _syncTimer;
 
     public SyncService(
-        IWorkSessionService workSessionService,
-        IVacationDayService vacationDayService,
-        IUserSettingsService userSettingsService,
+        MobileDbContext context,
         IWorkSessionsApiClient workSessionsApiClient,
         IVacationApiClient vacationApiClient,
         ISettingsApiClient settingsApiClient,
@@ -43,9 +38,7 @@ public class SyncService : ISyncService, IDisposable
         IConfiguration configuration,
         ILogger<SyncService> logger)
     {
-        _workSessionService = workSessionService;
-        _vacationDayService = vacationDayService;
-        _userSettingsService = userSettingsService;
+        _context = context;
         _workSessionsApiClient = workSessionsApiClient;
         _vacationApiClient = vacationApiClient;
         _settingsApiClient = settingsApiClient;
@@ -162,10 +155,16 @@ public class SyncService : ISyncService, IDisposable
         {
             _logger.LogDebug("[Sync] Checking for pending syncs");
             var userId = await _authService.GetUserIdOrAnonymousAsync();
-            var pendingSessions = await _workSessionService.GetPendingSyncAsync(userId);
-            var pendingDays = await _vacationDayService.GetPendingSyncAsync(userId);
+            var pendingSessions = await _context.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId && ws.IsPendingSync && !ws.IsSynced && ws.IsFinished)
+                .ToListAsync();
+            var pendingDays = await _context.VacationDays
+                .AsNoTracking()
+                .Where(v => v.UserId == userId && v.IsPendingSync && !v.IsSynced)
+                .ToListAsync();
 
-            var hasPending = pendingSessions.Any() || pendingDays.Any();
+            var hasPending = pendingSessions.Count != 0 || pendingDays.Count != 0;
             _logger.LogDebug(
                 "[Sync] Pending syncs check - WorkSessions: {SessionCount}, VacationDays: {DayCount}, HasPending: {HasPending}",
                 pendingSessions.Count, pendingDays.Count, hasPending);
@@ -246,7 +245,10 @@ public class SyncService : ISyncService, IDisposable
             _logger.LogDebug("[Sync] [WorkSessions] Starting sync for user {UserId}", userId);
 
             // Step 1: Get local pending sessions
-            var pendingSessions = await _workSessionService.GetPendingSyncAsync(userId);
+            var pendingSessions = await _context.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId && ws.IsPendingSync && !ws.IsSynced && ws.IsFinished)
+                .ToListAsync();
             _logger.LogInformation("[Sync] [WorkSessions] Found {Count} pending work sessions", pendingSessions.Count);
 
             // Step 2 & 3: Sync pending or fetch all from backend
@@ -286,7 +288,10 @@ public class SyncService : ISyncService, IDisposable
             }
 
             // Step 4: Get all local synced sessions
-            var localSyncedSessions = await _workSessionService.GetSyncedAsync(userId);
+            var localSyncedSessions = await _context.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId && ws.IsSynced)
+                .ToListAsync();
             _logger.LogDebug("[Sync] [WorkSessions] Found {Count} local synced sessions", localSyncedSessions.Count);
 
             // Step 5: Create set of backend IDs
@@ -299,7 +304,13 @@ public class SyncService : ISyncService, IDisposable
             {
                 _logger.LogDebug("[Sync] [WorkSessions] Deleting session {SessionId} - no longer exists in backend",
                     session.Id);
-                await _workSessionService.DeleteAsync(session.Id);
+                var toRemove = await _context.WorkSessions.FirstOrDefaultAsync(ws => ws.Id == session.Id);
+                if (toRemove != null)
+                {
+                    _context.WorkSessions.Remove(toRemove);
+                    await _context.SaveChangesAsync();
+                }
+
                 deletedCount++;
             }
 
@@ -308,7 +319,12 @@ public class SyncService : ISyncService, IDisposable
 
             // Step 7: Merge backend data into local database
             _logger.LogDebug("[Sync] [WorkSessions] Merging backend sessions into local database");
-            var localAllSessions = await _workSessionService.GetByUserIdAsync(userId);
+            var localAllSessions = await _context.WorkSessions
+                .AsNoTracking()
+                .Where(ws => ws.UserId == userId)
+                .OrderByDescending(ws => ws.Date)
+                .ThenByDescending(ws => ws.StartTime)
+                .ToListAsync();
             var localDict = localAllSessions.ToDictionary(s => s.Id);
             _logger.LogDebug("[Sync] [WorkSessions] Found {LocalCount} total local sessions", localAllSessions.Count);
 
@@ -316,29 +332,33 @@ public class SyncService : ISyncService, IDisposable
             var sessionsUpdated = 0;
 
             foreach (var backendModel in backendSessions)
-                if (localDict.TryGetValue(backendModel.Id, out var localEntity))
+                if (localDict.ContainsKey(backendModel.Id))
                 {
-                    // Update existing entity - backend is source of truth
-                    _logger.LogDebug("[Sync] [WorkSessions] Updating existing session {SessionId}", backendModel.Id);
-                    localEntity.UserId = backendModel.UserId;
-                    localEntity.Date = backendModel.Date;
-                    localEntity.StartTime = backendModel.StartTime;
-                    localEntity.StopTime = backendModel.StopTime;
-                    localEntity.CreatedAt = backendModel.CreatedAt;
-                    localEntity.UpdatedAt = backendModel.UpdatedAt;
-                    localEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
-                    localEntity.IsSynced = true;
-                    localEntity.IsPendingSync = false;
-                    localEntity.IsFinished = backendModel.StopTime.HasValue;
+                    // Update existing entity - use FindAsync to get tracked instance (localDict is AsNoTracking)
+                    var entity = await _context.WorkSessions.FindAsync(backendModel.Id);
+                    if (entity == null) continue;
 
+                    _logger.LogDebug("[Sync] [WorkSessions] Updating existing session {SessionId}", backendModel.Id);
+                    entity.UserId = userId;
+                    entity.Date = backendModel.Date;
+                    entity.StartTime = backendModel.StartTime;
+                    entity.StopTime = backendModel.StopTime;
+                    entity.CreatedAt = backendModel.CreatedAt;
+                    entity.UpdatedAt = backendModel.UpdatedAt;
+                    entity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                    entity.IsSynced = true;
+                    entity.IsPendingSync = false;
+                    entity.IsFinished = backendModel.StopTime.HasValue;
                     // Preserve CalendarEventId - it's mobile-specific and not synced from backend
-                    await _workSessionService.UpdateAsync(localEntity);
+
+                    await _context.SaveChangesAsync();
                     sessionsUpdated++;
                 }
                 else
                 {
                     // Not in localDict (filtered by userId) - may exist with different userId (e.g. after login)
-                    var existingEntity = await _workSessionService.GetByIdAsync(backendModel.Id);
+                    // Use FindAsync to avoid duplicate tracking: it returns the tracked instance if present
+                    var existingEntity = await _context.WorkSessions.FindAsync(backendModel.Id);
                     if (existingEntity != null)
                     {
                         // Exists with different/old userId - update to backend state and correct userId
@@ -355,7 +375,7 @@ public class SyncService : ISyncService, IDisposable
                         existingEntity.IsSynced = true;
                         existingEntity.IsPendingSync = false;
                         existingEntity.IsFinished = backendModel.StopTime.HasValue;
-                        await _workSessionService.UpdateAsync(existingEntity);
+                        await _context.SaveChangesAsync();
                         sessionsUpdated++;
                     }
                     else
@@ -378,7 +398,8 @@ public class SyncService : ISyncService, IDisposable
                             IsFinished = backendModel.StopTime.HasValue,
                             CalendarEventId = null // CalendarEventId is not synced from backend
                         };
-                        await _workSessionService.AddAsync(entity);
+                        await _context.WorkSessions.AddAsync(entity);
+                        await _context.SaveChangesAsync();
                         newSessionsAdded++;
                     }
                 }
@@ -392,14 +413,14 @@ public class SyncService : ISyncService, IDisposable
                 if (backendIds.Contains(pending.Id))
                 {
                     _logger.LogDebug("[Sync] [WorkSessions] Marking session {SessionId} as synced", pending.Id);
-                    // Get fresh entity from database to update
-                    var pendingEntity = await _workSessionService.GetByIdAsync(pending.Id);
+                    // Use FindAsync to avoid duplicate tracking (entity may already be tracked from merge)
+                    var pendingEntity = await _context.WorkSessions.FindAsync(pending.Id);
                     if (pendingEntity != null)
                     {
                         pendingEntity.IsSynced = true;
                         pendingEntity.IsPendingSync = false;
                         pendingEntity.SyncedAt = DateTime.UtcNow;
-                        await _workSessionService.UpdateAsync(pendingEntity);
+                        await _context.SaveChangesAsync();
                         markedAsSynced++;
                     }
                 }
@@ -425,7 +446,10 @@ public class SyncService : ISyncService, IDisposable
             _logger.LogDebug("[Sync] [VacationDays] Starting sync for user {UserId}", userId);
 
             // Step 1: Get local pending vacation days
-            var pendingDays = await _vacationDayService.GetPendingSyncAsync(userId);
+            var pendingDays = await _context.VacationDays
+                .AsNoTracking()
+                .Where(v => v.UserId == userId && v.IsPendingSync && !v.IsSynced)
+                .ToListAsync();
             _logger.LogInformation("[Sync] [VacationDays] Found {Count} pending vacation days", pendingDays.Count);
 
             // Step 2 & 3: Sync pending or fetch all from backend
@@ -436,7 +460,11 @@ public class SyncService : ISyncService, IDisposable
                     pendingDays.Count);
 
                 // Get all local days to include in sync request
-                var localDaysForSync = await _vacationDayService.GetByUserIdAsync(userId);
+                var localDaysForSync = await _context.VacationDays
+                    .AsNoTracking()
+                    .Where(v => v.UserId == userId)
+                    .OrderBy(v => v.Date)
+                    .ToListAsync();
                 var allDaysForSync = new List<VacationDayDto>();
 
                 // Add all local days (both synced and pending) to sync request
@@ -477,7 +505,10 @@ public class SyncService : ISyncService, IDisposable
             }
 
             // Step 4: Get all local synced vacation days
-            var localSyncedDays = await _vacationDayService.GetSyncedAsync(userId);
+            var localSyncedDays = await _context.VacationDays
+                .AsNoTracking()
+                .Where(v => v.UserId == userId && v.IsSynced)
+                .ToListAsync();
             _logger.LogDebug("[Sync] [VacationDays] Found {Count} local synced vacation days", localSyncedDays.Count);
 
             // Step 5: Create set of backend IDs
@@ -491,7 +522,13 @@ public class SyncService : ISyncService, IDisposable
                 _logger.LogDebug(
                     "[Sync] [VacationDays] Deleting vacation day {DayId} ({Date}) - no longer exists in backend",
                     day.Id, day.Date);
-                await _vacationDayService.DeleteAsync(day.Id);
+                var toRemove = await _context.VacationDays.FirstOrDefaultAsync(v => v.Id == day.Id);
+                if (toRemove != null)
+                {
+                    _context.VacationDays.Remove(toRemove);
+                    await _context.SaveChangesAsync();
+                }
+
                 deletedCount++;
             }
 
@@ -501,7 +538,11 @@ public class SyncService : ISyncService, IDisposable
 
             // Step 7: Merge backend data into local database
             _logger.LogDebug("[Sync] [VacationDays] Merging backend days into local database");
-            var localAllDays = await _vacationDayService.GetByUserIdAsync(userId);
+            var localAllDays = await _context.VacationDays
+                .AsNoTracking()
+                .Where(v => v.UserId == userId)
+                .OrderBy(v => v.Date)
+                .ToListAsync();
             var localDict = localAllDays.ToDictionary(d => d.Id);
             _logger.LogDebug("[Sync] [VacationDays] Found {LocalCount} total local vacation days", localAllDays.Count);
 
@@ -509,26 +550,30 @@ public class SyncService : ISyncService, IDisposable
             var daysUpdated = 0;
 
             foreach (var backendModel in backendDays)
-                if (localDict.TryGetValue(backendModel.Id, out var localEntity))
+                if (localDict.ContainsKey(backendModel.Id))
                 {
-                    // Update existing entity - backend is source of truth
+                    // Update existing entity - use FindAsync to get tracked instance (localDict is AsNoTracking)
+                    var entity = await _context.VacationDays.FindAsync(backendModel.Id);
+                    if (entity == null) continue;
+
                     _logger.LogDebug("[Sync] [VacationDays] Updating existing vacation day {DayId} ({Date})",
                         backendModel.Id, backendModel.Date);
-                    localEntity.UserId = userId;
-                    localEntity.Date = backendModel.Date;
-                    localEntity.CreatedAt = backendModel.CreatedAt;
-                    localEntity.UpdatedAt = backendModel.UpdatedAt;
-                    localEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
-                    localEntity.IsSynced = true;
-                    localEntity.IsPendingSync = false;
+                    entity.UserId = userId;
+                    entity.Date = backendModel.Date;
+                    entity.CreatedAt = backendModel.CreatedAt;
+                    entity.UpdatedAt = backendModel.UpdatedAt;
+                    entity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
+                    entity.IsSynced = true;
+                    entity.IsPendingSync = false;
 
-                    await _vacationDayService.UpdateAsync(localEntity);
+                    await _context.SaveChangesAsync();
                     daysUpdated++;
                 }
                 else
                 {
                     // Not in localDict - may exist with different userId (e.g. after login)
-                    var existingEntity = await _vacationDayService.GetByIdAsync(backendModel.Id);
+                    // Use FindAsync to avoid duplicate tracking
+                    var existingEntity = await _context.VacationDays.FindAsync(backendModel.Id);
                     if (existingEntity != null)
                     {
                         _logger.LogDebug(
@@ -541,7 +586,7 @@ public class SyncService : ISyncService, IDisposable
                         existingEntity.SyncedAt = backendModel.SyncedAt ?? DateTime.UtcNow;
                         existingEntity.IsSynced = true;
                         existingEntity.IsPendingSync = false;
-                        await _vacationDayService.UpdateAsync(existingEntity);
+                        await _context.SaveChangesAsync();
                         daysUpdated++;
                     }
                     else
@@ -559,7 +604,8 @@ public class SyncService : ISyncService, IDisposable
                             IsSynced = true,
                             IsPendingSync = false
                         };
-                        await _vacationDayService.AddAsync(entity);
+                        await _context.VacationDays.AddAsync(entity);
+                        await _context.SaveChangesAsync();
                         newDaysAdded++;
                     }
                 }
@@ -574,14 +620,14 @@ public class SyncService : ISyncService, IDisposable
                 {
                     _logger.LogDebug("[Sync] [VacationDays] Marking day {DayId} ({Date}) as synced", pending.Id,
                         pending.Date);
-                    // Get fresh entity from database to update
-                    var pendingEntity = await _vacationDayService.GetByIdAsync(pending.Id);
+                    // Use FindAsync to avoid duplicate tracking (entity may already be tracked from merge)
+                    var pendingEntity = await _context.VacationDays.FindAsync(pending.Id);
                     if (pendingEntity != null)
                     {
                         pendingEntity.IsSynced = true;
                         pendingEntity.IsPendingSync = false;
                         pendingEntity.SyncedAt = DateTime.UtcNow;
-                        await _vacationDayService.UpdateAsync(pendingEntity);
+                        await _context.SaveChangesAsync();
                         markedAsSynced++;
                     }
                 }
@@ -613,11 +659,25 @@ public class SyncService : ISyncService, IDisposable
             _logger.LogDebug("[Sync] [UserSettings] API call completed in {Duration}ms", apiDuration);
 
             _logger.LogDebug("[Sync] [UserSettings] Getting or creating local settings");
-            var localSettings = await _userSettingsService.GetOrCreateAsync(userId);
+            var localSettings = await _context.UserSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+            if (localSettings == null)
+            {
+                localSettings = new UserSettingsEntity
+                {
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await _context.UserSettings.AddAsync(localSettings);
+                await _context.SaveChangesAsync();
+            }
 
             _logger.LogDebug("[Sync] [UserSettings] Resolving conflicts between local and backend settings");
             var resolved = await _conflictResolver.ResolveUserSettingsConflictAsync(localSettings, backendSettings);
-            await _userSettingsService.UpdateAsync(resolved);
+            _context.UserSettings.Update(resolved);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("[Sync] [UserSettings] Settings sync completed successfully");
         }

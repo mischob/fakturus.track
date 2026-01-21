@@ -11,11 +11,6 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
         Connectivity.Current.ConnectivityChanged += OnConnectivityChanged;
     }
 
-    public void Dispose()
-    {
-        StopMonitoring();
-    }
-
     public bool IsConnected { get; private set; }
 
     public event EventHandler<bool>? ConnectivityChanged;
@@ -50,6 +45,11 @@ public class NetworkMonitor : INetworkMonitor, IDisposable
 
         _isMonitoring = false;
         Connectivity.Current.ConnectivityChanged -= OnConnectivityChanged;
+    }
+
+    public void Dispose()
+    {
+        StopMonitoring();
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)

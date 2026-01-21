@@ -1,6 +1,5 @@
 using Fakturus.Track.Mobile.Data.Entities;
 using Fakturus.Track.Mobile.Shared.Models;
-using Microsoft.Extensions.Logging;
 
 namespace Fakturus.Track.Mobile.Services.Offline;
 

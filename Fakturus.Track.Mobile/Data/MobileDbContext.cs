@@ -1,5 +1,4 @@
 using Fakturus.Track.Mobile.Data.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fakturus.Track.Mobile.Data;
 
@@ -28,7 +27,6 @@ public class MobileDbContext : DbContext
     public DbSet<UserSettingsEntity> UserSettings { get; set; }
     public DbSet<SchoolHolidayPeriodEntity> SchoolHolidayPeriods { get; set; }
     public DbSet<CalendarEventEntity> CalendarEvents { get; set; }
-    public DbSet<SyncQueueEntity> SyncQueue { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -94,16 +92,6 @@ public class MobileDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-        });
-
-        // Configure SyncQueueEntity
-        modelBuilder.Entity<SyncQueueEntity>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.EntityType, e.EntityId });
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.CreatedAt);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
     }
 }
