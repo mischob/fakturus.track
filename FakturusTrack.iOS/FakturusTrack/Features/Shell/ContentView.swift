@@ -17,30 +17,17 @@ struct ContentView: View {
                     .tabItem { Label("Zeiten", systemImage: "clock") }
                     .tag(0)
 
-                PlaceholderView(
-                    icon: "sun.max",
-                    title: "Urlaub",
-                    message: "Kommt in Phase 2"
-                )
-                .tabItem { Label("Urlaub", systemImage: "sun.max") }
-                .tag(1)
+                VacationScreen()
+                    .tabItem { Label("Urlaub", systemImage: "sun.max") }
+                    .tag(1)
 
-                PlaceholderView(
-                    icon: "chart.bar",
-                    title: "Gesamt",
-                    message: "Kommt in Phase 2"
-                )
-                .tabItem { Label("Gesamt", systemImage: "chart.bar") }
-                .tag(2)
+                OverviewScreen()
+                    .tabItem { Label("Gesamt", systemImage: "chart.bar") }
+                    .tag(2)
 
-                PlaceholderView(
-                    icon: "gearshape",
-                    title: "Einstellungen",
-                    message: "Kommt in Phase 2",
-                    showLogout: true
-                )
-                .tabItem { Label("Einstellungen", systemImage: "gearshape") }
-                .tag(3)
+                SettingsView()
+                    .tabItem { Label("Einstellungen", systemImage: "gearshape") }
+                    .tag(3)
             }
         }
     }

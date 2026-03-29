@@ -1,5 +1,59 @@
 import Foundation
 
+// MARK: - Sick Day DTOs (Placeholder for E04)
+
+struct SyncSickDaysRequest: Encodable {
+    let sickDays: [SickDaySyncItem]
+
+    enum CodingKeys: String, CodingKey {
+        case sickDays = "SickDays"
+    }
+}
+
+struct SickDaySyncItem: Codable {
+    let id: String
+    let date: String
+    let createdAt: String?
+    let updatedAt: String?
+    let syncedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id"
+        case date = "Date"
+        case createdAt = "CreatedAt"
+        case updatedAt = "UpdatedAt"
+        case syncedAt = "SyncedAt"
+    }
+}
+
+struct SickDayDTO: Decodable {
+    let id: String
+    let userId: String?
+    let date: String
+    let createdAt: String?
+    let updatedAt: String?
+    let syncedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id"
+        case userId = "UserId"
+        case date = "Date"
+        case createdAt = "CreatedAt"
+        case updatedAt = "UpdatedAt"
+        case syncedAt = "SyncedAt"
+    }
+}
+
+struct SyncSickDaysResponse: Decodable {
+    let serverSickDays: [SickDayDTO]
+    let deletedIds: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case serverSickDays = "ServerSickDays"
+        case deletedIds = "DeletedIds"
+    }
+}
+
 // MARK: - Request Types
 
 struct SyncWorkSessionsRequest: Encodable {
@@ -110,6 +164,7 @@ struct UserSettingsDTO: Codable {
     let workHoursPerWeek: Double
     let workDays: Int
     let bundesland: String
+    let updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case calendarUrl = "CalendarUrl"
@@ -117,10 +172,11 @@ struct UserSettingsDTO: Codable {
         case workHoursPerWeek = "WorkHoursPerWeek"
         case workDays = "WorkDays"
         case bundesland = "Bundesland"
+        case updatedAt = "UpdatedAt"
     }
 }
 
-struct OvertimeSummaryDTO: Decodable {
+struct OvertimeSummaryDTO: Codable {
     let totalOvertimeHours: Double
     let monthlyOvertime: [MonthlyOvertimeDTO]
     let vacationDaysTaken: Int
@@ -128,6 +184,7 @@ struct OvertimeSummaryDTO: Decodable {
     let vacationDaysPerYear: Int
     let holidaysTaken: Int
     let schoolHolidayHoursNotWorked: Double
+    let sickDaysTaken: Int?
 
     enum CodingKeys: String, CodingKey {
         case totalOvertimeHours = "TotalOvertimeHours"
@@ -137,16 +194,18 @@ struct OvertimeSummaryDTO: Decodable {
         case vacationDaysPerYear = "VacationDaysPerYear"
         case holidaysTaken = "HolidaysTaken"
         case schoolHolidayHoursNotWorked = "SchoolHolidayHoursNotWorked"
+        case sickDaysTaken = "SickDaysTaken"
     }
 }
 
-struct MonthlyOvertimeDTO: Decodable {
+struct MonthlyOvertimeDTO: Codable {
     let year: Int
     let month: Int
     let monthName: String
     let overtimeHours: Double
     let workedHours: Double
     let expectedHours: Double
+    let sickDays: Int?
 
     enum CodingKeys: String, CodingKey {
         case year = "Year"
@@ -155,5 +214,6 @@ struct MonthlyOvertimeDTO: Decodable {
         case overtimeHours = "OvertimeHours"
         case workedHours = "WorkedHours"
         case expectedHours = "ExpectedHours"
+        case sickDays = "SickDays"
     }
 }

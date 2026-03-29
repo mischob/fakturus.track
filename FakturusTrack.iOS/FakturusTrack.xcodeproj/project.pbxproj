@@ -42,6 +42,23 @@
 		E4CE68D066CD7C6FA88D5D42 /* SessionDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76A6ED3B7E9BE2236C5B0A76 /* SessionDetailSheet.swift */; };
 		E8D3DCA1D29484B3202E6284 /* WorkSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39A60E935AE7BC66A84E63B /* WorkSession.swift */; };
 		F4346A4E82B4662E16C46BB9 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970611F0570A0A12991C3DCF /* Date+Formatting.swift */; };
+		P2A001B001 /* HolidayCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F001 /* HolidayCalculator.swift */; };
+		P2A001B002 /* WorkdaySelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F002 /* WorkdaySelector.swift */; };
+		P2A001B003 /* BundeslandPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F003 /* BundeslandPicker.swift */; };
+		P2A001B004 /* OvertimeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F004 /* OvertimeCard.swift */; };
+		P2A001B005 /* VacationCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F005 /* VacationCalendar.swift */; };
+		P2A001B006 /* SchoolHolidayPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F006 /* SchoolHolidayPeriod.swift */; };
+		P2A001B007 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F007 /* SettingsView.swift */; };
+		P2A001B008 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F008 /* SettingsViewModel.swift */; };
+		P2A001B009 /* SchoolHolidaysScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F009 /* SchoolHolidaysScreen.swift */; };
+		P2A001B010 /* VacationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F010 /* VacationScreen.swift */; };
+		P2A001B011 /* VacationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F011 /* VacationViewModel.swift */; };
+		P2A001B012 /* OverviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F012 /* OverviewScreen.swift */; };
+		P2A001B013 /* OverviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F013 /* OverviewViewModel.swift */; };
+		P2A001B014 /* MonthlyOvertimeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2A001F014 /* MonthlyOvertimeTable.swift */; };
+		E04A001B001 /* SickDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04A001F001 /* SickDay.swift */; };
+		E06A001B001 /* PDFReportGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A001F001 /* PDFReportGenerator.swift */; };
+		E06A001B002 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A001F002 /* CSVExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,6 +111,23 @@
 		EDA6A6E63E906A98178262A7 /* SessionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRow.swift; sourceTree = "<group>"; };
 		EEF4AB844B110B77118841A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F39A60E935AE7BC66A84E63B /* WorkSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkSession.swift; sourceTree = "<group>"; };
+		P2A001F001 /* HolidayCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayCalculator.swift; sourceTree = "<group>"; };
+		P2A001F002 /* WorkdaySelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkdaySelector.swift; sourceTree = "<group>"; };
+		P2A001F003 /* BundeslandPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundeslandPicker.swift; sourceTree = "<group>"; };
+		P2A001F004 /* OvertimeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvertimeCard.swift; sourceTree = "<group>"; };
+		P2A001F005 /* VacationCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VacationCalendar.swift; sourceTree = "<group>"; };
+		P2A001F006 /* SchoolHolidayPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchoolHolidayPeriod.swift; sourceTree = "<group>"; };
+		P2A001F007 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		P2A001F008 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		P2A001F009 /* SchoolHolidaysScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchoolHolidaysScreen.swift; sourceTree = "<group>"; };
+		P2A001F010 /* VacationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VacationScreen.swift; sourceTree = "<group>"; };
+		P2A001F011 /* VacationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VacationViewModel.swift; sourceTree = "<group>"; };
+		P2A001F012 /* OverviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewScreen.swift; sourceTree = "<group>"; };
+		P2A001F013 /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
+		P2A001F014 /* MonthlyOvertimeTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyOvertimeTable.swift; sourceTree = "<group>"; };
+		E04A001F001 /* SickDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SickDay.swift; sourceTree = "<group>"; };
+		E06A001F001 /* PDFReportGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFReportGenerator.swift; sourceTree = "<group>"; };
+		E06A001F002 /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +156,8 @@
 				850C18AC8DF64DBE44563BAA /* DTOs.swift */,
 				719D9B8A416F3837CC3AA702 /* PendingDelete.swift */,
 				5215300DB76BBDD4AE0F5927 /* PersistenceManager.swift */,
+				P2A001F006 /* SchoolHolidayPeriod.swift */,
+				E04A001F001 /* SickDay.swift */,
 				7C3A9D76E4F1B5588CA571B5 /* UserSettings.swift */,
 				1E997861C6833E941C4FFB23 /* VacationDay.swift */,
 				F39A60E935AE7BC66A84E63B /* WorkSession.swift */,
@@ -182,10 +218,20 @@
 			children = (
 				2F9FA4DCFEE32E9287DD4CA1 /* API */,
 				A8182EF0BA4C5C2854BE2A3F /* Auth */,
+				E06A001G001 /* Export */,
 				036FAB36C6BFC195354389AC /* Network */,
 				C30F3429F66DDDC989FD5ED4 /* Sync */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		E06A001G001 /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				E06A001F002 /* CSVExporter.swift */,
+				E06A001F001 /* PDFReportGenerator.swift */,
+			);
+			path = Export;
 			sourceTree = "<group>";
 		};
 		73CEBC3F2D735ED58BEC932A /* Shared */ = {
@@ -195,6 +241,11 @@
 				9F4700D86C5773312D5E32BF /* InitialSyncView.swift */,
 				412F3A4ED5D1544480AF1A26 /* OfflineBanner.swift */,
 				84B76C2F4CE3E7FC7C7722FC /* SyncStatusView.swift */,
+				P2A001F003 /* BundeslandPicker.swift */,
+				P2A001F001 /* HolidayCalculator.swift */,
+				P2A001F004 /* OvertimeCard.swift */,
+				P2A001F005 /* VacationCalendar.swift */,
+				P2A001F002 /* WorkdaySelector.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -203,8 +254,11 @@
 			isa = PBXGroup;
 			children = (
 				CD74B6CE333F1EAADE418C2A /* Auth */,
+				P2A001G003 /* Overview */,
+				P2A001G001 /* Settings */,
 				F758047FCBA3A1606D5EF7D1 /* Shell */,
 				30A50FBE916A98C4C013B1FF /* TimeTracking */,
+				P2A001G002 /* Vacation */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -279,6 +333,35 @@
 				A1697E6228C5FAC8F3EA8009 /* PlaceholderView.swift */,
 			);
 			path = Shell;
+			sourceTree = "<group>";
+		};
+		P2A001G001 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				P2A001F009 /* SchoolHolidaysScreen.swift */,
+				P2A001F007 /* SettingsView.swift */,
+				P2A001F008 /* SettingsViewModel.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		P2A001G002 /* Vacation */ = {
+			isa = PBXGroup;
+			children = (
+				P2A001F010 /* VacationScreen.swift */,
+				P2A001F011 /* VacationViewModel.swift */,
+			);
+			path = Vacation;
+			sourceTree = "<group>";
+		};
+		P2A001G003 /* Overview */ = {
+			isa = PBXGroup;
+			children = (
+				P2A001F014 /* MonthlyOvertimeTable.swift */,
+				P2A001F012 /* OverviewScreen.swift */,
+				P2A001F013 /* OverviewViewModel.swift */,
+			);
+			path = Overview;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -398,6 +481,23 @@
 				BE1F3B2E7C4C0C685C04AF33 /* UserSettings.swift in Sources */,
 				E05E76AE7940CAAD510B318A /* VacationDay.swift in Sources */,
 				E8D3DCA1D29484B3202E6284 /* WorkSession.swift in Sources */,
+				P2A001B001 /* HolidayCalculator.swift in Sources */,
+				P2A001B002 /* WorkdaySelector.swift in Sources */,
+				P2A001B003 /* BundeslandPicker.swift in Sources */,
+				P2A001B004 /* OvertimeCard.swift in Sources */,
+				P2A001B005 /* VacationCalendar.swift in Sources */,
+				P2A001B006 /* SchoolHolidayPeriod.swift in Sources */,
+				P2A001B007 /* SettingsView.swift in Sources */,
+				P2A001B008 /* SettingsViewModel.swift in Sources */,
+				P2A001B009 /* SchoolHolidaysScreen.swift in Sources */,
+				P2A001B010 /* VacationScreen.swift in Sources */,
+				P2A001B011 /* VacationViewModel.swift in Sources */,
+				P2A001B012 /* OverviewScreen.swift in Sources */,
+				P2A001B013 /* OverviewViewModel.swift in Sources */,
+				P2A001B014 /* MonthlyOvertimeTable.swift in Sources */,
+				E04A001B001 /* SickDay.swift in Sources */,
+				E06A001B001 /* PDFReportGenerator.swift in Sources */,
+				E06A001B002 /* CSVExporter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

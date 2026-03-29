@@ -1,15 +1,15 @@
 package com.fakturus.track.features.shell
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.fakturus.track.ServiceContainer
+import com.fakturus.track.features.overview.OverviewScreen
+import com.fakturus.track.features.settings.SchoolHolidaysScreen
+import com.fakturus.track.features.settings.SettingsScreen
 import com.fakturus.track.features.timetracking.TimeTrackingScreen
+import com.fakturus.track.features.vacation.VacationScreen
 import com.fakturus.track.services.auth.AuthManager
 
 @Composable
@@ -23,23 +23,23 @@ fun AppNavigation(
             TimeTrackingScreen(services = services)
         }
         composable("urlaub") {
-            PlaceholderScreen(
-                title = "Urlaub",
-                icon = Icons.Default.WbSunny
-            )
+            VacationScreen(services = services)
         }
         composable("gesamt") {
-            PlaceholderScreen(
-                title = "Gesamt",
-                icon = Icons.Default.BarChart
-            )
+            OverviewScreen(services = services)
         }
         composable("einstellungen") {
-            PlaceholderScreen(
-                title = "Einstellungen",
-                icon = Icons.Default.Settings,
-                showLogout = true,
-                onLogout = { authManager.logout() }
+            SettingsScreen(
+                services = services,
+                onLogout = { authManager.logout() },
+                onNavigateToSchoolHolidays = {
+                    navController.navigate("schulferien")
+                }
+            )
+        }
+        composable("schulferien") {
+            SchoolHolidaysScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

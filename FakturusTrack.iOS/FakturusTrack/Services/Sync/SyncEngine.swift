@@ -29,6 +29,7 @@ actor SyncEngine {
         do {
             try await syncWorkSessions()
             try await syncVacationDays()
+            try await syncSickDays()
             try await syncUserSettings()
             lastSyncDate = Date()
         } catch {
@@ -176,20 +177,107 @@ actor SyncEngine {
         try modelContext.save()
     }
 
-    // MARK: - UserSettings (Server-wins in Phase 1)
+    // MARK: - SickDays
+
+    private func syncSickDays() async throws {
+        let allLocal = try modelContext.fetch(FetchDescriptor<SickDay>())
+        let pending = allLocal.filter { $0.isPendingSync }
+
+        let serverSickDays: [SickDayDTO]
+        var deletedIds: [String] = []
+
+        if !pending.isEmpty {
+            // Pending exists -> send ALL local days (not just pending!)
+            let request = SyncSickDaysRequest(
+                sickDays: allLocal.map { $0.toDTO() }
+            )
+            let response = try await apiClient.syncSickDays(request)
+            serverSickDays = response.serverSickDays
+            deletedIds = response.deletedIds
+        } else {
+            // No pending -> simple GET suffices
+            serverSickDays = try await apiClient.getSickDays()
+        }
+
+        // Process deleted IDs
+        for deletedId in deletedIds {
+            let uuid = UUID(uuidString: deletedId) ?? UUID()
+            let descriptor = FetchDescriptor<SickDay>(
+                predicate: #Predicate { day in day.id == uuid }
+            )
+            if let toDelete = try modelContext.fetch(descriptor).first {
+                modelContext.delete(toDelete)
+            }
+        }
+
+        // Set-difference: delete local synced that are no longer on server
+        let serverIds = Set(serverSickDays.map(\.id))
+        let localSynced = allLocal.filter { $0.isSynced }
+        for local in localSynced where !serverIds.contains(local.id.uuidString) {
+            modelContext.delete(local)
+        }
+
+        // Upsert server sick days
+        for dto in serverSickDays {
+            let uuid = UUID(uuidString: dto.id) ?? UUID()
+            let descriptor = FetchDescriptor<SickDay>(
+                predicate: #Predicate { day in day.id == uuid }
+            )
+            if let existing = try modelContext.fetch(descriptor).first {
+                existing.update(from: dto)
+            } else {
+                modelContext.insert(SickDay(from: dto))
+            }
+        }
+
+        // Mark all as synced
+        for day in allLocal {
+            day.isPendingSync = false
+            day.isSynced = true
+            day.syncedAt = Date()
+        }
+
+        try modelContext.save()
+    }
+
+    // MARK: - UserSettings (Last-Write-Wins)
 
     private func syncUserSettings() async throws {
         let serverSettings = try await apiClient.getUserSettings()
         let localSettings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first
 
         if let local = localSettings {
-            local.vacationDaysPerYear = serverSettings.vacationDaysPerYear
-            local.workHoursPerWeek = serverSettings.workHoursPerWeek
-            local.workDays = serverSettings.workDays
-            local.bundesland = serverSettings.bundesland
-            local.calendarUrl = serverSettings.calendarUrl
-            local.isSynced = true
-            local.isPendingSync = false
+            let localUpdatedAt = local.updatedAt
+            let serverUpdatedAt: Date? = serverSettings.updatedAt.flatMap { ISO8601DateFormatter().date(from: $0) }
+
+            if let localDate = localUpdatedAt,
+               (serverUpdatedAt == nil || localDate > serverUpdatedAt!) {
+                // Local is newer -> upload
+                try await apiClient.updateUserSettings(local.toDTO())
+                local.isSynced = true
+                local.isPendingSync = false
+            } else if let serverDate = serverUpdatedAt,
+                      localUpdatedAt == nil || serverDate > localUpdatedAt! {
+                // Server is newer -> overwrite local
+                local.vacationDaysPerYear = serverSettings.vacationDaysPerYear
+                local.workHoursPerWeek = serverSettings.workHoursPerWeek
+                local.workDays = serverSettings.workDays
+                local.bundesland = serverSettings.bundesland
+                local.calendarUrl = serverSettings.calendarUrl
+                local.updatedAt = serverUpdatedAt
+                local.isSynced = true
+                local.isPendingSync = false
+            } else if serverUpdatedAt == nil && localUpdatedAt == nil {
+                // No updatedAt on either side -> server-wins (fallback)
+                local.vacationDaysPerYear = serverSettings.vacationDaysPerYear
+                local.workHoursPerWeek = serverSettings.workHoursPerWeek
+                local.workDays = serverSettings.workDays
+                local.bundesland = serverSettings.bundesland
+                local.calendarUrl = serverSettings.calendarUrl
+                local.isSynced = true
+                local.isPendingSync = false
+            }
+            // Equal -> do nothing
         } else {
             let settings = UserSettings(userId: "")
             settings.vacationDaysPerYear = serverSettings.vacationDaysPerYear

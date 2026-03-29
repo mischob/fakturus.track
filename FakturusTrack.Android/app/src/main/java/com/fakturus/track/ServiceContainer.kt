@@ -22,7 +22,7 @@ class ServiceContainer(private val context: Context) {
             AppDatabase::class.java,
             "fakturus_track.db"
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
     }
 
@@ -64,6 +64,32 @@ class ServiceContainer(private val context: Context) {
                         `entityId` TEXT NOT NULL,
                         `entityType` TEXT NOT NULL,
                         `deletedAt` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )""".trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `user_settings` ADD COLUMN `updatedAt` TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS `sick_days` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `createdAt` TEXT NOT NULL,
+                        `updatedAt` TEXT NOT NULL,
+                        `syncedAt` TEXT,
+                        `isPendingSync` INTEGER NOT NULL,
+                        `isSynced` INTEGER NOT NULL,
                         PRIMARY KEY(`id`)
                     )""".trimIndent()
                 )

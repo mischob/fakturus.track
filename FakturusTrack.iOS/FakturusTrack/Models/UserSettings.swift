@@ -9,6 +9,7 @@ final class UserSettings {
     var workHoursPerWeek: Double
     var workDays: Int
     var bundesland: String
+    var updatedAt: Date?
     var isSynced: Bool
     var isPendingSync: Bool
 
@@ -40,7 +41,8 @@ final class UserSettings {
             vacationDaysPerYear: vacationDaysPerYear,
             workHoursPerWeek: workHoursPerWeek,
             workDays: workDays,
-            bundesland: bundesland
+            bundesland: bundesland,
+            updatedAt: updatedAt?.ISO8601Format()
         )
     }
 

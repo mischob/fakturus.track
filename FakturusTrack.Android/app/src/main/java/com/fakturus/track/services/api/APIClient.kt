@@ -2,6 +2,10 @@ package com.fakturus.track.services.api
 
 import android.util.Log
 import com.fakturus.track.BuildConfig
+import com.fakturus.track.models.OvertimeSummaryDTO
+import com.fakturus.track.models.SickDayDTO
+import com.fakturus.track.models.SyncSickDaysRequest
+import com.fakturus.track.models.SyncSickDaysResponse
 import com.fakturus.track.models.SyncVacationDaysRequest
 import com.fakturus.track.models.SyncVacationDaysResponse
 import com.fakturus.track.models.SyncWorkSessionsRequest
@@ -164,6 +168,16 @@ class APIClient(
     suspend fun getUserSettings(): UserSettingsDTO = get("/v1/settings")
 
     suspend fun updateUserSettings(settings: UserSettingsDTO) = put("/v1/settings", settings)
+
+    suspend fun getOvertimeSummary(year: Int): OvertimeSummaryDTO =
+        get("/v1/overtime-summary", queryParams = mapOf("year" to year.toString()))
+
+    // SickDay endpoints
+    suspend fun getSickDays(from: String, to: String): List<SickDayDTO> =
+        get("/v1/sick-days", queryParams = mapOf("from" to from, "to" to to))
+
+    suspend fun syncSickDays(request: SyncSickDaysRequest): SyncSickDaysResponse =
+        post("/v1/sick-days/sync", request)
 
     fun close() {
         client.close()

@@ -83,13 +83,54 @@ data class SyncVacationDaysResponse(
     @SerialName("DeletedIds") val deletedIds: List<String>
 )
 
+// SickDay DTOs
+
+@Serializable
+data class SyncSickDaysRequest(
+    @SerialName("SickDays") val sickDays: List<SickDaySyncItem>
+)
+
+@Serializable
+data class SickDaySyncItem(
+    @SerialName("Id") val id: String,
+    @SerialName("Date") val date: String,
+    @SerialName("CreatedAt") val createdAt: String? = null,
+    @SerialName("UpdatedAt") val updatedAt: String? = null,
+    @SerialName("SyncedAt") val syncedAt: String? = null
+)
+
+@Serializable
+data class SickDayDTO(
+    @SerialName("Id") val id: String,
+    @SerialName("UserId") val userId: String? = null,
+    @SerialName("Date") val date: String,
+    @SerialName("CreatedAt") val createdAt: String? = null,
+    @SerialName("UpdatedAt") val updatedAt: String? = null,
+    @SerialName("SyncedAt") val syncedAt: String? = null
+) {
+    fun toEntity() = SickDayEntity(
+        id = id, userId = userId ?: "", date = date,
+        createdAt = createdAt ?: Instant.now().toString(),
+        updatedAt = updatedAt ?: Instant.now().toString(),
+        syncedAt = Instant.now().toString(),
+        isPendingSync = false, isSynced = true
+    )
+}
+
+@Serializable
+data class SyncSickDaysResponse(
+    @SerialName("ServerSickDays") val serverSickDays: List<SickDayDTO>,
+    @SerialName("DeletedIds") val deletedIds: List<String>
+)
+
 @Serializable
 data class UserSettingsDTO(
     @SerialName("CalendarUrl") val calendarUrl: String? = null,
     @SerialName("VacationDaysPerYear") val vacationDaysPerYear: Int = 30,
     @SerialName("WorkHoursPerWeek") val workHoursPerWeek: Double = 40.0,
     @SerialName("WorkDays") val workDays: Int = 31,
-    @SerialName("Bundesland") val bundesland: String = "NW"
+    @SerialName("Bundesland") val bundesland: String = "NW",
+    @SerialName("UpdatedAt") val updatedAt: String? = null
 )
 
 @Serializable
@@ -100,7 +141,8 @@ data class OvertimeSummaryDTO(
     @SerialName("VacationDaysRemaining") val vacationDaysRemaining: Int,
     @SerialName("VacationDaysPerYear") val vacationDaysPerYear: Int,
     @SerialName("HolidaysTaken") val holidaysTaken: Int,
-    @SerialName("SchoolHolidayHoursNotWorked") val schoolHolidayHoursNotWorked: Double
+    @SerialName("SchoolHolidayHoursNotWorked") val schoolHolidayHoursNotWorked: Double,
+    @SerialName("SickDaysTaken") val sickDaysTaken: Int = 0
 )
 
 @Serializable
@@ -110,5 +152,6 @@ data class MonthlyOvertimeDTO(
     @SerialName("MonthName") val monthName: String,
     @SerialName("OvertimeHours") val overtimeHours: Double,
     @SerialName("WorkedHours") val workedHours: Double,
-    @SerialName("ExpectedHours") val expectedHours: Double
+    @SerialName("ExpectedHours") val expectedHours: Double,
+    @SerialName("SickDays") val sickDays: Int = 0
 )

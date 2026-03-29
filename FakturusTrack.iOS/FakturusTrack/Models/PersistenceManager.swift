@@ -4,8 +4,10 @@ enum PersistenceManager {
     static let schema = Schema([
         WorkSession.self,
         VacationDay.self,
+        SickDay.self,
         UserSettings.self,
-        PendingDelete.self
+        PendingDelete.self,
+        SchoolHolidayPeriod.self
     ])
 
     static let container: ModelContainer = {

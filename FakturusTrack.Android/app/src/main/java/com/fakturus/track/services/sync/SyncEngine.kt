@@ -2,6 +2,7 @@ package com.fakturus.track.services.sync
 
 import android.util.Log
 import com.fakturus.track.models.AppDatabase
+import com.fakturus.track.models.SyncSickDaysRequest
 import com.fakturus.track.models.SyncVacationDaysRequest
 import com.fakturus.track.models.SyncWorkSessionsRequest
 import com.fakturus.track.models.UserSettingsEntity
@@ -42,6 +43,7 @@ class SyncEngine(
             syncPendingDeletes()
             syncWorkSessions()
             syncVacationDays()
+            syncSickDays()
             syncUserSettings()
             _lastSyncDate.value = Instant.now()
         } catch (e: Exception) {
@@ -126,22 +128,57 @@ class SyncEngine(
         }
     }
 
+    private suspend fun syncSickDays() {
+        val dao = database.sickDayDao()
+        val allLocal = dao.getAll()
+        val pending = allLocal.filter { it.isPendingSync }
+
+        if (pending.isNotEmpty()) {
+            val request = SyncSickDaysRequest(
+                sickDays = allLocal.map { it.toDTO() }
+            )
+            val response = apiClient.syncSickDays(request)
+
+            response.deletedIds.forEach { dao.deleteById(it) }
+            response.serverSickDays.forEach { dto -> dao.insert(dto.toEntity()) }
+        } else {
+            val serverDays = apiClient.getSickDays("2000-01-01", "2099-12-31")
+            val localSynced = dao.getAll().filter { it.isSynced }
+
+            val serverIds = serverDays.map { it.id }.toSet()
+            localSynced.filter { it.id !in serverIds }.forEach { dao.deleteById(it.id) }
+
+            serverDays.forEach { dto -> dao.insert(dto.toEntity()) }
+        }
+    }
+
     private suspend fun syncUserSettings() {
         val settingsDao = database.userSettingsDao()
+        val local = settingsDao.getSettingsOnce() ?: return
+
         val serverSettings = apiClient.getUserSettings()
 
-        // Phase 1: Server-wins
-        settingsDao.upsert(
-            UserSettingsEntity(
-                userId = "",
+        val localUpdatedAt = try { Instant.parse(local.updatedAt) } catch (_: Exception) { Instant.EPOCH }
+        val serverUpdatedAt = serverSettings.updatedAt?.let {
+            try { Instant.parse(it) } catch (_: Exception) { null }
+        }
+
+        if (serverUpdatedAt == null || localUpdatedAt.isAfter(serverUpdatedAt)) {
+            // Lokal ist neuer -> hochladen
+            apiClient.updateUserSettings(local.toDTO())
+        } else if (serverUpdatedAt.isAfter(localUpdatedAt)) {
+            // Server ist neuer -> lokal ueberschreiben
+            settingsDao.upsert(local.copy(
                 calendarUrl = serverSettings.calendarUrl,
                 vacationDaysPerYear = serverSettings.vacationDaysPerYear,
                 workHoursPerWeek = serverSettings.workHoursPerWeek,
                 workDays = serverSettings.workDays,
                 bundesland = serverSettings.bundesland,
+                updatedAt = serverSettings.updatedAt ?: local.updatedAt,
                 isSynced = true,
                 isPendingSync = false
-            )
-        )
+            ))
+        }
+        // Gleich -> nichts tun
     }
 }

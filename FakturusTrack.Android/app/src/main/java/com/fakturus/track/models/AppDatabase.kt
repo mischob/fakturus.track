@@ -56,6 +56,24 @@ interface VacationDayDao {
 }
 
 @Dao
+interface SickDayDao {
+    @Query("SELECT * FROM sick_days ORDER BY date")
+    fun getAllOrderedByDate(): Flow<List<SickDayEntity>>
+
+    @Query("SELECT * FROM sick_days")
+    suspend fun getAll(): List<SickDayEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(day: SickDayEntity)
+
+    @Delete
+    suspend fun delete(day: SickDayEntity)
+
+    @Query("DELETE FROM sick_days WHERE id = :id")
+    suspend fun deleteById(id: String)
+}
+
+@Dao
 interface PendingDeleteDao {
     @Query("SELECT * FROM pending_deletes WHERE entityType = :type")
     suspend fun getByType(type: String): List<PendingDeleteEntity>
@@ -72,18 +90,22 @@ interface UserSettingsDao {
     @Query("SELECT * FROM user_settings LIMIT 1")
     fun getSettings(): Flow<UserSettingsEntity?>
 
+    @Query("SELECT * FROM user_settings LIMIT 1")
+    suspend fun getSettingsOnce(): UserSettingsEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(settings: UserSettingsEntity)
 }
 
 @Database(
-    entities = [WorkSessionEntity::class, VacationDayEntity::class, UserSettingsEntity::class, PendingDeleteEntity::class],
-    version = 2,
+    entities = [WorkSessionEntity::class, VacationDayEntity::class, SickDayEntity::class, UserSettingsEntity::class, PendingDeleteEntity::class],
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun workSessionDao(): WorkSessionDao
     abstract fun vacationDayDao(): VacationDayDao
     abstract fun userSettingsDao(): UserSettingsDao
+    abstract fun sickDayDao(): SickDayDao
     abstract fun pendingDeleteDao(): PendingDeleteDao
 }

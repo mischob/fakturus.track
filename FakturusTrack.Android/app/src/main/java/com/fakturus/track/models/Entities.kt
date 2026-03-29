@@ -65,6 +65,23 @@ data class VacationDayEntity(
     )
 }
 
+@Entity(tableName = "sick_days")
+data class SickDayEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val date: String,
+    val createdAt: String = Instant.now().toString(),
+    val updatedAt: String = Instant.now().toString(),
+    val syncedAt: String? = null,
+    val isPendingSync: Boolean = true,
+    val isSynced: Boolean = false
+) {
+    fun toDTO() = SickDaySyncItem(
+        id = id, date = date,
+        createdAt = createdAt, updatedAt = updatedAt, syncedAt = syncedAt
+    )
+}
+
 @Entity(tableName = "pending_deletes")
 data class PendingDeleteEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
@@ -81,6 +98,16 @@ data class UserSettingsEntity(
     val workHoursPerWeek: Double = 40.0,
     val workDays: Int = 31,
     val bundesland: String = "NW",
+    val updatedAt: String = Instant.now().toString(),
     val isSynced: Boolean = false,
     val isPendingSync: Boolean = true
-)
+) {
+    fun toDTO() = UserSettingsDTO(
+        calendarUrl = calendarUrl,
+        vacationDaysPerYear = vacationDaysPerYear,
+        workHoursPerWeek = workHoursPerWeek,
+        workDays = workDays,
+        bundesland = bundesland,
+        updatedAt = updatedAt
+    )
+}
