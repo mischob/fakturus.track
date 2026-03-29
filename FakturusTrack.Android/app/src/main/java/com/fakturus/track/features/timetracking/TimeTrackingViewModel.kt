@@ -310,6 +310,29 @@ class TimeTrackingViewModel(
     fun markShown9h() { _hasShown9h.value = true }
     fun markShown10h() { _hasShown10h.value = true }
 
+    /// Create a manual session for retroactive entry (E06-S09)
+    fun createManualSession(onCreated: (WorkSessionEntity) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val now = Instant.now()
+                val oneHourAgo = now.minus(Duration.ofHours(1))
+                val session = WorkSessionEntity(
+                    date = LocalDate.now().toString(),
+                    startTime = oneHourAgo.toString(),
+                    stopTime = now.toString(),
+                    pauseMinutes = 0,
+                    isPendingSync = true,
+                    isSynced = false,
+                    isFinished = false
+                )
+                dao.insert(session)
+                onCreated(session)
+            } catch (e: Exception) {
+                _error.value = "Fehler beim Erstellen der manuellen Sitzung"
+            }
+        }
+    }
+
     fun triggerSync() {
         viewModelScope.launch {
             try {

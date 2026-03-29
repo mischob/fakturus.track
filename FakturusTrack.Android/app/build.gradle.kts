@@ -93,4 +93,8 @@ dependencies {
 
     // WorkManager
     implementation(libs.work.runtime)
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.serialization.json)
 }

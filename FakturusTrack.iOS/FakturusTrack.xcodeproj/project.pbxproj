@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B2C3D4E5F60001AABB0001 /* TimeTrackingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60001AABB0011 /* TimeTrackingViewModelTests.swift */; };
+		A1B2C3D4E5F60001AABB0002 /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60001AABB0012 /* SyncEngineTests.swift */; };
 		021A49003C423339B404B732 /* TimeInterval+Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1892D67A1E24C491106FFC89 /* TimeInterval+Display.swift */; };
 		05449BE83C8847B740A9E292 /* ActiveSessionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E725FD736191CB6C8D28A1 /* ActiveSessionCard.swift */; };
 		07D1CAEBF1E1647330CFD021 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45FE9957A7650F0AB4D6AA26 /* AuthManager.swift */; };
@@ -53,6 +55,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1B2C3D4E5F60001AABB0011 /* TimeTrackingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeTrackingViewModelTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60001AABB0012 /* SyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
 		0689471860148EFA293D79F4 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		092491487764048D312D90BB /* MonthGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthGroup.swift; sourceTree = "<group>"; };
 		0FE0295825FA90BC871AC6B9 /* APIClient+Endpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Endpoints.swift"; sourceTree = "<group>"; };
@@ -129,6 +133,8 @@
 			isa = PBXGroup;
 			children = (
 				C4E53CB47358DAF6E8B88370 /* .gitkeep */,
+				A1B2C3D4E5F60001AABB0011 /* TimeTrackingViewModelTests.swift */,
+				A1B2C3D4E5F60001AABB0012 /* SyncEngineTests.swift */,
 			);
 			path = FakturusTrackTests;
 			sourceTree = "<group>";
@@ -351,6 +357,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60001AABB0001 /* TimeTrackingViewModelTests.swift in Sources */,
+				A1B2C3D4E5F60001AABB0002 /* SyncEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,6 +577,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -576,6 +585,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.fakturus.track.tests;
 				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FakturusTrack.app/FakturusTrack";
 			};
@@ -585,6 +595,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -592,6 +603,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.fakturus.track.tests;
 				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FakturusTrack.app/FakturusTrack";
 			};
