@@ -1,0 +1,4 @@
+- [Native App Strategy](project_native_app_strategy.md) -- Decision to build native iOS/Android apps replacing MAUI, with 4-phase roadmap
+- [Current Feature Inventory](project_current_features.md) -- Complete backend + MAUI app feature baseline as of March 2026
+- [fakturus.poi Reference](reference_fakturus_poi.md) -- Architecture patterns (Auth, API, AppState) to reuse from sister app
+- [Marketing Integration](project_marketing_integration.md) -- Pricing tiers, critical gaps (breaks/export/sick days), +2 week timeline shift

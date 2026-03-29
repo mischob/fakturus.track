@@ -1,0 +1,2 @@
+- [Native App Migration](project_native_apps.md) -- MAUI->Native Migration, Phase 1 ab April 2026
+- [Flache Architektur](feedback_flat_architecture.md) -- Keine Clean Architecture, kein Hilt, keine UseCases

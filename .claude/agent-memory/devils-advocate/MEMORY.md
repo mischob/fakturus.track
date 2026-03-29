@@ -1,0 +1,1 @@
+- [Native Migration](project_native_migration.md) -- MAUI-to-native migration, key arch decisions, known doc discrepancies

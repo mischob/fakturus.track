@@ -659,16 +659,17 @@ public class SyncService : ISyncService, IDisposable
             _logger.LogDebug("[Sync] [UserSettings] API call completed in {Duration}ms", apiDuration);
 
             _logger.LogDebug("[Sync] [UserSettings] Getting or creating local settings");
-            var localSettings = await _context.UserSettings
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+            var localSettings = await _context.UserSettings.FindAsync(userId);
+
             if (localSettings == null)
             {
                 localSettings = new UserSettingsEntity
                 {
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    IsSynced = false,
+                    IsPendingSync = true
                 };
                 await _context.UserSettings.AddAsync(localSettings);
                 await _context.SaveChangesAsync();

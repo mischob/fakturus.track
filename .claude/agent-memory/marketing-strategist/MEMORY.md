@@ -1,0 +1,2 @@
+- [Marktanalyse DACH 2026](project_market_analysis.md) -- Wettbewerb, Positionierung, Preisempfehlung fuer fakturus.track
+- [Produkt-Features](project_product_features.md) -- Aktueller Funktionsumfang und Tech-Stack von fakturus.track
