@@ -116,7 +116,7 @@ SyncEngine
     +-- syncAll()           -- Alle Bereiche synchronisieren
     |     +-- syncWorkSessions()
     |     +-- syncVacationDays()
-    |     +-- syncSickDays()
+    |     +-- syncSickDays()       // Phase 2
     |     +-- syncUserSettings()
     |
     +-- Sync-Trigger:
@@ -168,7 +168,9 @@ Der VacationDay-Sync sendet ALLE lokalen Tage, nicht nur pending. Grund: Das Bac
 
 > **Warum der Unterschied?** WorkSessions sind individuelle CRUD-Eintraege. VacationDays sind eine "Menge von markierten Tagen" -- der Nutzer toggled Tage an/aus. Das Backend braucht die komplette Liste um Demarkierungen (Loeschungen) zu erkennen.
 
-### Sync-Algorithmus SickDays (identisch zu VacationDays)
+### Sync-Algorithmus SickDays (identisch zu VacationDays) -- Phase 2
+
+> **Phase 2**: SickDays werden erst in Phase 2 implementiert. Der Algorithmus ist hier der Vollstaendigkeit halber dokumentiert.
 
 SickDays nutzen exakt den gleichen Sync-Algorithmus wie VacationDays: ALLE lokalen Krankheitstage senden, nicht nur pending. Das Backend liefert `ServerSickDays` + `DeletedIds` zurueck.
 
@@ -211,7 +213,7 @@ actor SyncEngine {
         do {
             try await syncWorkSessions()
             try await syncVacationDays()
-            try await syncSickDays()
+            // try await syncSickDays()  // Phase 2
             try await syncUserSettings()
         } catch {
             // Log error, don't crash
@@ -294,6 +296,7 @@ actor SyncEngine {
         try modelContext.save()
     }
 
+    // Phase 2: SickDay-Sync
     private func syncSickDays() async throws {
         // Analog zu VacationDays: ALLE lokalen Krankheitstage senden, nicht nur pending!
         let allLocal = try modelContext.fetch(FetchDescriptor<SickDay>())
@@ -347,7 +350,7 @@ class SyncEngine(
         try {
             syncWorkSessions()
             syncVacationDays()
-            syncSickDays()
+            // syncSickDays()  // Phase 2
             syncUserSettings()
         } catch (e: Exception) {
             Log.e("SyncEngine", "Sync failed", e)
@@ -403,6 +406,7 @@ class SyncEngine(
         }
     }
 
+    // Phase 2: SickDay-Sync
     private suspend fun syncSickDays() {
         val dao = database.sickDayDao()
 

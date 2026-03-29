@@ -2,7 +2,9 @@
 
 ## Bestehendes Backend
 
-Das Backend ist produktionsreif und benoetigt fuer Phase 1 **keine Aenderungen**. Die nativen Apps nutzen exakt die gleichen API-Endpunkte wie die bestehende MAUI-App und das Web-Frontend.
+Das Backend ist produktionsreif und benoetigt fuer Phase 1 **fast keine Aenderungen**. Die nativen Apps nutzen exakt die gleichen API-Endpunkte wie die bestehende MAUI-App und das Web-Frontend.
+
+> **ACHTUNG: PauseMinutes ist eine NEUE Backend-Aenderung!** Das Feld `PauseMinutes` in WorkSession existiert aktuell noch NICHT im Backend. Es muss vor Beginn von EPIC 08 (Pausenerfassung) per Schema-Migration hinzugefuegt und die API entsprechend angepasst werden. Siehe P1-E08-S00 in `stories/phase1/epic-08-breaks.md`.
 
 ### Basis-Konfiguration
 

@@ -128,6 +128,7 @@ final class VacationDay {
     }
 }
 
+// Phase 2: SickDay wird erst in Phase 2 implementiert
 @Model
 final class SickDay {
     @Attribute(.unique) var id: UUID
@@ -173,6 +174,22 @@ final class UserSettings {
     }
 }
 
+@Model
+final class PendingDelete {
+    @Attribute(.unique) var id: UUID
+    var entityId: UUID      // ID des geloeschten Eintrags
+    var entityType: String  // "WorkSession", "VacationDay", etc.
+    var deletedAt: Date
+
+    init(entityId: UUID, entityType: String) {
+        self.id = UUID()
+        self.entityId = entityId
+        self.entityType = entityType
+        self.deletedAt = Date()
+    }
+}
+
+// Phase 2: SchoolHolidayPeriod wird erst in Phase 2 implementiert
 @Model
 final class SchoolHolidayPeriod {
     @Attribute(.unique) var id: UUID
@@ -263,6 +280,7 @@ data class VacationDayEntity(
     val isSynced: Boolean = false
 )
 
+// Phase 2: SickDayEntity wird erst in Phase 2 implementiert
 @Entity(tableName = "sick_days")
 data class SickDayEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
@@ -273,6 +291,14 @@ data class SickDayEntity(
     val syncedAt: String? = null,
     val isPendingSync: Boolean = true,
     val isSynced: Boolean = false
+)
+
+@Entity(tableName = "pending_deletes")
+data class PendingDeleteEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val entityId: String,       // ID des geloeschten Eintrags
+    val entityType: String,     // "WorkSession", "VacationDay", etc.
+    val deletedAt: String = Instant.now().toString()
 )
 
 @Entity(tableName = "user_settings")
@@ -336,6 +362,7 @@ interface VacationDayDao {
     suspend fun deleteById(id: String)  // Fuer DeletedIds aus Sync-Response
 }
 
+// Phase 2: SickDayDao wird erst in Phase 2 implementiert
 @Dao
 interface SickDayDao {
     @Query("SELECT * FROM sick_days ORDER BY date")
@@ -355,6 +382,18 @@ interface SickDayDao {
 
     @Query("DELETE FROM sick_days WHERE id = :id")
     suspend fun deleteById(id: String)  // Fuer DeletedIds aus Sync-Response
+}
+
+@Dao
+interface PendingDeleteDao {
+    @Query("SELECT * FROM pending_deletes WHERE entityType = :type")
+    suspend fun getByType(type: String): List<PendingDeleteEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entry: PendingDeleteEntity)
+
+    @Query("DELETE FROM pending_deletes WHERE entityId = :entityId")
+    suspend fun deleteByEntityId(entityId: String)
 }
 
 @Dao
