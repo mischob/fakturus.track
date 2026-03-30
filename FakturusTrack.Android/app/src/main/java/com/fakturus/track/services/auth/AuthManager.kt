@@ -23,7 +23,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-enum class LoginProvider { APPLE, GOOGLE, EMAIL }
+enum class LoginProvider { APPLE, GOOGLE, MICROSOFT, AMAZON, EMAIL }
 
 sealed class AuthException : Exception() {
     object NotAuthenticated : AuthException()
@@ -95,6 +95,8 @@ class AuthManager(private val context: Context) {
                 val hint = when (provider) {
                     LoginProvider.APPLE -> "apple.com"
                     LoginProvider.GOOGLE -> "google.com"
+                    LoginProvider.MICROSOFT -> "live.com"
+                    LoginProvider.AMAZON -> "amazon.com"
                     LoginProvider.EMAIL -> null
                 }
                 if (hint != null) {

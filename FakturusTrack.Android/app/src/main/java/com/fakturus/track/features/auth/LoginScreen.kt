@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Laptop
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.fakturus.track.R
 import com.fakturus.track.services.auth.AuthException
 import com.fakturus.track.services.auth.AuthManager
 import com.fakturus.track.services.auth.LoginProvider
@@ -65,17 +70,27 @@ fun LoginScreen(authManager: AuthManager) {
         )
         Spacer(Modifier.height(48.dp))
 
-        LoginButton("Mit Apple anmelden", Icons.Default.Email, isLoading) {
+        LoginButton(stringResource(R.string.login_apple), Icons.Default.Phone, isLoading) {
             loginWith(scope, authManager, activity, LoginProvider.APPLE,
                 onLoading = { isLoading = it }, onError = { errorMessage = it })
         }
         Spacer(Modifier.height(12.dp))
-        LoginButton("Mit Google anmelden", Icons.Default.Email, isLoading) {
+        LoginButton(stringResource(R.string.login_google), Icons.Default.Email, isLoading) {
             loginWith(scope, authManager, activity, LoginProvider.GOOGLE,
                 onLoading = { isLoading = it }, onError = { errorMessage = it })
         }
         Spacer(Modifier.height(12.dp))
-        LoginButton("Mit E-Mail anmelden", Icons.Default.Email, isLoading) {
+        LoginButton(stringResource(R.string.login_microsoft), Icons.Default.Laptop, isLoading) {
+            loginWith(scope, authManager, activity, LoginProvider.MICROSOFT,
+                onLoading = { isLoading = it }, onError = { errorMessage = it })
+        }
+        Spacer(Modifier.height(12.dp))
+        LoginButton(stringResource(R.string.login_amazon), Icons.Default.ShoppingCart, isLoading) {
+            loginWith(scope, authManager, activity, LoginProvider.AMAZON,
+                onLoading = { isLoading = it }, onError = { errorMessage = it })
+        }
+        Spacer(Modifier.height(12.dp))
+        LoginButton(stringResource(R.string.login_email), Icons.Default.Email, isLoading) {
             loginWith(scope, authManager, activity, LoginProvider.EMAIL,
                 onLoading = { isLoading = it }, onError = { errorMessage = it })
         }

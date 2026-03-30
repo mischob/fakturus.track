@@ -3,12 +3,14 @@ import Observation
 import UIKit
 
 enum LoginProvider {
-    case apple, google, email
+    case apple, google, microsoft, amazon, email
 
     var domainHint: String? {
         switch self {
         case .apple: return "apple.com"
         case .google: return "google.com"
+        case .microsoft: return "live.com"
+        case .amazon: return "amazon.com"
         case .email: return nil
         }
     }

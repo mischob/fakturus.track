@@ -137,3 +137,5 @@
 "settings_restore_purchases" = "Restore Purchases";
 "vacation_locked_title" = "Vacation Calendar";
 "vacation_locked_description" = "Manage your vacation and sick days in the calendar. Available from Starter.";
+"login_microsoft" = "Sign in with Microsoft";
+"login_amazon" = "Sign in with Amazon";

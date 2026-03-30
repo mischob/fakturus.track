@@ -11,6 +11,6 @@ struct TimerWidget: Widget {
         }
         .configurationDisplayName(String(localized: "widget_timer_title"))
         .description(String(localized: "widget_timer_description"))
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
     }
 }

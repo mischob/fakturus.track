@@ -65,6 +65,7 @@ targets:
         excludes:
           - "**/.gitkeep"
       - path: FakturusTrack/Shared/SharedDefaults.swift
+      - path: FakturusTrackWidget/Resources
     info:
       path: FakturusTrackWidget/Info.plist
       properties:

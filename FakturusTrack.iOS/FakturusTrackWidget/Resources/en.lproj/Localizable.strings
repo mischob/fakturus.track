@@ -1,0 +1,11 @@
+"widget_timer_title" = "Timer";
+"widget_timer_description" = "Shows the current timer status.";
+"widget_paused" = "Paused";
+"widget_ready" = "Ready";
+"widget_since" = "Since";
+"widget_today" = "Today";
+"widget_pause" = "Break";
+"widget_status_running" = "Running";
+"widget_status_paused" = "Paused";
+"widget_status_ready" = "Ready";
+"times_timer_start" = "Start";

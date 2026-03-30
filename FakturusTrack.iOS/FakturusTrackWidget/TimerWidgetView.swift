@@ -11,6 +11,10 @@ struct TimerWidgetView: View {
             smallWidget
         case .systemMedium:
             mediumWidget
+        case .accessoryCircular:
+            circularWidget
+        case .accessoryRectangular:
+            rectangularWidget
         default:
             smallWidget
         }
@@ -135,6 +139,75 @@ struct TimerWidgetView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
             }
+        }
+    }
+
+    // MARK: - Lock Screen Circular
+
+    private var circularWidget: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            if entry.isRunning, let start = entry.startDate {
+                // Text(timerInterval:) zählt live auf dem Lock Screen!
+                VStack(spacing: 0) {
+                    Image(systemName: "timer")
+                        .font(.caption2)
+                    Text(timerInterval: start...Date.distantFuture, countsDown: false)
+                        .font(.system(.caption, design: .monospaced))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.center)
+                }
+            } else if entry.isPaused {
+                Image(systemName: "pause.circle")
+                    .font(.title3)
+            } else {
+                Image(systemName: "clock.badge.checkmark")
+                    .font(.title3)
+            }
+        }
+    }
+
+    // MARK: - Lock Screen Rectangular
+
+    private var rectangularWidget: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                if entry.isRunning, let start = entry.startDate {
+                    HStack(spacing: 4) {
+                        Image(systemName: "record.circle")
+                            .foregroundStyle(.green)
+                            .font(.caption2)
+                        Text("Fakturus Track")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(timerInterval: start...Date.distantFuture, countsDown: false)
+                        .font(.system(.title3, design: .monospaced))
+                        .monospacedDigit()
+                } else if entry.isPaused {
+                    HStack(spacing: 4) {
+                        Image(systemName: "pause.circle")
+                            .foregroundStyle(.orange)
+                            .font(.caption2)
+                        Text("Pausiert")
+                            .font(.caption2)
+                    }
+                    Text("--:--:--")
+                        .font(.system(.title3, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock.badge.checkmark")
+                            .font(.caption2)
+                        Text("Fakturus Track")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Bereit")
+                        .font(.headline)
+                }
+            }
+            Spacer()
         }
     }
 

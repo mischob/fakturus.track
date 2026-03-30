@@ -39,6 +39,7 @@
 		51918A9E0B17F98D126BE6D9 /* MSAL in Frameworks */ = {isa = PBXBuildFile; productRef = 648193C838457B6E9ADD222E /* MSAL */; };
 		53721414EC854EFFB3EEFA74 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C465D82193A665CCA68F39B2 /* Configuration.swift */; };
 		555A41C0126C505F2052FE74 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2382D2605E549B113A3135 /* ServiceContainer.swift */; };
+		55D15DB336D2A02997B5F170 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 458172B7BC5DC3C733049095 /* Localizable.strings */; };
 		63111B9383127255082DBA15 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3854AEC191A75F0356FB9485 /* SettingsViewModel.swift */; };
 		64DDD7E47693316C4BA8BDDD /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43089AEE3F9F66E005E64242 /* SubscriptionManager.swift */; };
 		65AFDE964339EF04EA6433EF /* PDFReportGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C7F3C906DE0D4F3D3CF621 /* PDFReportGenerator.swift */; };
@@ -119,6 +120,7 @@
 		092491487764048D312D90BB /* MonthGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthGroup.swift; sourceTree = "<group>"; };
 		0A66253A54C00EABE8A704B6 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		0AD03434919540D0C6DD9E43 /* Tier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tier.swift; sourceTree = "<group>"; };
+		0BC7FD78A750081E815D9E92 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		0C7A4F16099139420B402019 /* OverviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewScreen.swift; sourceTree = "<group>"; };
 		0C9F2D375DB384AE060A7454 /* FakturusTrackWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakturusTrackWidgetBundle.swift; sourceTree = "<group>"; };
 		0FE0295825FA90BC871AC6B9 /* APIClient+Endpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Endpoints.swift"; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 		9005D3E840DADDBF0DF197BE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		9181F54DB6E69D0EB5884473 /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
 		970611F0570A0A12991C3DCF /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
+		9A8452F6A8980E20C4CDAA7B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		9BA8B7F8E9DA679D5BB2CF19 /* PaywallTeaserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallTeaserView.swift; sourceTree = "<group>"; };
 		9F4700D86C5773312D5E32BF /* InitialSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialSyncView.swift; sourceTree = "<group>"; };
 		9FE1A20C536E75587C15B9A6 /* TimerWidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerWidgetIntents.swift; sourceTree = "<group>"; };
@@ -287,6 +290,14 @@
 				73CEBC3F2D735ED58BEC932A /* Shared */,
 			);
 			path = FakturusTrack;
+			sourceTree = "<group>";
+		};
+		63483F62CCFE98AA44A6A248 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				458172B7BC5DC3C733049095 /* Localizable.strings */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		63FBF08AA035670D40405954 /* Services */ = {
@@ -460,6 +471,7 @@
 				9FE1A20C536E75587C15B9A6 /* TimerWidgetIntents.swift */,
 				E3A628D5AAF4A4934BDDEE21 /* TimerWidgetProvider.swift */,
 				B6F6A6BEAC078C42CF03D33E /* TimerWidgetView.swift */,
+				63483F62CCFE98AA44A6A248 /* Resources */,
 			);
 			path = FakturusTrackWidget;
 			sourceTree = "<group>";
@@ -509,6 +521,7 @@
 			buildConfigurationList = 46ED096189039CFF86B2DEFF /* Build configuration list for PBXNativeTarget "FakturusTrackWidget" */;
 			buildPhases = (
 				AC5D63261994A0B4D364B158 /* Sources */,
+				F3A25ACF0A84CC5F7A4D6945 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -583,6 +596,14 @@
 			files = (
 				A6B6F6F6FAB2132B9633ECE8 /* Assets.xcassets in Resources */,
 				EACF39070AA1B4D123C3ED63 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F3A25ACF0A84CC5F7A4D6945 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55D15DB336D2A02997B5F170 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -695,6 +716,15 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		458172B7BC5DC3C733049095 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0BC7FD78A750081E815D9E92 /* de */,
+				9A8452F6A8980E20C4CDAA7B /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 		9E0A0DF0A954904A8F2D0E3E /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (

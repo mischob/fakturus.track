@@ -37,6 +37,8 @@ struct LoginView: View {
                 }
 
                 loginButton(String(localized: "login_google"), icon: "g.circle.fill", provider: .google)
+                loginButton(String(localized: "login_microsoft"), icon: "window.casement", provider: .microsoft)
+                loginButton(String(localized: "login_amazon"), icon: "cart.fill", provider: .amazon)
                 loginButton(String(localized: "login_email"), icon: "envelope.fill", provider: .email)
             }
             .disabled(isLoading)
