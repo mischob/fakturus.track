@@ -139,3 +139,5 @@
 "vacation_locked_description" = "Manage your vacation and sick days in the calendar. Available from Starter.";
 "login_microsoft" = "Sign in with Microsoft";
 "login_amazon" = "Sign in with Amazon";
+"settings_keyboard_done" = "Done";
+"vacation_legend_school_holiday" = "School Holidays";

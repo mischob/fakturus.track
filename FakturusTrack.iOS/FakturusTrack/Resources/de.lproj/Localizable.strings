@@ -139,3 +139,5 @@
 "vacation_locked_description" = "Verwalten Sie Ihre Urlaubstage und Krankheitstage im Kalender. Verfügbar ab Starter.";
 "login_microsoft" = "Mit Microsoft anmelden";
 "login_amazon" = "Mit Amazon anmelden";
+"settings_keyboard_done" = "Fertig";
+"vacation_legend_school_holiday" = "Schulferien";

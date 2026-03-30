@@ -33,9 +33,15 @@ struct SessionRow: View {
                         )
                 }
 
-                Text(session.netDuration.formattedHHMM)
-                    .font(.subheadline.bold())
-                    .monospacedDigit()
+                if let net = session.netDuration {
+                    Text(net.formattedHHMM)
+                        .font(.subheadline.bold())
+                        .monospacedDigit()
+                } else {
+                    Text("--:--")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .buttonStyle(.plain)
@@ -61,7 +67,7 @@ struct SessionRow: View {
         let weekday = session.date.weekdayDateShort
         let start = session.startTime.timeShort
         let end = session.stopTime?.timeShort ?? "--:--"
-        let net = session.netDuration.formattedHHMM
+        let net = session.netDuration?.formattedHHMM ?? "--:--"
         let syncState = session.isSynced
             ? String(localized: "a11y_sync_done")
             : String(localized: "a11y_sync_pending")

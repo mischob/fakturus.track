@@ -9,6 +9,7 @@ enum DayType: Equatable {
     case holiday(String)
     case vacation
     case sickDay
+    case schoolHoliday
 }
 
 struct DayCell: Identifiable {
@@ -31,6 +32,7 @@ struct DayCell: Identifiable {
 struct VacationCalendar: View {
     let vacationDates: Set<DateComponents>
     let sickDayDates: Set<DateComponents>
+    let schoolHolidayDates: Set<DateComponents>
     let holidays: Set<DateComponents>
     let holidaysList: [Holiday]
     let workDays: Int
@@ -47,6 +49,7 @@ struct VacationCalendar: View {
         month: Int,
         vacationDates: Set<DateComponents>,
         sickDayDates: Set<DateComponents> = [],
+        schoolHolidayDates: Set<DateComponents> = [],
         holidays: Set<DateComponents>,
         holidaysList: [Holiday],
         workDays: Int,
@@ -57,6 +60,7 @@ struct VacationCalendar: View {
     ) {
         self.vacationDates = vacationDates
         self.sickDayDates = sickDayDates
+        self.schoolHolidayDates = schoolHolidayDates
         self.holidays = holidays
         self.holidaysList = holidaysList
         self.workDays = workDays
@@ -194,6 +198,8 @@ struct VacationCalendar: View {
             } else if yearHolidays.contains(where: { $0.year == comps.year && $0.month == comps.month && $0.day == comps.day }) {
                 let name = holidaysList.first { cal.isDate($0.date, inSameDayAs: date) }?.name ?? ""
                 type = .holiday(name)
+            } else if schoolHolidayDates.contains(where: { $0.year == comps.year && $0.month == comps.month && $0.day == comps.day }) {
+                type = .schoolHoliday
             } else if !isWorkday(date: date, calendar: cal) {
                 type = .weekend
             } else {
@@ -237,6 +243,8 @@ struct DayCellView: View {
                     Circle().fill(Theme.vacation.opacity(0.3))
                 case .sickDay:
                     Circle().fill(Theme.sickDay.opacity(0.3))
+                case .schoolHoliday:
+                    Circle().fill(Color.orange.opacity(0.15))
                 default:
                     Color.clear
                 }
@@ -264,6 +272,10 @@ struct DayCellView: View {
                         Text("K")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundStyle(Theme.sickDay)
+                    case .schoolHoliday:
+                        Text("F")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.orange)
                     default:
                         EmptyView()
                     }
@@ -327,6 +339,7 @@ struct DayCellView: View {
         case .vacation: return "\(dateStr), Urlaubstag"
         case .sickDay: return "\(dateStr), Krankheitstag"
         case .holiday(let name): return "\(dateStr), Feiertag, \(name)"
+        case .schoolHoliday: return "\(dateStr), Schulferien"
         case .workday: return "\(dateStr), Arbeitstag"
         case .weekend: return "\(dateStr), Wochenende"
         case .empty: return ""
@@ -347,6 +360,7 @@ struct DayCellView: View {
         switch cell.type {
         case .weekend: return Theme.textSecondary
         case .holiday: return .purple
+        case .schoolHoliday: return Color.orange
         default: return Theme.textPrimary
         }
     }

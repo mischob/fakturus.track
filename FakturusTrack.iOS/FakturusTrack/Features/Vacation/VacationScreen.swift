@@ -70,6 +70,7 @@ struct VacationScreen: View {
                     month: vm.displayedMonth,
                     vacationDates: vm.vacationDates,
                     sickDayDates: vm.sickDayDates,
+                    schoolHolidayDates: vm.schoolHolidayDates,
                     holidays: vm.holidayDates,
                     holidaysList: vm.holidaysList,
                     workDays: vm.workDays,
@@ -154,6 +155,7 @@ struct VacationScreen: View {
                     legendRow(color: Theme.vacation.opacity(0.3), text: String(localized: "vacation_legend_vacation"))
                     legendRow(color: Theme.sickDay.opacity(0.3), text: String(localized: "vacation_legend_sick"))
                     legendRow(color: .purple, text: String(localized: "vacation_legend_holiday"), isSmallDot: true)
+                    legendRow(color: Color.orange.opacity(0.3), text: String(localized: "vacation_legend_school_holiday"))
                     legendRow(color: Theme.gray200, text: String(localized: "vacation_legend_weekend"))
                 }
                 .padding(.horizontal)

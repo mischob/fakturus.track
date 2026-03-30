@@ -24,7 +24,7 @@ struct MonthGroup: View {
     }
 
     private var totalNetDuration: TimeInterval {
-        sessions.reduce(0) { $0 + $1.netDuration }
+        sessions.reduce(0) { $0 + ($1.netDuration ?? 0) }
     }
 
     var body: some View {

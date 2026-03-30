@@ -47,21 +47,31 @@ final class WorkSession {
 
     var isRunning: Bool { !isFinished && stopTime == nil }
 
-    /// Gross duration in seconds
-    var duration: TimeInterval {
-        let end = stopTime ?? Date()
-        return end.timeIntervalSince(startTime)
+    /// Gross duration in seconds (nil if no stop time and not actively running today)
+    var duration: TimeInterval? {
+        if let stop = stopTime {
+            return stop.timeIntervalSince(startTime)
+        }
+        // Only calculate live duration for actively running sessions (started today)
+        if isRunning && Calendar.current.isDateInToday(startTime) {
+            return Date().timeIntervalSince(startTime)
+        }
+        return nil
     }
 
-    /// Net duration in seconds (minus pause)
-    var netDuration: TimeInterval {
-        max(0, duration - Double(pauseMinutes * 60))
+    /// Net duration in seconds (minus pause), nil if duration unknown
+    var netDuration: TimeInterval? {
+        guard let dur = duration else { return nil }
+        return max(0, dur - Double(pauseMinutes * 60))
     }
 
-    /// Net duration in minutes
+    /// Net duration in minutes, 0 if unknown
     var netDurationMinutes: Int {
-        Int(netDuration / 60)
+        Int((netDuration ?? 0) / 60)
     }
+
+    /// Whether this session has a calculable duration
+    var hasDuration: Bool { duration != nil }
 
     /// Grouping key "März 2026"
     var monthKey: String { date.monthYearString }

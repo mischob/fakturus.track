@@ -11,6 +11,7 @@ final class VacationViewModel {
     var sickDayDates: Set<DateComponents> = []
     var holidayDates: Set<DateComponents> = []
     var holidaysList: [Holiday] = []
+    var schoolHolidayDates: Set<DateComponents> = []
     var workDays: Int = 31
     var vacationDaysPerYear: Int = 30
     var bundesland: String = "NW"
@@ -76,6 +77,21 @@ final class VacationViewModel {
         let cal = Calendar.current
         holidayDates = Set(holidays.map { cal.dateComponents([.year, .month, .day], from: $0.date) })
         holidaysList = holidays
+    }
+
+    func loadSchoolHolidays() {
+        let descriptor = FetchDescriptor<SchoolHolidayPeriod>()
+        let periods = (try? modelContext.fetch(descriptor)) ?? []
+        let cal = Calendar.current
+        var dates = Set<DateComponents>()
+        for period in periods {
+            var current = period.startDate
+            while current <= period.endDate {
+                dates.insert(cal.dateComponents([.year, .month, .day], from: current))
+                current = cal.date(byAdding: .day, value: 1, to: current) ?? current
+            }
+        }
+        schoolHolidayDates = dates
     }
 
     // MARK: - Computed
@@ -230,6 +246,7 @@ final class VacationViewModel {
     func refresh() {
         loadSettings()
         loadVacationDays()
+        loadSchoolHolidays()
         updateHolidays()
     }
 }
