@@ -5,8 +5,10 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ServiceContainer.self) private var services
     @Environment(AuthManager.self) private var authManager
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var viewModel: SettingsViewModel?
     @State private var showSchoolHolidays = false
+    @State private var showPaywall = false
     @AppStorage("appearance") private var appearance = "system"
 
     var body: some View {
@@ -95,6 +97,7 @@ struct SettingsView: View {
                             .font(.caption)
                     }
                 }
+                .featureLocked(.schoolHolidays)
             }
 
             // MARK: - Erscheinungsbild
@@ -146,6 +149,35 @@ struct SettingsView: View {
                 }
             }
 
+            // MARK: - Abo
+            Section(String(localized: "settings_subscription")) {
+                HStack {
+                    Text(String(localized: "settings_current_tier"))
+                    Spacer()
+                    Text(subscriptionManager.currentTier.displayName)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    showPaywall = true
+                } label: {
+                    HStack {
+                        Text(String(localized: "settings_manage_subscription"))
+                            .foregroundStyle(Theme.textPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                }
+
+                Button(String(localized: "settings_restore_purchases")) {
+                    Task {
+                        try? await services.storeKitManager.restorePurchases()
+                    }
+                }
+            }
+
             // MARK: - Konto
             Section(String(localized: "settings_account")) {
                 Button(role: .destructive) {
@@ -160,6 +192,9 @@ struct SettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 }
 

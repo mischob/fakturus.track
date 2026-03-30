@@ -2,13 +2,7 @@ import Foundation
 
 enum Configuration {
     // API
-    static let apiBaseUrl: String = {
-        #if DEBUG
-        return "https://localhost:7001"
-        #else
-        return "https://api.track.fakturus.com"
-        #endif
-    }()
+    static let apiBaseUrl = "https://api.track.fakturus.com"
 
     // Azure AD B2C
     static let b2cTenant = "fakturus.onmicrosoft.com"

@@ -41,11 +41,20 @@ class SyncEngine(
         _lastError.value = null
         try {
             syncPendingDeletes()
+            Log.d("SyncEngine", "Syncing work sessions...")
             syncWorkSessions()
+            Log.d("SyncEngine", "Syncing vacation days...")
             syncVacationDays()
-            syncSickDays()
+            Log.d("SyncEngine", "Syncing sick days...")
+            try {
+                syncSickDays()
+            } catch (e: com.fakturus.track.services.api.APIError.NotFound) {
+                Log.d("SyncEngine", "Sick days endpoint not available (404), skipping")
+            }
+            Log.d("SyncEngine", "Syncing user settings...")
             syncUserSettings()
             _lastSyncDate.value = Instant.now()
+            Log.d("SyncEngine", "Sync completed successfully")
         } catch (e: Exception) {
             _lastError.value = e.message ?: "Sync failed"
             Log.e("SyncEngine", "Sync failed", e)

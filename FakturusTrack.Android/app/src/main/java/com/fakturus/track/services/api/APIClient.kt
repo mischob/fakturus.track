@@ -67,22 +67,29 @@ class APIClient(
             throw APIError.Unauthorized
         }
 
+        Log.d("API", "${method.value} $baseUrl$path")
+
         val response = try {
             client.request("$baseUrl$path") {
                 this.method = method
-                contentType(ContentType.Application.Json)
+                // Only set Content-Type for requests with body (POST, PUT)
+                if (body != null) contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
                 header("User-Agent", "FakturusTrack-Android/${BuildConfig.VERSION_NAME}")
                 queryParams.forEach { (k, v) -> parameter(k, v) }
                 if (body != null) setBody(body)
             }
         } catch (e: Exception) {
+            Log.e("API", "Network error: ${e.message}")
             if (e is APIError) throw e
             throw APIError.Network(e)
         }
 
+        Log.d("API", "Response ${response.status.value}")
+
         // 401 Retry (1x) with forced new token
         if (response.status.value == 401) {
+            Log.d("API", "401 - Retrying with fresh token")
             val newToken = try {
                 authManager.acquireTokenSilently()
             } catch (e: Exception) {
@@ -91,7 +98,7 @@ class APIClient(
             return try {
                 client.request("$baseUrl$path") {
                     this.method = method
-                    contentType(ContentType.Application.Json)
+                    if (body != null) contentType(ContentType.Application.Json)
                     header("Authorization", "Bearer $newToken")
                     header("User-Agent", "FakturusTrack-Android/${BuildConfig.VERSION_NAME}")
                     queryParams.forEach { (k, v) -> parameter(k, v) }

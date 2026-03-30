@@ -4,15 +4,24 @@ import SwiftData
 struct VacationScreen: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ServiceContainer.self) private var services
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var viewModel: VacationViewModel?
 
     var body: some View {
         NavigationStack {
             Group {
-                if let vm = viewModel {
-                    vacationContent(vm: vm)
+                if subscriptionManager.isAvailable(.vacation) {
+                    if let vm = viewModel {
+                        vacationContent(vm: vm)
+                    } else {
+                        ProgressView()
+                    }
                 } else {
-                    ProgressView()
+                    PaywallTeaserView(
+                        feature: .vacation,
+                        title: String(localized: "vacation_locked_title"),
+                        description: String(localized: "vacation_locked_description")
+                    )
                 }
             }
             .navigationTitle(String(localized: "vacation_tab_title"))

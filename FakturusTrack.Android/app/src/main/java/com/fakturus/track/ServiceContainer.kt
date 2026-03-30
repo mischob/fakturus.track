@@ -8,11 +8,23 @@ import com.fakturus.track.models.AppDatabase
 import com.fakturus.track.services.api.APIClient
 import com.fakturus.track.services.auth.AuthManager
 import com.fakturus.track.services.network.NetworkMonitor
+import com.fakturus.track.services.subscription.BillingManager
+import com.fakturus.track.services.subscription.SubscriptionManager
 import com.fakturus.track.services.sync.SyncEngine
 import com.fakturus.track.services.sync.SyncWorker
 
 class ServiceContainer(private val context: Context) {
     val authManager: AuthManager by lazy { AuthManager(context) }
+
+    // Phase 4: Subscription & Billing
+    val subscriptionManager = SubscriptionManager(context)
+    val billingManager = BillingManager(context, subscriptionManager)
+
+    init {
+        // Play Billing bei App-Start initialisieren (NICHT erst bei Login!)
+        // Abo-Status und Produkte muessen sofort verfuegbar sein.
+        billingManager.startConnection()
+    }
 
     val networkMonitor: NetworkMonitor by lazy { NetworkMonitor(context) }
 

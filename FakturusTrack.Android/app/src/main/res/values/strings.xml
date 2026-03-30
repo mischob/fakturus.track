@@ -138,6 +138,55 @@
     <string name="shortcut_start_timer_long">Neuen Timer starten</string>
     <string name="shortcut_view_history">Zeiten</string>
 
+    <!-- Feature Gates -->
+    <string name="feature_pdf_export">PDF-Export</string>
+    <string name="feature_csv_export">CSV-Export</string>
+    <string name="feature_sick_days">Krankheitstage</string>
+    <string name="feature_vacation">Urlaub</string>
+    <string name="feature_datev_export">DATEV-Export</string>
+    <string name="feature_school_holidays">Schulferien</string>
+    <string name="feature_calendar_integration">Kalender-Integration</string>
+
+    <!-- Paywall -->
+    <string name="paywall_headline">Mehr aus Fakturus Track herausholen</string>
+    <string name="paywall_subheadline">Waehle den Plan, der zu dir passt</string>
+    <string name="paywall_feature">Feature</string>
+    <string name="paywall_subscribe_starter">Starter</string>
+    <string name="paywall_subscribe_pro">Pro</string>
+    <string name="paywall_month">Monat</string>
+    <string name="paywall_restore">Kaeufe wiederherstellen</string>
+    <string name="paywall_auto_renew_notice">Abo verlaengert sich automatisch. Jederzeit kuendbar.</string>
+    <string name="paywall_terms">AGB</string>
+    <string name="paywall_privacy">Datenschutz</string>
+    <string name="paywall_success">Willkommen bei %s!</string>
+    <string name="paywall_upgrade_button">Jetzt upgraden</string>
+    <string name="paywall_required_tier">Mindestens</string>
+    <string name="paywall_feature_timer">Timer &amp; Pausen</string>
+    <string name="paywall_feature_history_30">History (30 Tage)</string>
+    <string name="paywall_feature_holidays">Feiertage</string>
+    <string name="paywall_feature_overtime">Ueberstunden-Dashboard</string>
+    <string name="paywall_feature_widgets">Widgets</string>
+    <string name="paywall_feature_history_unlimited">History (unbegrenzt)</string>
+    <string name="paywall_feature_pdf_export">PDF-Export</string>
+    <string name="paywall_feature_csv_export">CSV-Export</string>
+    <string name="paywall_feature_vacation_sick">Urlaub &amp; Krankheit</string>
+    <string name="paywall_feature_datev_export">DATEV-Export</string>
+    <string name="paywall_feature_school_holidays">Schulferien</string>
+    <string name="paywall_feature_calendar">Kalender-Integration</string>
+
+    <!-- Subscription Settings -->
+    <string name="settings_section_subscription">Abo</string>
+    <string name="settings_current_tier">Aktueller Plan</string>
+    <string name="settings_manage_subscription">Abo verwalten</string>
+    <string name="settings_restore_purchases">Kaeufe wiederherstellen</string>
+    <string name="restore_success">%s wiederhergestellt</string>
+    <string name="restore_no_subscription">Kein aktives Abo gefunden</string>
+    <string name="restore_error">Fehler beim Wiederherstellen</string>
+
+    <!-- Vacation Locked -->
+    <string name="vacation_locked_title">Urlaub &amp; Krankheitsverwaltung</string>
+    <string name="vacation_locked_description">Verwalte deine Urlaubs- und Krankheitstage mit dem Starter-Plan.</string>
+
     <!-- Accessibility -->
     <string name="a11y_timer_hours_minutes">%1$d Stunden %2$d Minuten Arbeitszeit</string>
     <string name="a11y_timer_minutes">%d Minuten Arbeitszeit</string>

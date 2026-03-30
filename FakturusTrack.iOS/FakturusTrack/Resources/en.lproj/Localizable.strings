@@ -106,3 +106,34 @@
 "vacation_sick_tap_hint" = "Tap a workday to add or remove a sick day.";
 "vacation_tab_title" = "Vacation";
 "vacation_tap_hint" = "Tap a workday to add or remove vacation.";
+
+/* Phase 4: Feature-Gating & Paywall */
+"feature_pdf_export" = "PDF Export";
+"feature_csv_export" = "CSV Export";
+"feature_sick_days" = "Sick Days";
+"feature_vacation" = "Vacation Calendar";
+"feature_datev_export" = "DATEV Export";
+"feature_school_holidays" = "School Holidays";
+"feature_calendar_integration" = "Calendar Integration";
+"paywall_title" = "Upgrade";
+"paywall_close" = "Close";
+"paywall_headline" = "Get more from your time tracking";
+"paywall_subheadline" = "Choose the plan that fits you.";
+"paywall_feature" = "Feature";
+"paywall_subscribe_starter" = "Subscribe to Starter";
+"paywall_subscribe_pro" = "Subscribe to Pro";
+"paywall_month" = "month";
+"paywall_restore" = "Restore Purchases";
+"paywall_auto_renew_notice" = "Subscription auto-renews. Cancel anytime.";
+"paywall_terms" = "Terms of Use";
+"paywall_privacy" = "Privacy Policy";
+"paywall_success %@" = "Welcome to %@!";
+"paywall_purchase_error" = "Purchase failed. Please try again.";
+"paywall_upgrade_button" = "Upgrade now";
+"paywall_required_tier" = "Required plan";
+"settings_subscription" = "Subscription";
+"settings_current_tier" = "Current Plan";
+"settings_manage_subscription" = "Manage Subscription";
+"settings_restore_purchases" = "Restore Purchases";
+"vacation_locked_title" = "Vacation Calendar";
+"vacation_locked_description" = "Manage your vacation and sick days in the calendar. Available from Starter.";

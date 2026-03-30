@@ -3,45 +3,39 @@ import SwiftData
 
 @main
 struct FakturusTrackApp: App {
-    @State private var appState = AppState()
-    @State private var authManager = AuthManager()
     @State private var services = ServiceContainer()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearance = "system"
 
     @State private var syncTimer: Timer?
-    @State private var hasCompletedInitialSync = false
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if authManager.isAuthenticated {
-                    if hasCompletedInitialSync {
-                        ContentView()
-                    } else {
-                        InitialSyncView(
-                            syncEngine: services.syncEngine,
-                            onComplete: {
-                                hasCompletedInitialSync = true
-                            },
-                            onSkip: {
-                                hasCompletedInitialSync = true
-                            }
-                        )
-                    }
+                if services.authManager.isAuthenticated {
+                    ContentView()
                 } else {
                     LoginView()
                 }
             }
             .preferredColorScheme(colorSchemeFor(appearance))
-            .environment(appState)
-            .environment(authManager)
+            .environment(services.appState)
+            .environment(services.authManager)
             .environment(services.networkMonitor)
             .environment(services)
-            .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
-                if !isAuthenticated {
-                    // Reset initial sync state on logout
-                    hasCompletedInitialSync = false
+            .environment(services.subscriptionManager)
+            .environment(services.storeKitManager)
+            .task {
+                await services.storeKitManager.listenForTransactions()
+            }
+            .onChange(of: services.authManager.isAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    print("[App] Login detected, initializing services...")
+                    services.onLogin()
+                    Task { await services.syncEngine?.syncAll() }
+                } else {
+                    print("[App] Logout detected, tearing down services...")
+                    services.onLogout()
                 }
             }
         }
@@ -50,7 +44,9 @@ struct FakturusTrackApp: App {
             switch newPhase {
             case .active:
                 startSyncTimer()
-                Task { await services.syncEngine?.syncAll() }
+                if services.authManager.isAuthenticated {
+                    Task { await services.syncEngine?.syncAll() }
+                }
             case .background:
                 stopSyncTimer()
             default:
@@ -58,8 +54,6 @@ struct FakturusTrackApp: App {
             }
         }
     }
-
-    // MARK: - Sync Timer
 
     private func startSyncTimer() {
         stopSyncTimer()
@@ -72,8 +66,6 @@ struct FakturusTrackApp: App {
         syncTimer?.invalidate()
         syncTimer = nil
     }
-
-    // MARK: - Appearance
 
     private func colorSchemeFor(_ appearance: String) -> ColorScheme? {
         switch appearance {

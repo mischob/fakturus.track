@@ -49,6 +49,7 @@ final class AuthManager {
                 authority: authority
             )
             config.knownAuthorities = [authority]
+            config.cacheConfig.keychainSharingGroup = "com.fakturus.track"
 
             msalApp = try MSALPublicClientApplication(configuration: config)
             print("[AuthManager] MSAL configured successfully")
@@ -62,17 +63,29 @@ final class AuthManager {
             print("[AuthManager] Skipping session check - msalApp is nil")
             return
         }
-        do {
-            let accounts = try msalApp.allAccounts()
-            guard let account = accounts.first else { return }
-            let token = try await acquireTokenSilently()
-            accessToken = token
-            currentAccount = account
-            isAuthenticated = true
-            print("[AuthManager] Restored existing session")
-        } catch {
-            print("[AuthManager] No existing session: \(error)")
+
+        // Retry up to 3 times - Keychain can be unavailable briefly after app launch
+        for attempt in 1...3 {
+            do {
+                let accounts = try msalApp.allAccounts()
+                guard let account = accounts.first else {
+                    print("[AuthManager] No accounts found in keychain")
+                    return
+                }
+                let token = try await acquireTokenSilently()
+                accessToken = token
+                currentAccount = account
+                isAuthenticated = true
+                print("[AuthManager] Restored existing session (attempt \(attempt))")
+                return
+            } catch {
+                print("[AuthManager] Session check attempt \(attempt) failed: \(error.localizedDescription)")
+                if attempt < 3 {
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
         }
+        print("[AuthManager] Could not restore session after 3 attempts")
     }
 
     func acquireTokenInteractively(provider: LoginProvider) async throws {

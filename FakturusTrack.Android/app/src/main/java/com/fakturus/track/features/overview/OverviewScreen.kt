@@ -53,7 +53,10 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
+import com.fakturus.track.features.subscription.PaywallBottomSheet
+import com.fakturus.track.services.subscription.FeatureGate
 import com.fakturus.track.ui.shared.ErrorBanner
+import com.fakturus.track.ui.shared.FeatureLockedCard
 import com.fakturus.track.ui.shared.OvertimeCard
 import com.fakturus.track.ui.shared.ShimmerCardPlaceholder
 import com.fakturus.track.ui.shared.ShimmerOvertimeCards
@@ -70,6 +73,8 @@ fun OverviewScreen(services: ServiceContainer) {
         factory = OverviewViewModelFactory(services, context)
     )
     val state by viewModel.uiState.collectAsState()
+    var paywallFeature by remember { mutableStateOf<FeatureGate?>(null) }
+    val activity = context as? android.app.Activity
 
     // Share exported file
     LaunchedEffect(state.exportedFile) {
@@ -226,6 +231,8 @@ fun OverviewScreen(services: ServiceContainer) {
                     ExportSection(
                         selectedYear = state.selectedYear,
                         isExporting = state.isExporting,
+                        subscriptionManager = services.subscriptionManager,
+                        onShowPaywall = { feature -> paywallFeature = feature },
                         onGeneratePDF = { month -> viewModel.generatePDF(month, state.selectedYear) },
                         onGenerateCSV = { range -> viewModel.generateCSV(range) },
                         onGenerateDATEV = { month -> viewModel.generateDATEV(month) }
@@ -236,12 +243,25 @@ fun OverviewScreen(services: ServiceContainer) {
             }
         }
     }
+
+    // Paywall Bottom Sheet
+    if (paywallFeature != null && activity != null) {
+        PaywallBottomSheet(
+            highlightedFeature = paywallFeature,
+            billingManager = services.billingManager,
+            subscriptionManager = services.subscriptionManager,
+            activity = activity,
+            onDismiss = { paywallFeature = null }
+        )
+    }
 }
 
 @Composable
 private fun ExportSection(
     selectedYear: Int,
     isExporting: Boolean,
+    subscriptionManager: com.fakturus.track.services.subscription.SubscriptionManager,
+    onShowPaywall: (FeatureGate) -> Unit,
     onGeneratePDF: (Int) -> Unit,
     onGenerateCSV: (CSVRange) -> Unit,
     onGenerateDATEV: (Int) -> Unit
@@ -264,38 +284,46 @@ private fun ExportSection(
                 }
             } else {
                 // PDF Export
-                Text(
-                    text = stringResource(R.string.overview_export_pdf_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
+                FeatureLockedCard(
+                    feature = FeatureGate.PDF_EXPORT,
+                    subscriptionManager = subscriptionManager,
+                    onShowPaywall = onShowPaywall
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.overview_export_pdf_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
 
-                var showPdfMonthPicker by remember { mutableStateOf(false) }
-                Box {
-                    OutlinedButton(onClick = { showPdfMonthPicker = true }) {
-                        Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.padding(end = 4.dp))
-                        Text(stringResource(R.string.overview_export_select_month))
-                    }
-                    DropdownMenu(
-                        expanded = showPdfMonthPicker,
-                        onDismissRequest = { showPdfMonthPicker = false }
-                    ) {
-                        val currentMonth = LocalDate.now().monthValue
-                        val months = if (selectedYear == LocalDate.now().year) {
-                            (1..currentMonth).toList()
-                        } else {
-                            (1..12).toList()
-                        }
-                        months.reversed().forEach { month ->
-                            val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
-                            DropdownMenuItem(
-                                text = { Text("$monthName $selectedYear") },
-                                onClick = {
-                                    showPdfMonthPicker = false
-                                    onGeneratePDF(month)
+                        var showPdfMonthPicker by remember { mutableStateOf(false) }
+                        Box {
+                            OutlinedButton(onClick = { showPdfMonthPicker = true }) {
+                                Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.padding(end = 4.dp))
+                                Text(stringResource(R.string.overview_export_select_month))
+                            }
+                            DropdownMenu(
+                                expanded = showPdfMonthPicker,
+                                onDismissRequest = { showPdfMonthPicker = false }
+                            ) {
+                                val currentMonth = LocalDate.now().monthValue
+                                val months = if (selectedYear == LocalDate.now().year) {
+                                    (1..currentMonth).toList()
+                                } else {
+                                    (1..12).toList()
                                 }
-                            )
+                                months.reversed().forEach { month ->
+                                    val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
+                                    DropdownMenuItem(
+                                        text = { Text("$monthName $selectedYear") },
+                                        onClick = {
+                                            showPdfMonthPicker = false
+                                            onGeneratePDF(month)
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -303,129 +331,145 @@ private fun ExportSection(
                 Spacer(Modifier.height(16.dp))
 
                 // CSV Export
-                Text(
-                    text = stringResource(R.string.overview_export_csv_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                FeatureLockedCard(
+                    feature = FeatureGate.CSV_EXPORT,
+                    subscriptionManager = subscriptionManager,
+                    onShowPaywall = onShowPaywall
                 ) {
-                    // Month picker
-                    var showCsvMonthPicker by remember { mutableStateOf(false) }
-                    Box {
-                        AssistChip(
-                            onClick = { showCsvMonthPicker = true },
-                            label = { Text(stringResource(R.string.overview_month)) },
-                            leadingIcon = { Icon(Icons.Default.Description, null) }
+                    Column {
+                        Text(
+                            text = stringResource(R.string.overview_export_csv_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        DropdownMenu(
-                            expanded = showCsvMonthPicker,
-                            onDismissRequest = { showCsvMonthPicker = false }
+                        Spacer(Modifier.height(4.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.horizontalScroll(rememberScrollState())
                         ) {
-                            val currentMonth = LocalDate.now().monthValue
-                            val months = if (selectedYear == LocalDate.now().year) {
-                                (1..currentMonth).toList()
-                            } else {
-                                (1..12).toList()
-                            }
-                            months.reversed().forEach { month ->
-                                val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
-                                DropdownMenuItem(
-                                    text = { Text("$monthName $selectedYear") },
-                                    onClick = {
-                                        showCsvMonthPicker = false
-                                        onGenerateCSV(CSVRange.Month(month))
-                                    }
+                            // Month picker
+                            var showCsvMonthPicker by remember { mutableStateOf(false) }
+                            Box {
+                                AssistChip(
+                                    onClick = { showCsvMonthPicker = true },
+                                    label = { Text(stringResource(R.string.overview_month)) },
+                                    leadingIcon = { Icon(Icons.Default.Description, null) }
                                 )
+                                DropdownMenu(
+                                    expanded = showCsvMonthPicker,
+                                    onDismissRequest = { showCsvMonthPicker = false }
+                                ) {
+                                    val currentMonth = LocalDate.now().monthValue
+                                    val months = if (selectedYear == LocalDate.now().year) {
+                                        (1..currentMonth).toList()
+                                    } else {
+                                        (1..12).toList()
+                                    }
+                                    months.reversed().forEach { month ->
+                                        val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
+                                        DropdownMenuItem(
+                                            text = { Text("$monthName $selectedYear") },
+                                            onClick = {
+                                                showCsvMonthPicker = false
+                                                onGenerateCSV(CSVRange.Month(month))
+                                            }
+                                        )
+                                    }
+                                }
                             }
+
+                            // Quarter picker
+                            var showQuarterPicker by remember { mutableStateOf(false) }
+                            Box {
+                                AssistChip(
+                                    onClick = { showQuarterPicker = true },
+                                    label = { Text(stringResource(R.string.overview_export_quarter)) },
+                                    leadingIcon = { Icon(Icons.Default.Description, null) }
+                                )
+                                DropdownMenu(
+                                    expanded = showQuarterPicker,
+                                    onDismissRequest = { showQuarterPicker = false }
+                                ) {
+                                    (1..4).forEach { quarter ->
+                                        DropdownMenuItem(
+                                            text = { Text("Q$quarter $selectedYear") },
+                                            onClick = {
+                                                showQuarterPicker = false
+                                                onGenerateCSV(CSVRange.Quarter(quarter))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Full year
+                            AssistChip(
+                                onClick = { onGenerateCSV(CSVRange.Year) },
+                                label = { Text(stringResource(R.string.overview_export_year, selectedYear)) },
+                                leadingIcon = { Icon(Icons.Default.Description, null) }
+                            )
                         }
                     }
-
-                    // Quarter picker
-                    var showQuarterPicker by remember { mutableStateOf(false) }
-                    Box {
-                        AssistChip(
-                            onClick = { showQuarterPicker = true },
-                            label = { Text(stringResource(R.string.overview_export_quarter)) },
-                            leadingIcon = { Icon(Icons.Default.Description, null) }
-                        )
-                        DropdownMenu(
-                            expanded = showQuarterPicker,
-                            onDismissRequest = { showQuarterPicker = false }
-                        ) {
-                            (1..4).forEach { quarter ->
-                                DropdownMenuItem(
-                                    text = { Text("Q$quarter $selectedYear") },
-                                    onClick = {
-                                        showQuarterPicker = false
-                                        onGenerateCSV(CSVRange.Quarter(quarter))
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // Full year
-                    AssistChip(
-                        onClick = { onGenerateCSV(CSVRange.Year) },
-                        label = { Text(stringResource(R.string.overview_export_year, selectedYear)) },
-                        leadingIcon = { Icon(Icons.Default.Description, null) }
-                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
                 // DATEV Export
-                Text(
-                    text = stringResource(R.string.overview_export_datev_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
-
-                var showDatevMonthPicker by remember { mutableStateOf(false) }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                FeatureLockedCard(
+                    feature = FeatureGate.DATEV_EXPORT,
+                    subscriptionManager = subscriptionManager,
+                    onShowPaywall = onShowPaywall
                 ) {
-                    Box {
-                        OutlinedButton(onClick = { showDatevMonthPicker = true }) {
-                            Icon(Icons.Default.Share, null, modifier = Modifier.padding(end = 4.dp))
-                            Text(stringResource(R.string.overview_export_select_month))
-                        }
-                        DropdownMenu(
-                            expanded = showDatevMonthPicker,
-                            onDismissRequest = { showDatevMonthPicker = false }
+                    Column {
+                        Text(
+                            text = stringResource(R.string.overview_export_datev_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+
+                        var showDatevMonthPicker by remember { mutableStateOf(false) }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            val currentMonth = LocalDate.now().monthValue
-                            val months = if (selectedYear == LocalDate.now().year) {
-                                (1..currentMonth).toList()
-                            } else {
-                                (1..12).toList()
-                            }
-                            months.reversed().forEach { month ->
-                                val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
-                                DropdownMenuItem(
-                                    text = { Text("$monthName $selectedYear") },
-                                    onClick = {
-                                        showDatevMonthPicker = false
-                                        onGenerateDATEV(month)
+                            Box {
+                                OutlinedButton(onClick = { showDatevMonthPicker = true }) {
+                                    Icon(Icons.Default.Share, null, modifier = Modifier.padding(end = 4.dp))
+                                    Text(stringResource(R.string.overview_export_select_month))
+                                }
+                                DropdownMenu(
+                                    expanded = showDatevMonthPicker,
+                                    onDismissRequest = { showDatevMonthPicker = false }
+                                ) {
+                                    val currentMonth = LocalDate.now().monthValue
+                                    val months = if (selectedYear == LocalDate.now().year) {
+                                        (1..currentMonth).toList()
+                                    } else {
+                                        (1..12).toList()
                                     }
-                                )
+                                    months.reversed().forEach { month ->
+                                        val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
+                                        DropdownMenuItem(
+                                            text = { Text("$monthName $selectedYear") },
+                                            onClick = {
+                                                showDatevMonthPicker = false
+                                                onGenerateDATEV(month)
+                                            }
+                                        )
+                                    }
+                                }
                             }
+                            Text(
+                                text = stringResource(R.string.overview_export_datev_beta),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
                         }
                     }
-                    Text(
-                        text = stringResource(R.string.overview_export_datev_beta),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
                 }
             }
         }

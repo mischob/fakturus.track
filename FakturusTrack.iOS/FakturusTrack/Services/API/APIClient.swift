@@ -53,21 +53,10 @@ final class APIClient: @unchecked Sendable {
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
 
-        // PascalCase -> camelCase Decoder
+        // Backend liefert camelCase JSON - kein custom Strategy nötig
+        // DTOs nutzen explizite CodingKeys für das Mapping
         self.decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .custom { keys in
-            let key = keys.last!.stringValue
-            let camel = key.prefix(1).lowercased() + key.dropFirst()
-            return AnyCodingKey(stringValue: camel)!
-        }
-
-        // camelCase -> PascalCase Encoder
         self.encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .custom { keys in
-            let key = keys.last!.stringValue
-            let pascal = key.prefix(1).uppercased() + key.dropFirst()
-            return AnyCodingKey(stringValue: pascal)!
-        }
     }
 
     // MARK: - Generic Methods
@@ -92,14 +81,14 @@ final class APIClient: @unchecked Sendable {
     func put<B: Encodable>(_ path: String, body: B) async throws {
         var request = try await buildRequest(path: path, method: "PUT")
         request.httpBody = try encoder.encode(body)
-        let (_, response) = try await session.data(for: request)
-        try validateResponse(response)
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response, data: data)
     }
 
     func delete(_ path: String) async throws {
         let request = try await buildRequest(path: path, method: "DELETE")
-        let (_, response) = try await session.data(for: request)
-        try validateResponse(response)
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response, data: data)
     }
 
     // MARK: - Internal
@@ -114,24 +103,40 @@ final class APIClient: @unchecked Sendable {
 
         var request = URLRequest(url: components.url!)
         request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Only set Content-Type for requests with body (POST, PUT, PATCH)
+        if method != "GET" && method != "DELETE" {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
 
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         request.setValue("FakturusTrack-iOS/\(appVersion)", forHTTPHeaderField: "User-Agent")
 
-        // Token Injection
-        let token = try await authManager.acquireTokenSilently()
+        // Token Injection: use cached token first, only refresh on 401
+        let token: String
+        if let cached = await MainActor.run(body: { authManager.accessToken }) {
+            token = cached
+        } else {
+            print("[API] No cached token, acquiring silently...")
+            token = try await authManager.acquireTokenSilently()
+        }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
+        print("[API] \(method) \(baseURL)\(path)")
         return request
     }
 
     private func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
         let (data, response) = try await executeWithRetry(request)
-        try validateResponse(response)
+        let httpResponse = response as! HTTPURLResponse
+        print("[API] Response \(httpResponse.statusCode) (\(data.count) bytes)")
+        try validateResponse(response, data: data)
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
+            print("[API] Decode error: \(error)")
+            if let body = String(data: data, encoding: .utf8) {
+                print("[API] Response body: \(body.prefix(500))")
+            }
             throw APIError.decodingError(error)
         }
     }
@@ -141,7 +146,7 @@ final class APIClient: @unchecked Sendable {
             let (data, response) = try await session.data(for: request)
             let httpResponse = response as! HTTPURLResponse
             if httpResponse.statusCode == 401 {
-                // 1x Retry with forced token refresh
+                print("[API] 401 - Retrying with forced token refresh")
                 var retryRequest = request
                 let newToken = try await authManager.acquireTokenSilently(forceRefresh: true)
                 retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
@@ -151,19 +156,28 @@ final class APIClient: @unchecked Sendable {
         } catch let error as APIError {
             throw error
         } catch {
+            print("[API] Network error: \(error)")
             throw APIError.network(error)
         }
     }
 
-    private func validateResponse(_ response: URLResponse) throws {
+    private func validateResponse(_ response: URLResponse, data: Data? = nil) throws {
         let code = (response as! HTTPURLResponse).statusCode
         switch code {
         case 200...299: return
         case 401: throw APIError.unauthorized
         case 403: throw APIError.forbidden
         case 404: throw APIError.notFound
-        case 500...599: throw APIError.serverError(code)
-        default: throw APIError.unknown(code)
+        case 500...599:
+            if let data, let body = String(data: data, encoding: .utf8) {
+                print("[API] Server error \(code): \(body.prefix(300))")
+            }
+            throw APIError.serverError(code)
+        default:
+            if let data, let body = String(data: data, encoding: .utf8) {
+                print("[API] Error \(code): \(body.prefix(300))")
+            }
+            throw APIError.unknown(code)
         }
     }
 }

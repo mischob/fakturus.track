@@ -8,9 +8,22 @@ final class ServiceContainer {
     let authManager = AuthManager()
     let networkMonitor = NetworkMonitor()
 
+    // Phase 4: Subscription (initialisiert bei App-Start, NICHT bei Login)
+    let subscriptionManager = SubscriptionManager()
+    let storeKitManager = StoreKitManager()
+
     // Lazy-initialized after login
     private(set) var apiClient: APIClient?
     private(set) var syncEngine: SyncEngine?
+
+    init() {
+        // StoreKit bei App-Start initialisieren (NICHT erst bei Login!)
+        // Grund: Abo-Status und Produkte muessen sofort verfuegbar sein,
+        // auch bevor der User eingeloggt ist (z.B. Paywall in Onboarding).
+        Task {
+            await storeKitManager.configure(subscriptionManager: subscriptionManager)
+        }
+    }
 
     func onLogin() {
         appState.isAuthenticated = true

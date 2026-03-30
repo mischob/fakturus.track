@@ -15,7 +15,9 @@ class SettingsViewModelFactory(
             return SettingsViewModel(
                 database = services.database,
                 syncEngine = services.syncEngine,
-                context = context
+                context = context,
+                billingManager = services.billingManager,
+                subscriptionManager = services.subscriptionManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

@@ -10,6 +10,10 @@ import androidx.lifecycle.viewModelScope
 import com.fakturus.track.BuildConfig
 import com.fakturus.track.models.AppDatabase
 import com.fakturus.track.models.UserSettingsEntity
+import com.fakturus.track.R
+import com.fakturus.track.services.subscription.BillingManager
+import com.fakturus.track.services.subscription.SubscriptionManager
+import com.fakturus.track.services.subscription.Tier
 import com.fakturus.track.services.sync.SyncEngine
 import com.fakturus.track.settingsDataStore
 import kotlinx.coroutines.Job
@@ -26,7 +30,9 @@ import java.time.Instant
 class SettingsViewModel(
     private val database: AppDatabase,
     private val syncEngine: SyncEngine? = null,
-    private val context: Context? = null
+    private val context: Context? = null,
+    private val billingManager: BillingManager? = null,
+    private val subscriptionManager: SubscriptionManager? = null
 ) : ViewModel() {
 
     private val settingsDao = database.userSettingsDao()
@@ -53,6 +59,32 @@ class SettingsViewModel(
 
     val appVersion: String
         get() = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+
+    // Restore purchases
+    private val _isRestoringPurchases = MutableStateFlow(false)
+    val isRestoringPurchases: StateFlow<Boolean> = _isRestoringPurchases.asStateFlow()
+
+    private val _restoreResult = MutableStateFlow<String?>(null)
+    val restoreResult: StateFlow<String?> = _restoreResult.asStateFlow()
+
+    fun restorePurchases() {
+        viewModelScope.launch {
+            _isRestoringPurchases.value = true
+            try {
+                billingManager?.queryExistingPurchases()
+                val tier = subscriptionManager?.tier?.value ?: Tier.FREE
+                _restoreResult.value = if (tier > Tier.FREE) {
+                    context?.getString(R.string.restore_success, tier.name)
+                } else {
+                    context?.getString(R.string.restore_no_subscription)
+                }
+            } catch (e: Exception) {
+                _restoreResult.value = context?.getString(R.string.restore_error)
+            } finally {
+                _isRestoringPurchases.value = false
+            }
+        }
+    }
 
     private var debounceJob: Job? = null
 

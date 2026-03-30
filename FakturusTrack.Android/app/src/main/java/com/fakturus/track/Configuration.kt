@@ -2,8 +2,7 @@ package com.fakturus.track
 
 object Configuration {
     val apiBaseUrl: String
-        get() = if (BuildConfig.DEBUG) "https://10.0.2.2:7001"
-                else "https://api.track.fakturus.com"
+        get() = "https://api.track.fakturus.com"
 
     const val B2C_TENANT = "fakturus"
     const val B2C_CLIENT_ID = "3fb35bc6-8825-495e-b0a2-18e00352f968"

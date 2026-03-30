@@ -8,6 +8,10 @@
 # Room Entities
 -keep class com.fakturus.track.models.* { *; }
 
+# Google Play Billing
+-keep class com.android.vending.billing.** { *; }
+-keep class com.android.billingclient.** { *; }
+
 # kotlinx.serialization
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt

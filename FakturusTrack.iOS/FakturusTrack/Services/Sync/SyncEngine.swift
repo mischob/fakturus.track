@@ -18,25 +18,43 @@ actor SyncEngine {
     // MARK: - Public
 
     func syncAll() async {
-        guard !isSyncing else { return }
-        let isConnected = await MainActor.run { networkMonitor.isConnected }
-        guard isConnected else { return }
+        guard !isSyncing else {
+            print("[SyncEngine] Already syncing, skipping")
+            return
+        }
+        guard apiClient != nil else {
+            print("[SyncEngine] No apiClient configured, skipping")
+            return
+        }
+        let isConnected = await MainActor.run { networkMonitor?.isConnected ?? false }
+        guard isConnected else {
+            print("[SyncEngine] Offline, skipping sync")
+            return
+        }
 
+        print("[SyncEngine] Starting sync...")
         isSyncing = true
         lastError = nil
         defer { isSyncing = false }
 
         do {
+            print("[SyncEngine] Syncing work sessions...")
             try await syncWorkSessions()
+            print("[SyncEngine] Syncing vacation days...")
             try await syncVacationDays()
-            try await syncSickDays()
+            print("[SyncEngine] Syncing sick days...")
+            do {
+                try await syncSickDays()
+            } catch APIError.notFound {
+                print("[SyncEngine] Sick days endpoint not available (404), skipping")
+            }
+            print("[SyncEngine] Syncing user settings...")
             try await syncUserSettings()
             lastSyncDate = Date()
+            print("[SyncEngine] Sync completed successfully")
         } catch {
             lastError = error.localizedDescription
-            #if DEBUG
-            print("[SyncEngine] Error: \(error)")
-            #endif
+            print("[SyncEngine] Sync failed: \(error)")
         }
     }
 

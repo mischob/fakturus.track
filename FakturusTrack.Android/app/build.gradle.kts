@@ -101,6 +101,9 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
+    // Play Billing
+    implementation(libs.billing.ktx)
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation(libs.serialization.json)

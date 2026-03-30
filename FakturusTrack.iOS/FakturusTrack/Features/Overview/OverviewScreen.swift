@@ -215,6 +215,7 @@ struct OverviewScreen: View {
                 .cornerRadius(8)
             }
             .disabled(vm.isGeneratingPDF)
+            .featureLocked(.pdfExport)
 
             // CSV Export
             VStack(spacing: 8) {
@@ -271,6 +272,7 @@ struct OverviewScreen: View {
                 }
             }
             .disabled(vm.isGeneratingCSV)
+            .featureLocked(.csvExport)
 
             // DATEV Export
             Button {
@@ -300,6 +302,7 @@ struct OverviewScreen: View {
                 .cornerRadius(8)
             }
             .disabled(vm.isGeneratingDATEV)
+            .featureLocked(.datevExport)
 
             if let exportError = vm.exportError {
                 Text(exportError)

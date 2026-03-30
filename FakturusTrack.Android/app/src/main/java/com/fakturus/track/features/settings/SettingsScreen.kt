@@ -46,7 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
+import com.fakturus.track.features.subscription.PaywallBottomSheet
+import com.fakturus.track.services.subscription.FeatureGate
+import com.fakturus.track.services.subscription.Tier
 import com.fakturus.track.ui.shared.BundeslandPicker
+import com.fakturus.track.ui.shared.FeatureLockedCard
 import com.fakturus.track.ui.shared.WorkdaySelector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +69,9 @@ fun SettingsScreen(
     val appearance by viewModel.appearance.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val tier by services.subscriptionManager.tier.collectAsState()
+    var paywallFeature by remember { mutableStateOf<FeatureGate?>(null) }
+    val activity = context as? android.app.Activity
 
     LaunchedEffect(Unit) {
         viewModel.initializeSettingsIfNeeded()
@@ -187,11 +194,17 @@ fun SettingsScreen(
             }
 
             item {
-                Button(
-                    onClick = onNavigateToSchoolHolidays,
-                    modifier = Modifier.fillMaxWidth()
+                FeatureLockedCard(
+                    feature = FeatureGate.SCHOOL_HOLIDAYS,
+                    subscriptionManager = services.subscriptionManager,
+                    onShowPaywall = { paywallFeature = it }
                 ) {
-                    Text(stringResource(R.string.settings_school_holidays_manage))
+                    Button(
+                        onClick = onNavigateToSchoolHolidays,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.settings_school_holidays_manage))
+                    }
                 }
             }
 
@@ -209,20 +222,26 @@ fun SettingsScreen(
             }
 
             item {
-                var urlText by remember(settings?.calendarUrl) {
-                    mutableStateOf(settings?.calendarUrl ?: "")
+                FeatureLockedCard(
+                    feature = FeatureGate.CALENDAR_INTEGRATION,
+                    subscriptionManager = services.subscriptionManager,
+                    onShowPaywall = { paywallFeature = it }
+                ) {
+                    var urlText by remember(settings?.calendarUrl) {
+                        mutableStateOf(settings?.calendarUrl ?: "")
+                    }
+                    OutlinedTextField(
+                        value = urlText,
+                        onValueChange = { newValue ->
+                            urlText = newValue
+                            viewModel.updateCalendarUrl(newValue.ifBlank { null })
+                        },
+                        label = { Text(stringResource(R.string.settings_calendar_url)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                 }
-                OutlinedTextField(
-                    value = urlText,
-                    onValueChange = { newValue ->
-                        urlText = newValue
-                        viewModel.updateCalendarUrl(newValue.ifBlank { null })
-                    },
-                    label = { Text(stringResource(R.string.settings_calendar_url)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
             }
 
             item {
@@ -311,6 +330,63 @@ fun SettingsScreen(
                 HorizontalDivider()
             }
 
+            // Section: Abo
+            item {
+                Text(
+                    text = stringResource(R.string.settings_section_subscription),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_current_tier)) },
+                    trailingContent = {
+                        Text(
+                            text = tier.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            }
+
+            item {
+                TextButton(
+                    onClick = { paywallFeature = FeatureGate.PDF_EXPORT },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.settings_manage_subscription))
+                }
+            }
+
+            item {
+                val isRestoring by viewModel.isRestoringPurchases.collectAsState()
+                val restoreResult by viewModel.restoreResult.collectAsState()
+                Column {
+                    TextButton(
+                        onClick = { viewModel.restorePurchases() },
+                        enabled = !isRestoring,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.settings_restore_purchases))
+                    }
+                    if (restoreResult != null) {
+                        Text(
+                            text = restoreResult ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+                }
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
             // Section: INFO
             item {
                 Text(
@@ -377,5 +453,16 @@ fun SettingsScreen(
                 Spacer(Modifier.height(32.dp))
             }
         }
+    }
+
+    // Paywall Bottom Sheet
+    if (paywallFeature != null && activity != null) {
+        PaywallBottomSheet(
+            highlightedFeature = paywallFeature,
+            billingManager = services.billingManager,
+            subscriptionManager = services.subscriptionManager,
+            activity = activity,
+            onDismiss = { paywallFeature = null }
+        )
     }
 }

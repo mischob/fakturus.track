@@ -106,3 +106,34 @@
 "vacation_sick_tap_hint" = "Tippen Sie auf einen Arbeitstag um einen Krankheitstag zu setzen oder zu entfernen.";
 "vacation_tab_title" = "Urlaub";
 "vacation_tap_hint" = "Tippen Sie auf einen Arbeitstag um Urlaub zu setzen oder zu entfernen.";
+
+/* Phase 4: Feature-Gating & Paywall */
+"feature_pdf_export" = "PDF-Export";
+"feature_csv_export" = "CSV-Export";
+"feature_sick_days" = "Krankheitstage";
+"feature_vacation" = "Urlaubskalender";
+"feature_datev_export" = "DATEV-Export";
+"feature_school_holidays" = "Schulferien";
+"feature_calendar_integration" = "Kalender-Integration";
+"paywall_title" = "Upgrade";
+"paywall_close" = "Schließen";
+"paywall_headline" = "Mehr aus Ihrer Zeiterfassung herausholen";
+"paywall_subheadline" = "Wählen Sie den Plan, der zu Ihnen passt.";
+"paywall_feature" = "Funktion";
+"paywall_subscribe_starter" = "Starter abonnieren";
+"paywall_subscribe_pro" = "Pro abonnieren";
+"paywall_month" = "Monat";
+"paywall_restore" = "Käufe wiederherstellen";
+"paywall_auto_renew_notice" = "Das Abo verlängert sich automatisch. Jederzeit kündbar.";
+"paywall_terms" = "Nutzungsbedingungen";
+"paywall_privacy" = "Datenschutz";
+"paywall_success %@" = "Willkommen bei %@!";
+"paywall_purchase_error" = "Kauf fehlgeschlagen. Bitte versuchen Sie es erneut.";
+"paywall_upgrade_button" = "Jetzt upgraden";
+"paywall_required_tier" = "Benötigtes Abo";
+"settings_subscription" = "Abo";
+"settings_current_tier" = "Aktueller Plan";
+"settings_manage_subscription" = "Abo verwalten";
+"settings_restore_purchases" = "Käufe wiederherstellen";
+"vacation_locked_title" = "Urlaubskalender";
+"vacation_locked_description" = "Verwalten Sie Ihre Urlaubstage und Krankheitstage im Kalender. Verfügbar ab Starter.";
