@@ -14,11 +14,12 @@ struct LoginView: View {
             Image(systemName: "clock.badge.checkmark")
                 .font(.system(size: 72))
                 .foregroundStyle(Theme.primary)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
-                Text("Fakturus Track")
+                Text(String(localized: "login_title"))
                     .font(.largeTitle.bold())
-                Text("Arbeitszeit erfassen. Einfach. Überall.")
+                Text(String(localized: "login_subtitle"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -35,8 +36,8 @@ struct LoginView: View {
                     Button { login(provider: .apple) } label: { Color.clear }
                 }
 
-                loginButton("Mit Google anmelden", icon: "g.circle.fill", provider: .google)
-                loginButton("Mit E-Mail anmelden", icon: "envelope.fill", provider: .email)
+                loginButton(String(localized: "login_google"), icon: "g.circle.fill", provider: .google)
+                loginButton(String(localized: "login_email"), icon: "envelope.fill", provider: .email)
             }
             .disabled(isLoading)
 
@@ -79,7 +80,7 @@ struct LoginView: View {
                 #if DEBUG
                 errorMessage = "Anmeldung fehlgeschlagen: \(error)"
                 #else
-                errorMessage = "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+                errorMessage = String(localized: "login_failed")
                 #endif
             }
             isLoading = false

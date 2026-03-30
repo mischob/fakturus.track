@@ -3,9 +3,9 @@ import SwiftUI
 struct WorkdaySelector: View {
     @Binding var workDays: Int
 
-    private let days: [(label: String, bit: Int)] = [
-        ("Mo", 1), ("Di", 2), ("Mi", 4), ("Do", 8),
-        ("Fr", 16), ("Sa", 32), ("So", 64)
+    private let days: [(label: String, fullName: String, bit: Int)] = [
+        ("Mo", "Montag", 1), ("Di", "Dienstag", 2), ("Mi", "Mittwoch", 4), ("Do", "Donnerstag", 8),
+        ("Fr", "Freitag", 16), ("Sa", "Samstag", 32), ("So", "Sonntag", 64)
     ]
 
     var body: some View {
@@ -31,6 +31,9 @@ struct WorkdaySelector: View {
                             workDays |= day.bit
                         }
                     }
+                    .accessibilityLabel(day.fullName)
+                    .accessibilityValue(isSelected ? "aktiviert" : "deaktiviert")
+                    .accessibilityAddTraits(.isButton)
             }
         }
     }

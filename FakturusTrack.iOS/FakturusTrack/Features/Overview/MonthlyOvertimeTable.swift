@@ -7,11 +7,11 @@ struct MonthlyOvertimeTable: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Monat")
+                Text(String(localized: "overview_month"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("Gearbeitet")
+                Text(String(localized: "overview_worked"))
                     .frame(width: 80, alignment: .trailing)
-                Text("Erwartet")
+                Text(String(localized: "overview_expected"))
                     .frame(width: 80, alignment: .trailing)
                 Text("+/-")
                     .frame(width: 70, alignment: .trailing)
@@ -20,6 +20,7 @@ struct MonthlyOvertimeTable: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal)
             .padding(.vertical, 8)
+            .accessibilityHidden(true)
 
             Divider()
 
@@ -39,6 +40,8 @@ struct MonthlyOvertimeTable: View {
                 .font(.caption)
                 .padding(.horizontal)
                 .padding(.vertical, 6)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(entry.monthName): \(formatWorked(entry.workedHours)) gearbeitet, \(formatWorked(entry.expectedHours)) erwartet, \(OverviewViewModel.formatHours(entry.overtimeHours)) Differenz")
 
                 if entry.month != months.last?.month {
                     Divider().padding(.horizontal)
@@ -54,7 +57,7 @@ struct MonthlyOvertimeTable: View {
                 let totalOvertime = months.reduce(0.0) { $0 + $1.overtimeHours }
 
                 HStack {
-                    Text("Gesamt")
+                    Text(String(localized: "overview_total"))
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(formatWorked(totalWorked))
@@ -68,6 +71,8 @@ struct MonthlyOvertimeTable: View {
                 .font(.caption.bold())
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Gesamt: \(formatWorked(totalWorked)) gearbeitet, \(formatWorked(totalExpected)) erwartet, \(OverviewViewModel.formatHours(totalOvertime)) Differenz")
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))

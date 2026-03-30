@@ -98,6 +98,7 @@ data class UserSettingsEntity(
     val workHoursPerWeek: Double = 40.0,
     val workDays: Int = 31,
     val bundesland: String = "NW",
+    val personalNumber: String? = null,
     val updatedAt: String = Instant.now().toString(),
     val isSynced: Boolean = false,
     val isPendingSync: Boolean = true

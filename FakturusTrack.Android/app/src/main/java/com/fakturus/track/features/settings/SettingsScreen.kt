@@ -1,5 +1,6 @@
 package com.fakturus.track.features.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,19 +9,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,9 +38,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
 import com.fakturus.track.ui.shared.BundeslandPicker
 import com.fakturus.track.ui.shared.WorkdaySelector
@@ -44,11 +56,15 @@ fun SettingsScreen(
     onLogout: () -> Unit,
     onNavigateToSchoolHolidays: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(services)
+        factory = SettingsViewModelFactory(services, context)
     )
     val settings by viewModel.settings.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val appearance by viewModel.appearance.collectAsState()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(Unit) {
         viewModel.initializeSettingsIfNeeded()
@@ -57,7 +73,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Einstellungen") }
+                title = { Text(stringResource(R.string.settings_tab_title)) }
             )
         }
     ) { innerPadding ->
@@ -72,7 +88,7 @@ fun SettingsScreen(
             item {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Arbeitszeit",
+                    text = stringResource(R.string.settings_section_worktime),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -88,7 +104,7 @@ fun SettingsScreen(
                         hoursText = newValue
                         newValue.toDoubleOrNull()?.let { viewModel.updateWorkHoursPerWeek(it) }
                     },
-                    label = { Text("Wochenstunden") },
+                    label = { Text(stringResource(R.string.settings_work_hours)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -97,7 +113,7 @@ fun SettingsScreen(
 
             item {
                 Text(
-                    text = "Arbeitstage",
+                    text = stringResource(R.string.settings_work_days),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(4.dp))
@@ -114,7 +130,7 @@ fun SettingsScreen(
             // Section: Urlaub
             item {
                 Text(
-                    text = "Urlaub",
+                    text = stringResource(R.string.settings_section_vacation),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -130,7 +146,7 @@ fun SettingsScreen(
                         daysText = newValue
                         newValue.toIntOrNull()?.let { viewModel.updateVacationDaysPerYear(it) }
                     },
-                    label = { Text("Urlaubstage pro Jahr") },
+                    label = { Text(stringResource(R.string.settings_vacation_days)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -144,7 +160,7 @@ fun SettingsScreen(
             // Section: Region
             item {
                 Text(
-                    text = "Region",
+                    text = stringResource(R.string.settings_section_region),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -164,7 +180,7 @@ fun SettingsScreen(
             // Section: Schulferien
             item {
                 Text(
-                    text = "Schulferien",
+                    text = stringResource(R.string.settings_section_school_holidays),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -175,7 +191,7 @@ fun SettingsScreen(
                     onClick = onNavigateToSchoolHolidays,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Schulferien verwalten")
+                    Text(stringResource(R.string.settings_school_holidays_manage))
                 }
             }
 
@@ -186,7 +202,7 @@ fun SettingsScreen(
             // Section: Kalender
             item {
                 Text(
-                    text = "Kalender",
+                    text = stringResource(R.string.settings_section_calendar),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -202,10 +218,141 @@ fun SettingsScreen(
                         urlText = newValue
                         viewModel.updateCalendarUrl(newValue.ifBlank { null })
                     },
-                    label = { Text("Kalender-URL (ICS)") },
+                    label = { Text(stringResource(R.string.settings_calendar_url)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
+                )
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
+            // Section: APP
+            item {
+                Text(
+                    text = stringResource(R.string.settings_section_app),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Erscheinungsbild
+            item {
+                var expanded by remember { mutableStateOf(false) }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_appearance)) },
+                    trailingContent = {
+                        TextButton(onClick = { expanded = true }) {
+                            Text(
+                                when (appearance) {
+                                    "light" -> stringResource(R.string.settings_appearance_light)
+                                    "dark" -> stringResource(R.string.settings_appearance_dark)
+                                    else -> stringResource(R.string.settings_appearance_system)
+                                }
+                            )
+                        }
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_appearance_system)) },
+                                onClick = { viewModel.setAppearance("system"); expanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_appearance_light)) },
+                                onClick = { viewModel.setAppearance("light"); expanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_appearance_dark)) },
+                                onClick = { viewModel.setAppearance("dark"); expanded = false }
+                            )
+                        }
+                    }
+                )
+            }
+
+            // Benachrichtigungen
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_notifications)) },
+                    trailingContent = {
+                        Switch(
+                            checked = notificationsEnabled,
+                            onCheckedChange = { viewModel.setNotifications(it) }
+                        )
+                    }
+                )
+            }
+
+            // Personalnummer
+            item {
+                var personalNumberText by remember(settings?.personalNumber) {
+                    mutableStateOf(settings?.personalNumber ?: "")
+                }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_personal_number)) },
+                    trailingContent = {
+                        OutlinedTextField(
+                            value = personalNumberText,
+                            onValueChange = { newValue ->
+                                personalNumberText = newValue
+                                viewModel.updatePersonalNumber(newValue)
+                            },
+                            placeholder = { Text("12345") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(120.dp)
+                        )
+                    }
+                )
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
+            // Section: INFO
+            item {
+                Text(
+                    text = stringResource(R.string.settings_section_info),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Version
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_version)) },
+                    trailingContent = {
+                        Text(
+                            text = viewModel.appVersion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            }
+
+            // Datenschutz
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_privacy)) },
+                    trailingContent = { Icon(Icons.AutoMirrored.Default.OpenInNew, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        uriHandler.openUri("https://track.fakturus.com/privacy")
+                    }
+                )
+            }
+
+            // Impressum
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_imprint)) },
+                    trailingContent = { Icon(Icons.AutoMirrored.Default.OpenInNew, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        uriHandler.openUri("https://track.fakturus.com/imprint")
+                    }
                 )
             }
 
@@ -224,7 +371,7 @@ fun SettingsScreen(
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                        Text("Abmelden")
+                        Text(stringResource(R.string.settings_logout))
                     }
                 }
                 Spacer(Modifier.height(32.dp))

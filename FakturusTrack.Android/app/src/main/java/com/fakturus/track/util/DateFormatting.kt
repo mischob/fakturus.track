@@ -2,25 +2,32 @@ package com.fakturus.track.util
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 object DateFormatting {
-    private val germanLocale = Locale.GERMAN
-
+    // UI-facing formatting uses system locale
     fun formatDate(date: LocalDate): String =
-        date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy", germanLocale))
+        date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault()))
 
     fun formatTime(instant: Instant): String =
         instant.atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("HH:mm", germanLocale))
+            .toLocalTime()
+            .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+                .withLocale(Locale.getDefault()))
 
     fun formatMonthYear(date: LocalDate): String =
-        date.format(DateTimeFormatter.ofPattern("MMMM yyyy", germanLocale))
+        date.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
 
     fun formatWeekdayShort(date: LocalDate): String =
-        date.format(DateTimeFormatter.ofPattern("EE", germanLocale))
+        date.format(DateTimeFormatter.ofPattern("EE", Locale.getDefault()))
+
+    fun localizedMonthYear(yearMonth: YearMonth): String =
+        yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
 
     fun formatDurationHHMMSS(durationMillis: Long): String {
         val total = durationMillis / 1000

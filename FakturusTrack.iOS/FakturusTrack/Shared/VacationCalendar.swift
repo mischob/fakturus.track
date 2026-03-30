@@ -70,13 +70,14 @@ struct VacationCalendar: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Monats-Header mit Navigation
+            // Month header with navigation
             HStack {
                 Button(action: previousMonth) {
                     Image(systemName: "chevron.left")
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
+                .accessibilityLabel("Vorheriger Monat")
                 Spacer()
                 Text(monthYearString)
                     .font(.headline)
@@ -86,10 +87,11 @@ struct VacationCalendar: View {
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
+                .accessibilityLabel("Naechster Monat")
             }
             .padding(.horizontal)
 
-            // Wochentags-Header
+            // Weekday header
             HStack(spacing: 0) {
                 ForEach(["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], id: \.self) { day in
                     Text(day)
@@ -99,8 +101,8 @@ struct VacationCalendar: View {
                 }
             }
 
-            // Tages-Grid (6 x 7)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7),
+            // Day grid (6 x 7)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 36)), count: 7),
                       spacing: 4) {
                 ForEach(cells, id: \.id) { cell in
                     DayCellView(
@@ -155,18 +157,17 @@ struct VacationCalendar: View {
 
     private func buildCells(year: Int, month: Int) -> [DayCell] {
         var cal = Calendar.current
-        cal.firstWeekday = 2 // Montag
+        cal.firstWeekday = 2 // Monday
 
         guard let firstOfMonth = cal.date(from: DateComponents(year: year, month: month, day: 1)),
               let range = cal.range(of: .day, in: .month, for: firstOfMonth)
         else { return [] }
 
-        let weekday = cal.component(.weekday, from: firstOfMonth) // 1=So, 2=Mo, ...
-        let offset = (weekday - 2 + 7) % 7 // 0=Mo, 1=Di, ..., 6=So
+        let weekday = cal.component(.weekday, from: firstOfMonth)
+        let offset = (weekday - 2 + 7) % 7
         let today = Date()
         let todayComps = cal.dateComponents([.year, .month, .day], from: today)
 
-        // Cached holiday components for this month's year
         let yearHolidays = holidays
 
         var result: [DayCell] = []
@@ -185,7 +186,6 @@ struct VacationCalendar: View {
                            comps.month == todayComps.month &&
                            comps.day == todayComps.day)
 
-            // Determine day type
             let type: DayType
             if vacationDates.contains(where: { $0.year == comps.year && $0.month == comps.month && $0.day == comps.day }) {
                 type = .vacation
@@ -213,8 +213,7 @@ struct VacationCalendar: View {
     }
 
     private func isWorkday(date: Date, calendar: Calendar) -> Bool {
-        let weekday = calendar.component(.weekday, from: date) // 1=So, 2=Mo, ..., 7=Sa
-        // Convert to Monday-based: 1=Mo, 2=Di, ..., 7=So
+        let weekday = calendar.component(.weekday, from: date)
         let mondayBased = weekday == 1 ? 7 : weekday - 1
         return (workDays & (1 << (mondayBased - 1))) != 0
     }
@@ -248,14 +247,30 @@ struct DayCellView: View {
                 Circle().stroke(Theme.danger, lineWidth: 2)
             }
 
-            // Text
+            // Text + type indicator
             if let dayNumber = cell.dayNumber {
-                Text("\(dayNumber)")
-                    .font(.body)
-                    .foregroundStyle(foregroundColor)
+                VStack(spacing: 0) {
+                    Text("\(dayNumber)")
+                        .font(.body)
+                        .foregroundStyle(foregroundColor)
+
+                    // Color + text label for non-color-only information
+                    switch cell.type {
+                    case .vacation:
+                        Text("U")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Theme.vacation)
+                    case .sickDay:
+                        Text("K")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Theme.sickDay)
+                    default:
+                        EmptyView()
+                    }
+                }
             }
 
-            // Feiertag-Indikator
+            // Holiday indicator
             if case .holiday = cell.type {
                 Circle()
                     .fill(Color.purple)
@@ -269,31 +284,62 @@ struct DayCellView: View {
             guard cell.isTappable else { return }
             onTap()
         }
+        .accessibilityLabel(accessibleDayLabel)
+        .accessibilityHint(accessibleDayHint)
         .contextMenu {
             if cell.type == .workday || cell.isToday {
                 Button {
                     onTap()
                 } label: {
-                    Label("Urlaub", systemImage: "sun.max.fill")
+                    Label(String(localized: "vacation_context_vacation"), systemImage: "sun.max.fill")
                 }
                 Button {
                     onLongPress()
                 } label: {
-                    Label("Krank", systemImage: "cross.circle.fill")
+                    Label(String(localized: "vacation_context_sick"), systemImage: "cross.circle.fill")
                 }
             }
             if cell.type == .vacation || cell.type == .sickDay {
                 Button {
                     onSwitchAbsenceType()
                 } label: {
-                    Label("Typ wechseln", systemImage: "arrow.triangle.2.circlepath")
+                    Label(String(localized: "vacation_context_switch_type"), systemImage: "arrow.triangle.2.circlepath")
                 }
                 Button(role: .destructive) {
                     onRemoveAbsence()
                 } label: {
-                    Label("Entfernen", systemImage: "trash")
+                    Label(String(localized: "vacation_context_remove"), systemImage: "trash")
                 }
             }
+        }
+    }
+
+    // MARK: - Accessibility
+
+    private var accessibleDayLabel: String {
+        guard let date = cell.date else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EEEE, d. MMMM"
+        let dateStr = formatter.string(from: date)
+
+        switch cell.type {
+        case .vacation: return "\(dateStr), Urlaubstag"
+        case .sickDay: return "\(dateStr), Krankheitstag"
+        case .holiday(let name): return "\(dateStr), Feiertag, \(name)"
+        case .workday: return "\(dateStr), Arbeitstag"
+        case .weekend: return "\(dateStr), Wochenende"
+        case .empty: return ""
+        }
+    }
+
+    private var accessibleDayHint: String {
+        guard cell.isTappable else { return "" }
+        switch cell.type {
+        case .vacation: return "Doppeltippen um Urlaub zu entfernen"
+        case .sickDay: return "Doppeltippen um Krankheitstag zu entfernen"
+        case .workday: return "Doppeltippen um Abwesenheit zu setzen"
+        default: return ""
         }
     }
 

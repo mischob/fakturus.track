@@ -31,8 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
 import com.fakturus.track.models.WorkSessionEntity
 import com.fakturus.track.ui.shared.ArbZGBanner
@@ -78,7 +80,7 @@ fun TimeTrackingScreen(services: ServiceContainer) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Zeiten") },
+                title = { Text(stringResource(R.string.times_tab_title)) },
                 actions = {
                     IconButton(onClick = {
                         viewModel.createManualSession { session ->

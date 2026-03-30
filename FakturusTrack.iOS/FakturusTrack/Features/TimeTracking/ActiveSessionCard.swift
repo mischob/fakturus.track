@@ -13,6 +13,8 @@ struct ActiveSessionCard: View {
     let onSave: (Date, Date, Date?, Int) -> Void
     let onDelete: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     init(
         session: WorkSession?,
         isPaused: Bool,
@@ -53,6 +55,8 @@ struct ActiveSessionCard: View {
                 idleContent
             }
         }
+        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: session?.isRunning)
+        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isPaused)
     }
 
     // MARK: - Idle State
@@ -60,20 +64,21 @@ struct ActiveSessionCard: View {
     @ViewBuilder
     private var idleContent: some View {
         VStack(spacing: 16) {
-            Text("Bereit fuer den naechsten Eintrag")
+            Text(String(localized: "times_session_idle"))
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
             Button(action: {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                HapticManager.timerStart()
                 onStart()
             }) {
-                Label("Starten", systemImage: "play.fill")
+                Label(String(localized: "times_timer_start"), systemImage: "play.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityHint(String(localized: "a11y_start_hint"))
         }
         .padding()
     }
@@ -87,7 +92,8 @@ struct ActiveSessionCard: View {
                 Circle()
                     .fill(Theme.timerActive)
                     .frame(width: 8, height: 8)
-                Text("Laufende Sitzung")
+                    .accessibilityHidden(true)
+                Text(String(localized: "times_session_running"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -102,7 +108,7 @@ struct ActiveSessionCard: View {
 
             HStack {
                 VStack(alignment: .leading) {
-                    Text("Start")
+                    Text(String(localized: "times_start"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(session.startTime.timeShort)
@@ -116,30 +122,34 @@ struct ActiveSessionCard: View {
             }
 
             HStack(spacing: 12) {
-                Button("Pause", systemImage: "pause.fill") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Button(String(localized: "times_timer_pause"), systemImage: "pause.fill") {
+                    HapticManager.timerPauseResume()
                     onPause()
                 }
                 .buttonStyle(.bordered)
                 .tint(Theme.timerPaused)
+                .accessibilityHint(String(localized: "a11y_pause_hint"))
 
                 Button("Stop", systemImage: "stop.fill") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    HapticManager.timerStop()
                     onStop()
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel(String(localized: "times_timer_stop"))
+                .accessibilityHint(String(localized: "a11y_stop_hint"))
 
-                Button("Fertig", systemImage: "checkmark.circle.fill") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Button(String(localized: "times_timer_finish"), systemImage: "checkmark.circle.fill") {
+                    HapticManager.sessionFinished()
                     onFinish()
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityHint(String(localized: "a11y_finish_hint"))
             }
         }
         .padding()
     }
 
-    // MARK: - Paused State (E08-S03)
+    // MARK: - Paused State
 
     @ViewBuilder
     private func pausedContent(_ session: WorkSession) -> some View {
@@ -148,7 +158,8 @@ struct ActiveSessionCard: View {
                 Circle()
                     .fill(Theme.timerPaused)
                     .frame(width: 8, height: 8)
-                Text("Pausiert")
+                    .accessibilityHidden(true)
+                Text(String(localized: "times_session_paused"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -173,7 +184,7 @@ struct ActiveSessionCard: View {
 
             HStack {
                 VStack(alignment: .leading) {
-                    Text("Start")
+                    Text(String(localized: "times_start"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(session.startTime.timeShort)
@@ -182,18 +193,20 @@ struct ActiveSessionCard: View {
             }
 
             HStack(spacing: 12) {
-                Button("Weiter", systemImage: "play.fill") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Button(String(localized: "times_timer_resume"), systemImage: "play.fill") {
+                    HapticManager.timerPauseResume()
                     onResume()
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityHint(String(localized: "a11y_resume_hint"))
 
-                Button("Fertig", systemImage: "checkmark.circle.fill") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Button(String(localized: "times_timer_finish"), systemImage: "checkmark.circle.fill") {
+                    HapticManager.sessionFinished()
                     onFinish()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.secondary)
+                .accessibilityHint(String(localized: "a11y_finish_hint"))
             }
         }
         .padding()
@@ -260,19 +273,20 @@ private struct StoppedSessionEditor: View {
             HStack {
                 Image(systemName: "pencil.circle.fill")
                     .foregroundStyle(Theme.warning)
-                Text("Sitzung bearbeiten")
+                    .accessibilityHidden(true)
+                Text(String(localized: "times_session_edit"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
             }
 
             VStack(spacing: 12) {
-                DatePicker("Datum", selection: $editDate, displayedComponents: .date)
+                DatePicker(String(localized: "times_date"), selection: $editDate, displayedComponents: .date)
                     .environment(\.locale, Locale(identifier: "de_DE"))
-                DatePicker("Start", selection: $editStartTime, displayedComponents: .hourAndMinute)
-                DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
+                DatePicker(String(localized: "times_start"), selection: $editStartTime, displayedComponents: .hourAndMinute)
+                DatePicker(String(localized: "times_end"), selection: $editStopTime, displayedComponents: .hourAndMinute)
                 HStack {
-                    Text("Pause (min)")
+                    Text(String(localized: "times_pause_min"))
                     Spacer()
                     TextField("0", text: $editPauseMinutes)
                         .keyboardType(.numberPad)
@@ -284,7 +298,7 @@ private struct StoppedSessionEditor: View {
             Divider()
 
             HStack {
-                Text("Brutto")
+                Text(String(localized: "times_gross"))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(bruttoDuration.formattedHHMM)
@@ -293,7 +307,7 @@ private struct StoppedSessionEditor: View {
             .font(.subheadline)
 
             HStack {
-                Text("Netto")
+                Text(String(localized: "times_net"))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(nettoDuration.formattedHHMM)
@@ -303,7 +317,7 @@ private struct StoppedSessionEditor: View {
             .font(.subheadline)
 
             if !isValid {
-                Text("Endzeit muss nach Startzeit liegen")
+                Text(String(localized: "times_end_after_start_error"))
                     .font(.caption)
                     .foregroundStyle(Theme.danger)
             }
@@ -312,17 +326,17 @@ private struct StoppedSessionEditor: View {
                 Button(role: .destructive) {
                     onDelete()
                 } label: {
-                    Text("Verwerfen")
+                    Text(String(localized: "times_session_discard"))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
 
                 Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    HapticManager.sessionFinished()
                     onSave(editDate, editStartTime, editStopTime, pauseMinutes)
                     onFinish()
                 } label: {
-                    Text("Fertig")
+                    Text(String(localized: "times_timer_finish"))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)

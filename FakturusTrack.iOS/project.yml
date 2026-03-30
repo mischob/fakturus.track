@@ -48,11 +48,39 @@ targets:
         CODE_SIGN_ENTITLEMENTS: FakturusTrack/FakturusTrack.entitlements
     dependencies:
       - package: MSAL
+      - target: FakturusTrackWidget
     entitlements:
       path: FakturusTrack/FakturusTrack.entitlements
       properties:
         keychain-access-groups:
           - $(AppIdentifierPrefix)com.fakturus.track
+        com.apple.security.application-groups:
+          - group.com.fakturus.track
+
+  FakturusTrackWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: FakturusTrackWidget
+        excludes:
+          - "**/.gitkeep"
+      - path: FakturusTrack/Shared/SharedDefaults.swift
+    info:
+      path: FakturusTrackWidget/Info.plist
+      properties:
+        CFBundleDisplayName: "Fakturus Track Widget"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fakturus.track.widget
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_ENTITLEMENTS: FakturusTrackWidget/FakturusTrackWidget.entitlements
+    entitlements:
+      path: FakturusTrackWidget/FakturusTrackWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.fakturus.track
 
   FakturusTrackTests:
     type: bundle.unit-test

@@ -6,8 +6,8 @@ import androidx.compose.ui.graphics.Color
 val Primary = Color(0xFF1A5CFF)
 val PrimaryDark = Color(0xFF4D8AFF)
 
-// Success / Timer Active
-val Success = Color(0xFF1DB954)
+// Success / Timer Active -- Improved contrast for WCAG AA on white background
+val Success = Color(0xFF15803D)       // Was 0xFF1DB954 -- darker green for better contrast on light
 val SuccessDark = Color(0xFF34D96E)
 val TimerRunning = Success
 val TimerRunningDark = SuccessDark
@@ -23,8 +23,8 @@ val Warning = Color(0xFFF59E0B)
 val PauseColor = Color(0xFF8B5CF6)
 val PauseColorDark = Color(0xFFA78BFA)
 
-// Vacation
-val Vacation = Color(0xFF06B6D4)
+// Vacation -- Improved contrast for WCAG AA on white background
+val Vacation = Color(0xFF0891B2)       // Was 0xFF06B6D4 -- darker cyan for better contrast on light
 
 // Sick Day
 val SickDay = Color(0xFFEF4444)
@@ -45,6 +45,7 @@ val Gray50 = Color(0xFFF9FAFB)
 val Gray100 = Color(0xFFF3F4F6)
 val Gray200 = Color(0xFFE5E7EB)
 val Gray500 = Color(0xFF6B7280)
+val Gray600 = Color(0xFF4B5563)       // Added for better secondary text contrast
 val Gray700 = Color(0xFF374151)
 val Gray900 = Color(0xFF111827)
 

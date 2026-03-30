@@ -1,4 +1,161 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Fakturus Track</string>
+
+    <!-- Tabs -->
+    <string name="times_tab_title">Zeiten</string>
+    <string name="vacation_tab_title">Urlaub</string>
+    <string name="overview_tab_title">Gesamt</string>
+    <string name="settings_tab_title">Einstellungen</string>
+
+    <!-- Timer -->
+    <string name="times_timer_start">Starten</string>
+    <string name="times_timer_stop">Stop</string>
+    <string name="times_timer_pause">Pause</string>
+    <string name="times_timer_resume">Weiter</string>
+    <string name="times_timer_finish">Fertig</string>
+    <string name="times_session_running">Laufende Sitzung</string>
+    <string name="times_session_stopped">Gestoppt</string>
+    <string name="times_session_paused">Pausiert</string>
+    <string name="times_session_idle">Bereit fuer den naechsten Eintrag</string>
+    <string name="times_session_edit">Sitzung bearbeiten</string>
+    <string name="times_session_save">Speichern</string>
+    <string name="times_session_delete">Loeschen</string>
+    <string name="times_session_delete_title">Sitzung loeschen?</string>
+    <string name="times_session_delete_message">Diese Sitzung wird unwiderruflich geloescht.</string>
+    <string name="times_label_start">Start</string>
+    <string name="times_label_date">Datum</string>
+    <string name="times_label_end">Ende</string>
+    <string name="times_label_brutto">Brutto</string>
+    <string name="times_label_netto">Netto</string>
+    <string name="times_label_pause_minutes">Pause (Minuten)</string>
+    <string name="times_label_pause_format">Pause: %d min</string>
+    <string name="times_validation_end_after_start">Endzeit muss nach Startzeit liegen</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Abbrechen</string>
+
+    <!-- Plurals -->
+    <plurals name="times_history_entries">
+        <item quantity="one">%d Eintrag</item>
+        <item quantity="other">%d Eintraege</item>
+    </plurals>
+
+    <!-- Vacation -->
+    <string name="vacation_remaining">Resturlaub</string>
+    <string name="vacation_days_remaining">%1$d von %2$d Urlaubstagen</string>
+    <string name="vacation_holiday">Feiertag</string>
+    <string name="vacation_sick_day">Krankheitstag</string>
+    <string name="vacation_label">Urlaub</string>
+    <string name="vacation_sick_label">Krank</string>
+    <string name="vacation_holiday_label">Feiertag</string>
+    <string name="vacation_type_switch">Typ wechseln</string>
+    <string name="vacation_remove">Entfernen</string>
+    <string name="vacation_previous_month">Vorheriger Monat</string>
+    <string name="vacation_next_month">Naechster Monat</string>
+
+    <!-- Overview -->
+    <string name="overview_overtime">Ueberstunden</string>
+    <string name="overview_vacation">Urlaub</string>
+    <string name="overview_holidays">Feiertage</string>
+    <string name="overview_sick_days">Krankheitstage</string>
+    <string name="overview_worked">Gearbeitet</string>
+    <string name="overview_expected">Erwartet</string>
+    <string name="overview_total">Gesamt</string>
+    <string name="overview_month">Monat</string>
+    <string name="overview_export">Export</string>
+    <string name="overview_export_pdf">PDF-Export</string>
+    <string name="overview_export_csv">CSV-Export</string>
+    <string name="overview_export_datev">DATEV-Export</string>
+    <string name="overview_export_datev_beta">BETA</string>
+    <string name="overview_export_creating">Wird erstellt...</string>
+    <string name="overview_export_pdf_label">PDF Arbeitszeitnachweis</string>
+    <string name="overview_export_csv_label">CSV Export</string>
+    <string name="overview_export_datev_label">DATEV Lodas Export</string>
+    <string name="overview_export_select_month">Monat waehlen</string>
+    <string name="overview_export_quarter">Quartal</string>
+    <string name="overview_export_year">Jahr %d</string>
+    <string name="overview_export_share">Teilen</string>
+    <string name="overview_last_updated">Zuletzt aktualisiert: %s</string>
+    <string name="overview_load_error">Uebersicht konnte nicht geladen werden</string>
+    <string name="overview_plus_minus">+/-</string>
+
+    <!-- Settings -->
+    <string name="settings_section_worktime">Arbeitszeit</string>
+    <string name="settings_work_hours">Wochenstunden</string>
+    <string name="settings_work_days">Arbeitstage</string>
+    <string name="settings_section_vacation">Urlaub</string>
+    <string name="settings_vacation_days">Urlaubstage pro Jahr</string>
+    <string name="settings_section_region">Region</string>
+    <string name="settings_bundesland">Bundesland</string>
+    <string name="settings_section_school_holidays">Schulferien</string>
+    <string name="settings_school_holidays_manage">Schulferien verwalten</string>
+    <string name="settings_section_calendar">Kalender</string>
+    <string name="settings_calendar_url">Kalender-URL (ICS)</string>
+    <string name="settings_section_app">APP</string>
+    <string name="settings_appearance">Erscheinungsbild</string>
+    <string name="settings_appearance_system">System</string>
+    <string name="settings_appearance_light">Hell</string>
+    <string name="settings_appearance_dark">Dunkel</string>
+    <string name="settings_personal_number">Personalnummer</string>
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_privacy">Datenschutzerklaerung</string>
+    <string name="settings_imprint">Impressum</string>
+    <string name="settings_licenses">Open-Source-Lizenzen</string>
+    <string name="settings_logout">Abmelden</string>
+
+    <!-- Errors -->
+    <string name="error_network">Keine Internetverbindung. Daten werden lokal gespeichert.</string>
+    <string name="error_sync_failed">Synchronisation fehlgeschlagen. Bitte spaeter erneut versuchen.</string>
+    <string name="error_token_expired">Sitzung abgelaufen. Bitte erneut anmelden.</string>
+    <string name="error_data_load">Daten konnten nicht geladen werden.</string>
+    <string name="error_generic">Ein Fehler ist aufgetreten</string>
+    <string name="error_retry">Erneut versuchen</string>
+
+    <!-- ArbZG -->
+    <string name="arbzg_6h_hint">Erinnerung: Nach 6 Stunden Arbeit steht Ihnen eine Pause von mindestens 30 Minuten zu.</string>
+    <string name="arbzg_9h_hint">Sie haben die regulaere Hoechstarbeitszeit von 8 Stunden ueberschritten.</string>
+    <string name="arbzg_10h_hint">Achtung: Die gesetzliche Hoechstarbeitszeit von 10 Stunden ist erreicht.</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Fakturus Timer</string>
+    <string name="widget_description">Timer-Status und heutige Arbeitszeit</string>
+    <string name="widget_running">Laeuft</string>
+    <string name="widget_running_since">Seit %s</string>
+    <string name="widget_paused">Pausiert</string>
+    <string name="widget_paused_minutes">%d Min Pause</string>
+    <string name="widget_ready">Bereit</string>
+    <string name="widget_today">Heute</string>
+    <string name="widget_start">Start</string>
+    <string name="widget_stop">Stop</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_resume">Weiter</string>
+    <string name="widget_elapsed_placeholder">--:--</string>
+
+    <!-- Shortcuts -->
+    <string name="shortcut_start_timer">Timer starten</string>
+    <string name="shortcut_start_timer_long">Neuen Timer starten</string>
+    <string name="shortcut_view_history">Zeiten</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_timer_hours_minutes">%1$d Stunden %2$d Minuten Arbeitszeit</string>
+    <string name="a11y_timer_minutes">%d Minuten Arbeitszeit</string>
+    <string name="a11y_start_timer">Timer starten. Startet die Zeiterfassung</string>
+    <string name="a11y_stop_timer">Timer stoppen. Stoppt die laufende Sitzung</string>
+    <string name="a11y_pause_timer">Timer pausieren</string>
+    <string name="a11y_resume_timer">Timer fortsetzen</string>
+    <string name="a11y_finish_session">Sitzung abschliessen und speichern</string>
+    <string name="a11y_session_summary">%1$s %2$s, %3$s bis %4$s, %5$s Nettoarbeitszeit</string>
+    <string name="a11y_month_group">%1$s, %2$d Eintraege, %3$s</string>
+    <string name="a11y_month_collapse">Doppeltippen zum Zuklappen</string>
+    <string name="a11y_month_expand">Doppeltippen zum Aufklappen</string>
+    <string name="a11y_sync_pending">Synchronisation ausstehend</string>
+    <string name="a11y_sync_done">Synchronisiert</string>
+    <string name="a11y_overtime_card">%1$s %2$s</string>
+    <string name="a11y_day_vacation">%s, Urlaubstag</string>
+    <string name="a11y_day_sick">%s, Krankheitstag</string>
+    <string name="a11y_day_holiday">%1$s, Feiertag, %2$s</string>
+    <string name="a11y_day_workday">%s, Arbeitstag</string>
+    <string name="a11y_day_weekend">%s, Wochenende</string>
 </resources>

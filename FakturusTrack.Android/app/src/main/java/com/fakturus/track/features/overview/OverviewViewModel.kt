@@ -9,6 +9,7 @@ import com.fakturus.track.models.OvertimeSummaryDTO
 import com.fakturus.track.models.UserSettingsEntity
 import com.fakturus.track.services.api.APIClient
 import com.fakturus.track.services.export.CSVExporter
+import com.fakturus.track.services.export.DATEVExporter
 import com.fakturus.track.services.export.PDFReportGenerator
 import com.fakturus.track.util.HolidayCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -207,6 +208,57 @@ class OverviewViewModel(
                 )
             } catch (e: Exception) {
                 Log.e("OverviewViewModel", "CSV generation failed", e)
+                _uiState.value = _uiState.value.copy(isExporting = false)
+            }
+        }
+    }
+
+    fun generateDATEV(month: Int) {
+        val db = database ?: return
+        val ctx = context ?: return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true)
+            try {
+                val year = _uiState.value.selectedYear
+                val ym = YearMonth.of(year, month)
+                val from = ym.atDay(1).toString()
+                val to = ym.atEndOfMonth().toString()
+
+                val sessions = db.workSessionDao().let { dao ->
+                    dao.getPendingSessions().plus(dao.getSyncedSessions())
+                        .distinctBy { it.id }
+                        .filter { it.date >= from && it.date <= to }
+                }
+                val vacationDays = db.vacationDayDao().getAll().filter {
+                    it.date >= from && it.date <= to
+                }
+                val sickDays = db.sickDayDao().getAll().filter {
+                    it.date >= from && it.date <= to
+                }
+                val settings = db.userSettingsDao().getSettingsOnce()
+                    ?: UserSettingsEntity(userId = "")
+
+                val personalNumber = settings.personalNumber ?: ""
+
+                val datev = DATEVExporter.generateExport(
+                    month = month, year = year,
+                    sessions = sessions, vacationDays = vacationDays,
+                    sickDays = sickDays, settings = settings,
+                    personalNumber = personalNumber
+                )
+
+                val fileName = DATEVExporter.fileName(month, year)
+                val file = File(ctx.cacheDir, fileName)
+                file.writeText(datev, Charsets.UTF_8)
+
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportedFile = file,
+                    exportMimeType = "text/csv"
+                )
+            } catch (e: Exception) {
+                Log.e("OverviewViewModel", "DATEV export failed", e)
                 _uiState.value = _uiState.value.copy(isExporting = false)
             }
         }

@@ -14,7 +14,12 @@ struct TimeTrackingView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    // ArbZG Banner (E08-S05)
+                    // Error Banner
+                    if let vm = viewModel, let error = vm.error {
+                        ErrorBanner(error)
+                    }
+
+                    // ArbZG Banner
                     if let vm = viewModel, vm.activeSession != nil {
                         ArbZGBannerContainer(
                             netWorkMinutes: vm.netWorkMinutes,
@@ -59,7 +64,7 @@ struct TimeTrackingView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Zeiten")
+            .navigationTitle(String(localized: "times_tab_title"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     SyncStatusView(status: syncStatus) {
@@ -158,9 +163,10 @@ struct TimeTrackingView: View {
             Image(systemName: "clock")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            Text("Noch keine Eintraege")
+                .accessibilityHidden(true)
+            Text(String(localized: "times_empty_title"))
                 .font(.headline)
-            Text("Starten Sie Ihre erste Arbeitssitzung!")
+            Text(String(localized: "times_empty_subtitle"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

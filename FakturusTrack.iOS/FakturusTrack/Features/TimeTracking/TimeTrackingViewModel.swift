@@ -1,5 +1,6 @@
 import SwiftData
 import Foundation
+import WidgetKit
 
 @Observable @MainActor
 final class TimeTrackingViewModel {
@@ -95,6 +96,11 @@ final class TimeTrackingViewModel {
         isPaused = false
         currentPauseStart = nil
         clearPauseDefaults()
+
+        SharedDefaults.writeTimerState(
+            isRunning: true, startDate: session.startTime,
+            isPaused: false, pauseMinutes: 0, todayTotalSeconds: 0
+        )
     }
 
     func stopSession() {
@@ -103,6 +109,11 @@ final class TimeTrackingViewModel {
         session.stopTime = Date()
         session.updatedAt = Date()
         try? modelContext.save()
+
+        SharedDefaults.writeTimerState(
+            isRunning: false, startDate: session.startTime,
+            isPaused: false, pauseMinutes: accumulatedPauseMinutes, todayTotalSeconds: 0
+        )
     }
 
     func finishSession() {
@@ -118,6 +129,11 @@ final class TimeTrackingViewModel {
         accumulatedPauseMinutes = 0
         currentPauseStart = nil
         clearPauseDefaults()
+
+        SharedDefaults.writeTimerState(
+            isRunning: false, startDate: nil,
+            isPaused: false, pauseMinutes: 0, todayTotalSeconds: 0
+        )
 
         // Trigger sync after finishing a session
         Task { await syncEngine?.syncAll() }
@@ -156,6 +172,11 @@ final class TimeTrackingViewModel {
             accumulatedPauseMinutes = 0
             currentPauseStart = nil
             clearPauseDefaults()
+
+            SharedDefaults.writeTimerState(
+                isRunning: false, startDate: nil,
+                isPaused: false, pauseMinutes: 0, todayTotalSeconds: 0
+            )
         }
 
         // Trigger sync to process the delete on server
@@ -201,6 +222,11 @@ final class TimeTrackingViewModel {
         isPaused = true
         currentPauseStart = Date()
         persistPauseState()
+
+        SharedDefaults.writeTimerState(
+            isRunning: true, startDate: session.startTime,
+            isPaused: true, pauseMinutes: accumulatedPauseMinutes, todayTotalSeconds: 0
+        )
     }
 
     func resumeSession() {
@@ -218,6 +244,11 @@ final class TimeTrackingViewModel {
         isPaused = false
         currentPauseStart = nil
         persistPauseState()
+
+        SharedDefaults.writeTimerState(
+            isRunning: true, startDate: activeSession?.startTime,
+            isPaused: false, pauseMinutes: accumulatedPauseMinutes, todayTotalSeconds: 0
+        )
     }
 
     /// Computed net work minutes for ArbZG checks (accounts for current ongoing pause)

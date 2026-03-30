@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -25,7 +27,13 @@ fun OvertimeCard(
     valueColor: Color,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(modifier = modifier.width(140.dp)) {
+    ElevatedCard(
+        modifier = modifier
+            .width(140.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title $value"
+            }
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))

@@ -1,5 +1,6 @@
 package com.fakturus.track.features.timetracking
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -9,6 +10,7 @@ import com.fakturus.track.models.PendingDeleteEntity
 import com.fakturus.track.models.WorkSessionEntity
 import com.fakturus.track.services.api.APIClient
 import com.fakturus.track.services.sync.SyncEngine
+import com.fakturus.track.widget.WidgetStateHelper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,8 @@ class TimeTrackingViewModel(
     private val database: AppDatabase,
     private val syncEngine: SyncEngine? = null,
     private val apiClient: APIClient? = null,
-    private val prefs: SharedPreferences? = null
+    private val prefs: SharedPreferences? = null,
+    private val appContext: Context? = null
 ) : ViewModel() {
 
     private val dao = database.workSessionDao()
@@ -99,6 +102,7 @@ class TimeTrackingViewModel(
                 )
                 dao.insert(session)
                 _activeSession.value = session
+                updateWidgetState()
             } catch (e: Exception) {
                 _error.value = "Fehler beim Starten der Sitzung"
             }
@@ -116,6 +120,7 @@ class TimeTrackingViewModel(
                 )
                 dao.update(updated)
                 _activeSession.value = updated
+                updateWidgetState()
             } catch (e: Exception) {
                 _error.value = "Fehler beim Stoppen der Sitzung"
             }
@@ -147,6 +152,7 @@ class TimeTrackingViewModel(
                 _hasShown9h.value = false
                 _hasShown10h.value = false
                 prefs?.edit()?.remove("currentPauseStart")?.apply()
+                updateWidgetState()
 
                 // Trigger sync after finishing session
                 syncEngine?.let { engine ->
@@ -271,6 +277,7 @@ class TimeTrackingViewModel(
         val now = Instant.now()
         _currentPauseStart.value = now
         prefs?.edit()?.putString("currentPauseStart", now.toString())?.apply()
+        updateWidgetState()
     }
 
     fun resumeSession() {
@@ -300,6 +307,7 @@ class TimeTrackingViewModel(
         _isPaused.value = false
         _currentPauseStart.value = null
         prefs?.edit()?.remove("currentPauseStart")?.apply()
+        updateWidgetState()
     }
 
     fun dismissArbZGBanner() {
@@ -339,6 +347,27 @@ class TimeTrackingViewModel(
                 syncEngine?.syncAll()
             } catch (e: Exception) {
                 Log.w("TimeTrackingVM", "Manual sync failed", e)
+            }
+        }
+    }
+
+    private fun updateWidgetState() {
+        val ctx = appContext ?: return
+        val session = _activeSession.value
+        viewModelScope.launch {
+            try {
+                WidgetStateHelper.writeTimerState(
+                    context = ctx,
+                    isRunning = session?.isRunning == true,
+                    startTimeMillis = session?.startTime?.let {
+                        try { Instant.parse(it).toEpochMilli() } catch (_: Exception) { null }
+                    },
+                    isPaused = _isPaused.value,
+                    pauseMinutes = _accumulatedPauseMinutes.value,
+                    todayTotalSeconds = 0
+                )
+            } catch (e: Exception) {
+                Log.w("TimeTrackingVM", "Widget state update failed", e)
             }
         }
     }

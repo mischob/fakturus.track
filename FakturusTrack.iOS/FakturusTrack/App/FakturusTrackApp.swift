@@ -7,6 +7,7 @@ struct FakturusTrackApp: App {
     @State private var authManager = AuthManager()
     @State private var services = ServiceContainer()
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("appearance") private var appearance = "system"
 
     @State private var syncTimer: Timer?
     @State private var hasCompletedInitialSync = false
@@ -32,6 +33,7 @@ struct FakturusTrackApp: App {
                     LoginView()
                 }
             }
+            .preferredColorScheme(colorSchemeFor(appearance))
             .environment(appState)
             .environment(authManager)
             .environment(services.networkMonitor)
@@ -69,5 +71,15 @@ struct FakturusTrackApp: App {
     private func stopSyncTimer() {
         syncTimer?.invalidate()
         syncTimer = nil
+    }
+
+    // MARK: - Appearance
+
+    private func colorSchemeFor(_ appearance: String) -> ColorScheme? {
+        switch appearance {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
     }
 }

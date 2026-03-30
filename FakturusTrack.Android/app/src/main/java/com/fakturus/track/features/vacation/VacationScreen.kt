@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
 import com.fakturus.track.ui.shared.VacationCalendar
 
@@ -34,7 +36,7 @@ fun VacationScreen(services: ServiceContainer) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Urlaub") })
+            TopAppBar(title = { Text(stringResource(R.string.vacation_tab_title)) })
         }
     ) { innerPadding ->
         Column(

@@ -1,25 +1,32 @@
 package com.fakturus.track.features.settings
 
+import android.content.Context
 import android.util.Log
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fakturus.track.BuildConfig
 import com.fakturus.track.models.AppDatabase
-import com.fakturus.track.models.UserSettingsDTO
 import com.fakturus.track.models.UserSettingsEntity
 import com.fakturus.track.services.sync.SyncEngine
+import com.fakturus.track.settingsDataStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 
 class SettingsViewModel(
     private val database: AppDatabase,
-    private val syncEngine: SyncEngine? = null
+    private val syncEngine: SyncEngine? = null,
+    private val context: Context? = null
 ) : ViewModel() {
 
     private val settingsDao = database.userSettingsDao()
@@ -29,6 +36,23 @@ class SettingsViewModel(
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    // Appearance from DataStore
+    val appearance: StateFlow<String> = context?.let { ctx ->
+        ctx.settingsDataStore.data
+            .map { prefs -> prefs[stringPreferencesKey("appearance")] ?: "system" }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "system")
+    } ?: MutableStateFlow("system").asStateFlow()
+
+    // Notifications from DataStore
+    val notificationsEnabled: StateFlow<Boolean> = context?.let { ctx ->
+        ctx.settingsDataStore.data
+            .map { prefs -> prefs[booleanPreferencesKey("notifications")] ?: true }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    } ?: MutableStateFlow(true).asStateFlow()
+
+    val appVersion: String
+        get() = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
     private var debounceJob: Job? = null
 
@@ -50,6 +74,28 @@ class SettingsViewModel(
 
     fun updateCalendarUrl(url: String?) {
         updateSettings { it.copy(calendarUrl = url) }
+    }
+
+    fun updatePersonalNumber(number: String) {
+        updateSettings { it.copy(personalNumber = number.ifBlank { null }) }
+    }
+
+    fun setAppearance(value: String) {
+        val ctx = context ?: return
+        viewModelScope.launch {
+            ctx.settingsDataStore.edit { prefs ->
+                prefs[stringPreferencesKey("appearance")] = value
+            }
+        }
+    }
+
+    fun setNotifications(enabled: Boolean) {
+        val ctx = context ?: return
+        viewModelScope.launch {
+            ctx.settingsDataStore.edit { prefs ->
+                prefs[booleanPreferencesKey("notifications")] = enabled
+            }
+        }
     }
 
     private fun updateSettings(transform: (UserSettingsEntity) -> UserSettingsEntity) {

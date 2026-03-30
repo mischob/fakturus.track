@@ -58,9 +58,15 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun FakturusTrackTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    overrideAppearance: String = "system",
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (overrideAppearance) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
+
     // Dynamic color explicitly disabled -- use own branding
     // Status bar appearance is handled by enableEdgeToEdge() in MainActivity
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

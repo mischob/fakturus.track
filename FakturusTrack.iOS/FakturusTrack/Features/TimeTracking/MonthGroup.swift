@@ -7,6 +7,7 @@ struct MonthGroup: View {
     let onSelectSession: (WorkSession) -> Void
 
     @State private var isExpanded: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         monthName: String,
@@ -30,7 +31,11 @@ struct MonthGroup: View {
         VStack(spacing: 0) {
             // Header
             Button {
-                withAnimation(.spring()) { isExpanded.toggle() }
+                if reduceMotion {
+                    isExpanded.toggle()
+                } else {
+                    withAnimation(.spring(response: 0.25)) { isExpanded.toggle() }
+                }
             } label: {
                 HStack {
                     Text(monthName)
@@ -50,6 +55,12 @@ struct MonthGroup: View {
                 .padding(.vertical, 8)
             }
             .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(monthName), \(sessions.count) Eintraege, \(totalNetDuration.formattedHHMM)")
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityHint(isExpanded
+                ? String(localized: "a11y_collapse_hint")
+                : String(localized: "a11y_expand_hint"))
 
             // Content
             if isExpanded {

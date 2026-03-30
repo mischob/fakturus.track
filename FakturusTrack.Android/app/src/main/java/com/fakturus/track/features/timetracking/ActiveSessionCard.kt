@@ -1,6 +1,13 @@
 package com.fakturus.track.features.timetracking
 
-import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -43,12 +51,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.fakturus.track.R
 import com.fakturus.track.models.WorkSessionEntity
 import com.fakturus.track.ui.theme.PauseColor
 import com.fakturus.track.ui.theme.TimerRunning
 import com.fakturus.track.util.DateFormatting
+import com.fakturus.track.util.HapticManager
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -71,30 +85,48 @@ fun ActiveSessionCard(
     onSave: (date: String, startTime: String, stopTime: String?, pauseMinutes: Int) -> Unit,
     onDelete: () -> Unit
 ) {
+    // Derive a state key for AnimatedContent transitions
+    val cardState = when {
+        session == null -> "idle"
+        isPaused && session.isRunning -> "paused"
+        session.isRunning -> "running"
+        !session.isFinished -> "stopped"
+        else -> "idle"
+    }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
-        when {
-            session == null -> IdleContent(onStart = onStart)
-            isPaused && session.isRunning -> PausedContent(
-                session = session,
-                currentPauseStart = currentPauseStart,
-                accumulatedPauseMinutes = accumulatedPauseMinutes,
-                onResume = onResume,
-                onFinish = onFinish
-            )
-            session.isRunning -> RunningContent(
-                session = session,
-                onStop = onStop,
-                onFinish = onFinish,
-                onPause = onPause
-            )
-            !session.isFinished -> StoppedContent(
-                session = session,
-                onFinish = onFinish,
-                onSave = onSave,
-                onDelete = onDelete
-            )
+        AnimatedContent(
+            targetState = cardState,
+            transitionSpec = {
+                (fadeIn(tween(300)) + slideInVertically { -it / 4 }) togetherWith
+                    (fadeOut(tween(200)) + slideOutVertically { it / 4 })
+            },
+            label = "activeSessionTransition"
+        ) { state ->
+            when (state) {
+                "idle" -> IdleContent(onStart = onStart)
+                "paused" -> if (session != null) PausedContent(
+                    session = session,
+                    currentPauseStart = currentPauseStart,
+                    accumulatedPauseMinutes = accumulatedPauseMinutes,
+                    onResume = onResume,
+                    onFinish = onFinish
+                )
+                "running" -> if (session != null) RunningContent(
+                    session = session,
+                    onStop = onStop,
+                    onFinish = onFinish,
+                    onPause = onPause
+                )
+                "stopped" -> if (session != null) StoppedContent(
+                    session = session,
+                    onFinish = onFinish,
+                    onSave = onSave,
+                    onDelete = onDelete
+                )
+            }
         }
     }
 }
@@ -102,6 +134,7 @@ fun ActiveSessionCard(
 @Composable
 private fun IdleContent(onStart: () -> Unit) {
     val view = LocalView.current
+    val startDesc = stringResource(R.string.a11y_start_timer)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,20 +143,22 @@ private fun IdleContent(onStart: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Bereit fuer den naechsten Eintrag",
+            text = stringResource(R.string.times_session_idle),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Button(
             onClick = {
-                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                HapticManager.toggle(view)
                 onStart()
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = startDesc }
         ) {
             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Starten", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.times_timer_start), style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -137,6 +172,9 @@ private fun RunningContent(
 ) {
     val view = LocalView.current
     val startInstant = remember(session.startTime) { Instant.parse(session.startTime) }
+    val pauseDesc = stringResource(R.string.a11y_pause_timer)
+    val stopDesc = stringResource(R.string.a11y_stop_timer)
+    val finishDesc = stringResource(R.string.a11y_finish_session)
 
     Column(
         modifier = Modifier
@@ -147,7 +185,7 @@ private fun RunningContent(
         // Status header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Laufende Sitzung",
+                text = stringResource(R.string.times_session_running),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -169,7 +207,7 @@ private fun RunningContent(
         ) {
             Column {
                 Text(
-                    text = "Start",
+                    text = stringResource(R.string.times_label_start),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -180,7 +218,7 @@ private fun RunningContent(
             }
             if (session.pauseMinutes > 0) {
                 Text(
-                    text = "Pause: ${session.pauseMinutes} min",
+                    text = stringResource(R.string.times_label_pause_format, session.pauseMinutes),
                     style = MaterialTheme.typography.labelSmall,
                     color = PauseColor
                 )
@@ -195,41 +233,47 @@ private fun RunningContent(
             // Pause button
             OutlinedButton(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     onPause()
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = pauseDesc },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = PauseColor)
             ) {
                 Icon(Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Pause")
+                Text(stringResource(R.string.times_timer_pause))
             }
 
             // Stop button
             OutlinedButton(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     onStop()
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = stopDesc }
             ) {
                 Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Stop")
+                Text(stringResource(R.string.times_timer_stop))
             }
 
             // Finish button
             Button(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     onFinish()
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = finishDesc }
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Fertig")
+                Text(stringResource(R.string.times_timer_finish))
             }
         }
     }
@@ -244,6 +288,8 @@ private fun PausedContent(
     onFinish: () -> Unit
 ) {
     val view = LocalView.current
+    val resumeDesc = stringResource(R.string.a11y_resume_timer)
+    val finishDesc = stringResource(R.string.a11y_finish_session)
 
     Column(
         modifier = Modifier
@@ -260,7 +306,7 @@ private fun PausedContent(
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "Pausiert",
+                text = stringResource(R.string.times_session_paused),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -278,7 +324,7 @@ private fun PausedContent(
         // Accumulated pause info
         if (accumulatedPauseMinutes > 0) {
             Text(
-                text = "Pause bisher: $accumulatedPauseMinutes min",
+                text = stringResource(R.string.times_label_pause_format, accumulatedPauseMinutes),
                 style = MaterialTheme.typography.labelSmall,
                 color = PauseColor
             )
@@ -292,27 +338,31 @@ private fun PausedContent(
             // Resume button
             Button(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     onResume()
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = resumeDesc }
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Weiter")
+                Text(stringResource(R.string.times_timer_resume))
             }
 
             // Finish button
             FilledTonalButton(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     onFinish()
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = finishDesc }
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Fertig")
+                Text(stringResource(R.string.times_timer_finish))
             }
         }
     }
@@ -356,6 +406,8 @@ private fun StoppedContent(
     val nettoMinutes = maxOf(0, bruttoMinutes - editPauseMinutes)
     val isValid = editStopTime.isAfter(editStartTime) && bruttoMinutes <= 1440
 
+    val finishDesc = stringResource(R.string.a11y_finish_session)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,7 +415,7 @@ private fun StoppedContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Sitzung bearbeiten",
+            text = stringResource(R.string.times_session_edit),
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -372,7 +424,7 @@ private fun StoppedContent(
             onClick = { showDatePicker = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Datum: ${DateFormatting.formatDate(editDate)}")
+            Text("${stringResource(R.string.times_label_date)}: ${DateFormatting.formatDate(editDate)}")
         }
 
         // Start time
@@ -380,7 +432,7 @@ private fun StoppedContent(
             onClick = { showStartTimePicker = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Start: %02d:%02d".format(editStartTime.hour, editStartTime.minute))
+            Text("${stringResource(R.string.times_label_start)}: %02d:%02d".format(editStartTime.hour, editStartTime.minute))
         }
 
         // Stop time
@@ -388,7 +440,7 @@ private fun StoppedContent(
             onClick = { showStopTimePicker = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Ende: %02d:%02d".format(editStopTime.hour, editStopTime.minute))
+            Text("${stringResource(R.string.times_label_end)}: %02d:%02d".format(editStopTime.hour, editStopTime.minute))
         }
 
         // Pause
@@ -397,7 +449,7 @@ private fun StoppedContent(
             onValueChange = { value ->
                 editPauseMinutes = value.filter { it.isDigit() }.toIntOrNull() ?: 0
             },
-            label = { Text("Pause (Minuten)") },
+            label = { Text(stringResource(R.string.times_label_pause_minutes)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -408,7 +460,7 @@ private fun StoppedContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text("Brutto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.times_label_brutto), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = DateFormatting.formatDurationHHMM(bruttoMinutes),
                     style = MaterialTheme.typography.bodyMedium,
@@ -416,7 +468,7 @@ private fun StoppedContent(
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("Netto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.times_label_netto), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = DateFormatting.formatDurationHHMM(nettoMinutes),
                     style = MaterialTheme.typography.titleMedium,
@@ -427,7 +479,7 @@ private fun StoppedContent(
 
         if (!isValid && editStopTime <= editStartTime) {
             Text(
-                text = "Endzeit muss nach Startzeit liegen",
+                text = stringResource(R.string.times_validation_end_after_start),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error
             )
@@ -442,7 +494,7 @@ private fun StoppedContent(
             IconButton(onClick = { showDeleteConfirmation = true }) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Loeschen",
+                    contentDescription = stringResource(R.string.times_session_delete),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -452,7 +504,7 @@ private fun StoppedContent(
             // Save
             FilledTonalButton(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     val startInstant = ZonedDateTime.of(editDate, editStartTime, zone).toInstant()
                     val stopInstant = ZonedDateTime.of(editDate, editStopTime, zone).toInstant()
                     onSave(
@@ -464,13 +516,13 @@ private fun StoppedContent(
                 },
                 enabled = isValid
             ) {
-                Text("Speichern")
+                Text(stringResource(R.string.times_session_save))
             }
 
             // Finish
             Button(
                 onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    HapticManager.toggle(view)
                     val startInstant = ZonedDateTime.of(editDate, editStartTime, zone).toInstant()
                     val stopInstant = ZonedDateTime.of(editDate, editStopTime, zone).toInstant()
                     onSave(
@@ -481,11 +533,12 @@ private fun StoppedContent(
                     )
                     onFinish()
                 },
-                enabled = isValid
+                enabled = isValid,
+                modifier = Modifier.semantics { contentDescription = finishDesc }
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Fertig")
+                Text(stringResource(R.string.times_timer_finish))
             }
         }
     }
@@ -503,10 +556,10 @@ private fun StoppedContent(
                         editDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
                     }
                     showDatePicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.dialog_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.dialog_cancel)) }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -553,8 +606,8 @@ private fun StoppedContent(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Sitzung loeschen?") },
-            text = { Text("Diese Sitzung wird unwiderruflich geloescht.") },
+            title = { Text(stringResource(R.string.times_session_delete_title)) },
+            text = { Text(stringResource(R.string.times_session_delete_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -564,10 +617,10 @@ private fun StoppedContent(
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
-                ) { Text("Loeschen") }
+                ) { Text(stringResource(R.string.times_session_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showDeleteConfirmation = false }) { Text(stringResource(R.string.dialog_cancel)) }
             }
         )
     }
@@ -582,10 +635,10 @@ private fun TimePickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("OK") }
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.dialog_ok)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_cancel)) }
         },
         text = { content() }
     )

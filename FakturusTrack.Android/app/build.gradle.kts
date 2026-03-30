@@ -94,6 +94,13 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime)
 
+    // Glance (Widget)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+
+    // DataStore
+    implementation(libs.datastore.preferences)
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation(libs.serialization.json)

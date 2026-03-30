@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,20 +24,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fakturus.track.R
 import com.fakturus.track.ui.theme.TimerRunning
 import com.fakturus.track.util.DateFormatting
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
 
-enum class TimerSize(val fontSize: TextUnit) {
-    LARGE(48.sp),
-    MEDIUM(28.sp),
-    SMALL(16.sp)
+enum class TimerSize {
+    LARGE,
+    MEDIUM,
+    SMALL
 }
 
 @Composable
@@ -59,6 +66,22 @@ fun TimerDisplay(
         }
     }
 
+    val totalSeconds = maxOf(0, elapsedMillis / 1000)
+    val hours = (totalSeconds / 3600).toInt()
+    val minutes = ((totalSeconds % 3600) / 60).toInt()
+
+    val accessibilityText = if (hours > 0) {
+        stringResource(R.string.a11y_timer_hours_minutes, hours, minutes)
+    } else {
+        stringResource(R.string.a11y_timer_minutes, minutes)
+    }
+
+    val textStyle = when (size) {
+        TimerSize.LARGE -> MaterialTheme.typography.displayMedium
+        TimerSize.MEDIUM -> MaterialTheme.typography.headlineMedium
+        TimerSize.SMALL -> MaterialTheme.typography.bodyLarge
+    }
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (isRunning) {
             PulsingDot(color = TimerRunning)
@@ -67,7 +90,11 @@ fun TimerDisplay(
         Text(
             text = DateFormatting.formatDurationHHMMSS(maxOf(0, elapsedMillis)),
             fontFamily = FontFamily.Monospace,
-            fontSize = size.fontSize
+            style = textStyle,
+            modifier = Modifier.semantics {
+                contentDescription = accessibilityText
+                liveRegion = LiveRegionMode.Polite
+            }
         )
     }
 }

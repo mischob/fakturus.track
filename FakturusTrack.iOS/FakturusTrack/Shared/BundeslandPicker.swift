@@ -24,12 +24,13 @@ struct BundeslandPicker: View {
 
     var body: some View {
         let currentYear = Calendar.current.component(.year, from: Date())
-        Picker("Bundesland", selection: $selectedBundesland) {
+        Picker(String(localized: "settings_bundesland"), selection: $selectedBundesland) {
             ForEach(Self.bundeslaender, id: \.code) { land in
                 let count = HolidayCalculator.holidayCount(bundesland: land.code, year: currentYear)
                 Text("\(land.name) (\(count) Feiertage)")
                     .tag(land.code)
             }
         }
+        .accessibilityHint(String(localized: "a11y_bundesland_hint"))
     }
 }

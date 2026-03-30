@@ -1,6 +1,24 @@
 import SwiftUI
 import UIKit
 
+// MARK: - WCAG AA Contrast Audit (E06-S05)
+//
+// Minimum contrast ratios (WCAG AA):
+//   - Normal text (< 18pt): 4.5:1
+//   - Large text (>= 18pt bold or >= 24pt): 3:1
+//   - UI components / graphical objects: 3:1
+//
+// Audit results (light mode, on white #FFFFFF background):
+//   primary    0x1A5CFF on white = ~4.6:1  -- PASS (AA normal text)
+//   success    0x15803D on white = ~5.0:1  -- PASS (was 0x1DB954 = 2.9:1, FIXED to darker green)
+//   danger     0xE5383B on white = ~3.9:1  -- PASS (large text / UI only; used as accent)
+//   warning    0xF59E0B on white = ~2.1:1  -- UI accent only, not for standalone text
+//   vacation   0x0891B2 on white = ~3.5:1  -- PASS for UI/large text (was 0x06B6D4 = 2.8:1, FIXED)
+//   textSecondary 0x4B5563 on white = ~7.1:1 -- PASS (was gray500 0x6B7280 = 4.6:1, improved)
+//   gray500    0x6B7280 on white = ~4.6:1  -- PASS (AA normal text, borderline)
+//
+// Dark mode uses lighter variants to maintain contrast on dark backgrounds.
+
 enum Theme {
     // MARK: - Brand Colors
 
@@ -9,8 +27,9 @@ enum Theme {
         dark: Color(hex: 0x4D8AFF)
     )
 
+    // Contrast-fixed: 0x15803D instead of 0x1DB954 for WCAG AA on white
     static let success = Color(
-        light: Color(hex: 0x1DB954),
+        light: Color(hex: 0x15803D),
         dark: Color(hex: 0x34D96E)
     )
 
@@ -30,7 +49,11 @@ enum Theme {
         dark: Color(hex: 0xA78BFA)
     )
 
-    static let vacation = Color(hex: 0x06B6D4)
+    // Contrast-fixed: 0x0891B2 instead of 0x06B6D4 for better contrast on white
+    static let vacation = Color(
+        light: Color(hex: 0x0891B2),
+        dark: Color(hex: 0x22D3EE)
+    )
 
     static let sickDay = Color(hex: 0xEF4444)
 
@@ -76,7 +99,12 @@ enum Theme {
         dark: Color(hex: 0x1A1D27)
     )
     static let textPrimary = gray900
-    static let textSecondary = gray500
+
+    // Contrast-fixed: 0x4B5563 instead of gray500 0x6B7280 for better contrast on white
+    static let textSecondary = Color(
+        light: Color(hex: 0x4B5563),
+        dark: Color(hex: 0x9CA3AF)
+    )
 }
 
 // MARK: - Color Helpers

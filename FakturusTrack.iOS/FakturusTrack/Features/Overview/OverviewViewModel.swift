@@ -15,6 +15,7 @@ final class OverviewViewModel {
     // Export state
     var isGeneratingPDF = false
     var isGeneratingCSV = false
+    var isGeneratingDATEV = false
     var exportedFileURL: URL?
     var exportError: String?
 
@@ -158,6 +159,39 @@ final class OverviewViewModel {
             exportedFileURL = tempURL
         } catch {
             exportError = "Fehler beim Generieren: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - DATEV Export
+
+    func generateDATEVExport(month: Int, year: Int) {
+        guard let modelContext else { return }
+        isGeneratingDATEV = true
+        exportError = nil
+        defer { isGeneratingDATEV = false }
+
+        do {
+            let sessions = try modelContext.fetch(FetchDescriptor<WorkSession>())
+            let vacationDays = try modelContext.fetch(FetchDescriptor<VacationDay>())
+            let sickDays = try modelContext.fetch(FetchDescriptor<SickDay>())
+            let settings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first
+                ?? UserSettings()
+
+            let personalNumber = settings.personalNumber ?? ""
+
+            let datev = DATEVExporter.generateExport(
+                month: month, year: year,
+                sessions: sessions, vacationDays: vacationDays,
+                sickDays: sickDays, settings: settings,
+                personalNumber: personalNumber
+            )
+
+            let fileName = DATEVExporter.fileName(month: month, year: year)
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            try datev.write(to: tempURL, atomically: true, encoding: String.Encoding.utf8)
+            exportedFileURL = tempURL
+        } catch {
+            exportError = "DATEV-Export fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 

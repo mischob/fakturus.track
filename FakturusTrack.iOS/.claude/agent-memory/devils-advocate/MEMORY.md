@@ -1,0 +1,2 @@
+- [Phase 3 Review](project_phase3_review.md) -- Critical scope/timing/DATEV/widget findings from planning review
+- [Architecture Patterns](project_architecture_patterns.md) -- iOS codebase patterns: Theme, project.yml, TimeTrackingViewModel, Swift 6

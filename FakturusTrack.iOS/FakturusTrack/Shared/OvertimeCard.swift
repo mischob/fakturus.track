@@ -20,6 +20,7 @@ struct OvertimeCard: View {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(.caption)
@@ -39,5 +40,14 @@ struct OvertimeCard: View {
         .frame(width: 130, alignment: .leading)
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    private var accessibilityDescription: String {
+        if let subtitle {
+            return "\(title) \(value), \(subtitle)"
+        }
+        return "\(title) \(value)"
     }
 }

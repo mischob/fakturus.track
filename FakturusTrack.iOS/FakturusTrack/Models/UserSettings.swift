@@ -12,6 +12,7 @@ final class UserSettings {
     var updatedAt: Date?
     var isSynced: Bool
     var isPendingSync: Bool
+    var personalNumber: String?
 
     init(
         userId: String = "",
@@ -21,7 +22,8 @@ final class UserSettings {
         workDays: Int = 31,
         bundesland: String = "NW",
         isSynced: Bool = false,
-        isPendingSync: Bool = true
+        isPendingSync: Bool = true,
+        personalNumber: String? = nil
     ) {
         self.userId = userId
         self.calendarUrl = calendarUrl
@@ -31,6 +33,7 @@ final class UserSettings {
         self.bundesland = bundesland
         self.isSynced = isSynced
         self.isPendingSync = isPendingSync
+        self.personalNumber = personalNumber
     }
 
     // MARK: - DTO Conversion

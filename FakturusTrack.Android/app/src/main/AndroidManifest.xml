@@ -24,6 +24,21 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- App Shortcuts (long-press on app icon) -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
+            <!-- Intent filters for shortcut actions -->
+            <intent-filter>
+                <action android:name="com.fakturus.track.ACTION_START_TIMER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.fakturus.track.ACTION_VIEW_HISTORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- MSAL BrowserTabActivity for auth redirect -->
@@ -38,6 +53,19 @@
                     android:host="com.fakturus.track" />
             </intent-filter>
         </activity>
+
+        <!-- Timer Widget Receiver -->
+        <receiver
+            android:name=".widget.TimerWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/timer_widget_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -16,7 +16,8 @@ class TimeTrackingViewModelFactory(
                 database = services.database,
                 syncEngine = services.syncEngine,
                 apiClient = services.apiClient,
-                prefs = context.getSharedPreferences("fakturus_track_prefs", Context.MODE_PRIVATE)
+                prefs = context.getSharedPreferences("fakturus_track_prefs", Context.MODE_PRIVATE),
+                appContext = context.applicationContext
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

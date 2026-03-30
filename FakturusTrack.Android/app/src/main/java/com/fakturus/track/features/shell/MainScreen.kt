@@ -14,7 +14,11 @@ import com.fakturus.track.services.auth.AuthManager
 import com.fakturus.track.ui.shared.OfflineBanner
 
 @Composable
-fun MainScreen(authManager: AuthManager, services: ServiceContainer) {
+fun MainScreen(
+    authManager: AuthManager,
+    services: ServiceContainer,
+    startTimerOnLaunch: Boolean = false
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

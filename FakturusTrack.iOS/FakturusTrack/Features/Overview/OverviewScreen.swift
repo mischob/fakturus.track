@@ -16,7 +16,7 @@ struct OverviewScreen: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Gesamt")
+            .navigationTitle(String(localized: "overview_tab_title"))
         }
         .onAppear {
             if viewModel == nil {
@@ -31,34 +31,63 @@ struct OverviewScreen: View {
     private func overviewContent(vm: OverviewViewModel) -> some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Summary Cards
-                if let summary = vm.summary {
+                // Summary Cards (with shimmer loading)
+                if vm.isLoading && vm.summary == nil {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             OvertimeCard(
-                                title: "Ueberstunden",
+                                title: "---",
+                                value: "---",
+                                icon: "clock.badge.checkmark",
+                                valueColor: Theme.textSecondary
+                            )
+                            .shimmer()
+
+                            OvertimeCard(
+                                title: "---",
+                                value: "---",
+                                icon: "sun.max",
+                                valueColor: Theme.textSecondary
+                            )
+                            .shimmer()
+
+                            OvertimeCard(
+                                title: "---",
+                                value: "---",
+                                icon: "cross.circle",
+                                valueColor: Theme.textSecondary
+                            )
+                            .shimmer()
+                        }
+                        .padding(.horizontal)
+                    }
+                } else if let summary = vm.summary {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            OvertimeCard(
+                                title: String(localized: "overview_overtime"),
                                 value: OverviewViewModel.formatHours(summary.totalOvertimeHours),
                                 icon: "clock.badge.checkmark",
                                 valueColor: summary.totalOvertimeHours >= 0 ? Theme.success : Theme.danger
                             )
 
                             OvertimeCard(
-                                title: "Urlaub",
+                                title: String(localized: "overview_vacation"),
                                 value: "\(summary.vacationDaysTaken) / \(summary.vacationDaysPerYear)",
-                                subtitle: "\(summary.vacationDaysRemaining) verbleibend",
+                                subtitle: "\(summary.vacationDaysRemaining) \(String(localized: "overview_vacation_remaining"))",
                                 icon: "sun.max",
                                 valueColor: Theme.textPrimary
                             )
 
                             OvertimeCard(
-                                title: "Krankheitstage",
+                                title: String(localized: "overview_sick_days"),
                                 value: "\(summary.sickDaysTaken ?? 0)",
                                 icon: "cross.circle",
                                 valueColor: summary.sickDaysTaken ?? 0 > 0 ? Theme.danger : Theme.textPrimary
                             )
 
                             OvertimeCard(
-                                title: "Feiertage",
+                                title: String(localized: "overview_holidays"),
                                 value: "\(summary.holidaysTaken)",
                                 icon: "calendar",
                                 valueColor: Theme.textPrimary
@@ -115,25 +144,17 @@ struct OverviewScreen: View {
 
                 // Error
                 if let error = vm.error {
-                    VStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        Text(error)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Button("Erneut versuchen") {
-                            Task { await vm.loadSummary() }
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primary)
-                    }
-                    .padding()
+                    ErrorBanner(
+                        error,
+                        action: { Task { await vm.loadSummary() } },
+                        actionLabel: String(localized: "error_retry")
+                    )
+                    .padding(.horizontal)
                 }
 
                 // Cache hint
                 if vm.isShowingCachedData, let lastUpdated = vm.lastUpdated {
-                    Text("Zuletzt aktualisiert: \(lastUpdated.formatted(.relative(presentation: .named)))")
+                    Text("\(String(localized: "overview_last_updated")): \(lastUpdated.formatted(.relative(presentation: .named)))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal)
@@ -162,7 +183,7 @@ struct OverviewScreen: View {
     private func exportSection(vm: OverviewViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Export")
+                Text(String(localized: "overview_export"))
                     .font(.headline)
                 Spacer()
             }
@@ -181,7 +202,7 @@ struct OverviewScreen: View {
             } label: {
                 HStack {
                     Image(systemName: "doc.richtext")
-                    Text("PDF Monatsnachweis")
+                    Text(String(localized: "overview_export_pdf"))
                     Spacer()
                     if vm.isGeneratingPDF {
                         ProgressView()
@@ -205,7 +226,7 @@ struct OverviewScreen: View {
                 } label: {
                     HStack {
                         Image(systemName: "tablecells")
-                        Text("CSV Monat")
+                        Text(String(localized: "overview_export_csv_month"))
                         Spacer()
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -223,7 +244,7 @@ struct OverviewScreen: View {
                 } label: {
                     HStack {
                         Image(systemName: "tablecells")
-                        Text("CSV Quartal (Q\(currentQuarter))")
+                        Text("\(String(localized: "overview_export_csv_quarter")) (Q\(currentQuarter))")
                         Spacer()
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -240,7 +261,7 @@ struct OverviewScreen: View {
                 } label: {
                     HStack {
                         Image(systemName: "tablecells")
-                        Text("CSV Jahr (\(String(currentYear)))")
+                        Text("\(String(localized: "overview_export_csv_year")) (\(String(currentYear)))")
                         Spacer()
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -250,6 +271,35 @@ struct OverviewScreen: View {
                 }
             }
             .disabled(vm.isGeneratingCSV)
+
+            // DATEV Export
+            Button {
+                vm.generateDATEVExport(month: currentMonth, year: currentYear)
+                if vm.exportedFileURL != nil {
+                    showShareSheet = true
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "doc.text")
+                    Text(String(localized: "overview_export_datev_beta"))
+                    Spacer()
+                    Text("BETA")
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Theme.primary.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    if vm.isGeneratingDATEV {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+                .padding(12)
+                .background(Theme.gray200.opacity(0.5))
+                .cornerRadius(8)
+            }
+            .disabled(vm.isGeneratingDATEV)
 
             if let exportError = vm.exportError {
                 Text(exportError)

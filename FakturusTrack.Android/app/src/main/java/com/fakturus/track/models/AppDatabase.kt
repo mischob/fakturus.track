@@ -99,7 +99,7 @@ interface UserSettingsDao {
 
 @Database(
     entities = [WorkSessionEntity::class, VacationDayEntity::class, SickDayEntity::class, UserSettingsEntity::class, PendingDeleteEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

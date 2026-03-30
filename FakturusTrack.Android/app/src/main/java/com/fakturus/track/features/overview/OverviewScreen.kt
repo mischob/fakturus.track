@@ -46,12 +46,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fakturus.track.R
 import com.fakturus.track.ServiceContainer
+import com.fakturus.track.ui.shared.ErrorBanner
 import com.fakturus.track.ui.shared.OvertimeCard
+import com.fakturus.track.ui.shared.ShimmerCardPlaceholder
+import com.fakturus.track.ui.shared.ShimmerOvertimeCards
 import java.time.LocalDate
 import java.time.Month
 import java.time.format.TextStyle
@@ -82,7 +87,7 @@ fun OverviewScreen(services: ServiceContainer) {
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Teilen"))
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.overview_export_share)))
         } catch (e: Exception) {
             // FileProvider not configured or share failed
         }
@@ -91,7 +96,7 @@ fun OverviewScreen(services: ServiceContainer) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Gesamt") })
+            TopAppBar(title = { Text(stringResource(R.string.overview_tab_title)) })
         }
     ) { innerPadding ->
         PullToRefreshBox(
@@ -102,21 +107,29 @@ fun OverviewScreen(services: ServiceContainer) {
                 .padding(innerPadding)
         ) {
             if (state.isLoading && state.summary == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    CircularProgressIndicator()
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerOvertimeCards()
+                    Spacer(Modifier.height(16.dp))
+                    ShimmerCardPlaceholder()
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerCardPlaceholder()
                 }
             } else if (state.error != null && state.summary == null) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = state.error ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                    ErrorBanner(
+                        message = state.error ?: "",
+                        actionLabel = stringResource(R.string.error_retry),
+                        onAction = { viewModel.refresh() }
                     )
                 }
             } else {
@@ -143,25 +156,25 @@ fun OverviewScreen(services: ServiceContainer) {
                                 MaterialTheme.colorScheme.error
 
                             OvertimeCard(
-                                title = "Ueberstunden",
+                                title = stringResource(R.string.overview_overtime),
                                 value = formatHours(summary.totalOvertimeHours),
                                 icon = Icons.Default.Schedule,
                                 valueColor = overtimeColor
                             )
                             OvertimeCard(
-                                title = "Urlaub",
+                                title = stringResource(R.string.overview_vacation),
                                 value = "${summary.vacationDaysTaken} / ${summary.vacationDaysPerYear}",
                                 icon = Icons.Default.WbSunny,
                                 valueColor = MaterialTheme.colorScheme.onSurface
                             )
                             OvertimeCard(
-                                title = "Feiertage",
+                                title = stringResource(R.string.overview_holidays),
                                 value = "${summary.holidaysTaken}",
                                 icon = Icons.Default.CalendarToday,
                                 valueColor = MaterialTheme.colorScheme.onSurface
                             )
                             OvertimeCard(
-                                title = "Krankheitstage",
+                                title = stringResource(R.string.overview_sick_days),
                                 value = "${summary.sickDaysTaken}",
                                 icon = Icons.Default.MedicalServices,
                                 valueColor = MaterialTheme.colorScheme.error
@@ -202,7 +215,7 @@ fun OverviewScreen(services: ServiceContainer) {
                     if (state.isShowingCachedData && state.lastUpdated != null) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Zuletzt aktualisiert: ${state.lastUpdated}",
+                            text = stringResource(R.string.overview_last_updated, state.lastUpdated ?: ""),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -214,7 +227,8 @@ fun OverviewScreen(services: ServiceContainer) {
                         selectedYear = state.selectedYear,
                         isExporting = state.isExporting,
                         onGeneratePDF = { month -> viewModel.generatePDF(month, state.selectedYear) },
-                        onGenerateCSV = { range -> viewModel.generateCSV(range) }
+                        onGenerateCSV = { range -> viewModel.generateCSV(range) },
+                        onGenerateDATEV = { month -> viewModel.generateDATEV(month) }
                     )
 
                     Spacer(Modifier.height(32.dp))
@@ -229,12 +243,13 @@ private fun ExportSection(
     selectedYear: Int,
     isExporting: Boolean,
     onGeneratePDF: (Int) -> Unit,
-    onGenerateCSV: (CSVRange) -> Unit
+    onGenerateCSV: (CSVRange) -> Unit,
+    onGenerateDATEV: (Int) -> Unit
 ) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Export",
+                text = stringResource(R.string.overview_export),
                 style = MaterialTheme.typography.titleSmall
             )
             Spacer(Modifier.height(12.dp))
@@ -245,12 +260,12 @@ private fun ExportSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CircularProgressIndicator(modifier = Modifier.height(20.dp).width(20.dp))
-                    Text("Wird erstellt...", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.overview_export_creating), style = MaterialTheme.typography.bodySmall)
                 }
             } else {
                 // PDF Export
                 Text(
-                    text = "PDF Arbeitszeitnachweis",
+                    text = stringResource(R.string.overview_export_pdf_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -260,7 +275,7 @@ private fun ExportSection(
                 Box {
                     OutlinedButton(onClick = { showPdfMonthPicker = true }) {
                         Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.padding(end = 4.dp))
-                        Text("Monat waehlen")
+                        Text(stringResource(R.string.overview_export_select_month))
                     }
                     DropdownMenu(
                         expanded = showPdfMonthPicker,
@@ -289,7 +304,7 @@ private fun ExportSection(
 
                 // CSV Export
                 Text(
-                    text = "CSV Export",
+                    text = stringResource(R.string.overview_export_csv_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -304,7 +319,7 @@ private fun ExportSection(
                     Box {
                         AssistChip(
                             onClick = { showCsvMonthPicker = true },
-                            label = { Text("Monat") },
+                            label = { Text(stringResource(R.string.overview_month)) },
                             leadingIcon = { Icon(Icons.Default.Description, null) }
                         )
                         DropdownMenu(
@@ -335,7 +350,7 @@ private fun ExportSection(
                     Box {
                         AssistChip(
                             onClick = { showQuarterPicker = true },
-                            label = { Text("Quartal") },
+                            label = { Text(stringResource(R.string.overview_export_quarter)) },
                             leadingIcon = { Icon(Icons.Default.Description, null) }
                         )
                         DropdownMenu(
@@ -357,8 +372,59 @@ private fun ExportSection(
                     // Full year
                     AssistChip(
                         onClick = { onGenerateCSV(CSVRange.Year) },
-                        label = { Text("Jahr $selectedYear") },
+                        label = { Text(stringResource(R.string.overview_export_year, selectedYear)) },
                         leadingIcon = { Icon(Icons.Default.Description, null) }
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // DATEV Export
+                Text(
+                    text = stringResource(R.string.overview_export_datev_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+
+                var showDatevMonthPicker by remember { mutableStateOf(false) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box {
+                        OutlinedButton(onClick = { showDatevMonthPicker = true }) {
+                            Icon(Icons.Default.Share, null, modifier = Modifier.padding(end = 4.dp))
+                            Text(stringResource(R.string.overview_export_select_month))
+                        }
+                        DropdownMenu(
+                            expanded = showDatevMonthPicker,
+                            onDismissRequest = { showDatevMonthPicker = false }
+                        ) {
+                            val currentMonth = LocalDate.now().monthValue
+                            val months = if (selectedYear == LocalDate.now().year) {
+                                (1..currentMonth).toList()
+                            } else {
+                                (1..12).toList()
+                            }
+                            months.reversed().forEach { month ->
+                                val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)
+                                DropdownMenuItem(
+                                    text = { Text("$monthName $selectedYear") },
+                                    onClick = {
+                                        showDatevMonthPicker = false
+                                        onGenerateDATEV(month)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = stringResource(R.string.overview_export_datev_beta),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }

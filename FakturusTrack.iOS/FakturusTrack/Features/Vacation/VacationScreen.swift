@@ -15,7 +15,7 @@ struct VacationScreen: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Urlaub")
+            .navigationTitle(String(localized: "vacation_tab_title"))
         }
         .onAppear {
             if viewModel == nil {
@@ -35,7 +35,7 @@ struct VacationScreen: View {
             VStack(spacing: 16) {
                 // Mode Selector
                 VStack(spacing: 8) {
-                    Picker("Modus", selection: Binding(
+                    Picker(String(localized: "vacation_mode"), selection: Binding(
                         get: { vm.editMode },
                         set: { vm.editMode = $0 }
                     )) {
@@ -47,8 +47,8 @@ struct VacationScreen: View {
                     .padding(.horizontal)
 
                     Text(vm.editMode == .vacation
-                         ? "Tippen Sie auf einen Arbeitstag um Urlaub zu setzen oder zu entfernen."
-                         : "Tippen Sie auf einen Arbeitstag um einen Krankheitstag zu setzen oder zu entfernen.")
+                         ? String(localized: "vacation_tap_hint")
+                         : String(localized: "vacation_sick_tap_hint"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -82,10 +82,10 @@ struct VacationScreen: View {
                 )
                 .padding(.horizontal)
 
-                // Resturlaub-Anzeige
+                // Remaining vacation display
                 VStack(spacing: 8) {
                     HStack {
-                        Text("Resturlaub")
+                        Text(String(localized: "vacation_remaining"))
                             .font(.headline)
                         Spacer()
                     }
@@ -100,11 +100,13 @@ struct VacationScreen: View {
                         Text("\(vm.vacationDaysPerYear)")
                             .font(.title2.bold())
                             .foregroundStyle(Theme.textPrimary)
-                        Text("Tage genommen")
+                        Text(String(localized: "vacation_days_taken"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Spacer()
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(vm.vacationDaysTakenThisYear) von \(vm.vacationDaysPerYear) Urlaubstagen genommen")
 
                     // Progress bar
                     GeometryReader { geo in
@@ -122,27 +124,28 @@ struct VacationScreen: View {
                         }
                     }
                     .frame(height: 8)
+                    .accessibilityHidden(true)
 
                     if vm.vacationDaysRemaining <= 0 {
-                        Text("Alle Urlaubstage aufgebraucht")
+                        Text(String(localized: "vacation_all_used"))
                             .font(.caption)
                             .foregroundStyle(Theme.danger)
                     }
                 }
                 .padding(.horizontal)
 
-                // Legende
+                // Legend
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Legende")
+                        Text(String(localized: "vacation_legend"))
                             .font(.headline)
                         Spacer()
                     }
 
-                    legendRow(color: Theme.vacation.opacity(0.3), text: "Urlaub")
-                    legendRow(color: Theme.sickDay.opacity(0.3), text: "Krankheit")
-                    legendRow(color: .purple, text: "Feiertag", isSmallDot: true)
-                    legendRow(color: Theme.gray200, text: "Wochenende / kein Arbeitstag")
+                    legendRow(color: Theme.vacation.opacity(0.3), text: String(localized: "vacation_legend_vacation"))
+                    legendRow(color: Theme.sickDay.opacity(0.3), text: String(localized: "vacation_legend_sick"))
+                    legendRow(color: .purple, text: String(localized: "vacation_legend_holiday"), isSmallDot: true)
+                    legendRow(color: Theme.gray200, text: String(localized: "vacation_legend_weekend"))
                 }
                 .padding(.horizontal)
 

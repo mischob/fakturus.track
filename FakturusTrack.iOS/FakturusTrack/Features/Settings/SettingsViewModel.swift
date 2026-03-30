@@ -1,4 +1,5 @@
 import SwiftData
+import SwiftUI
 import Foundation
 import Combine
 
@@ -16,6 +17,17 @@ final class SettingsViewModel {
     var error: String?
     var isSaving = false
 
+    // E10-S01: App settings
+    @ObservationIgnored @AppStorage("notificationsEnabled") var notificationsEnabled: Bool = true
+
+    var personalNumber: String = ""
+
+    var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
+    }
+
     // MARK: - Dependencies
 
     private let modelContext: ModelContext
@@ -25,6 +37,7 @@ final class SettingsViewModel {
     // MARK: - Debounce
 
     private var debounceTask: Task<Void, Never>?
+    private var personalNumberDebounceTask: Task<Void, Never>?
 
     init(modelContext: ModelContext, syncEngine: SyncEngine? = nil, authManager: AuthManager? = nil) {
         self.modelContext = modelContext
@@ -43,6 +56,7 @@ final class SettingsViewModel {
         vacationDaysPerYear = settings.vacationDaysPerYear
         workDays = settings.workDays
         bundesland = settings.bundesland
+        personalNumber = settings.personalNumber ?? ""
     }
 
     func loadSchoolHolidays() {
@@ -71,6 +85,7 @@ final class SettingsViewModel {
         settings.vacationDaysPerYear = vacationDaysPerYear
         settings.workDays = workDays
         settings.bundesland = bundesland
+        settings.personalNumber = personalNumber
         settings.updatedAt = Date()
         settings.isPendingSync = true
         settings.isSynced = false
@@ -79,6 +94,25 @@ final class SettingsViewModel {
 
         // Trigger sync
         await syncEngine?.syncAll()
+    }
+
+    // MARK: - Personal Number (debounced save)
+
+    func onPersonalNumberChanged() {
+        personalNumberDebounceTask?.cancel()
+        personalNumberDebounceTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            await self?.savePersonalNumber()
+        }
+    }
+
+    private func savePersonalNumber() async {
+        let descriptor = FetchDescriptor<UserSettings>()
+        guard let settings = try? modelContext.fetch(descriptor).first else { return }
+        settings.personalNumber = personalNumber
+        settings.updatedAt = Date()
+        try? modelContext.save()
     }
 
     // MARK: - School Holidays CRUD

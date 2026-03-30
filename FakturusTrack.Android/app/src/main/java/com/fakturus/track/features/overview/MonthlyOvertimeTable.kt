@@ -9,9 +9,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.fakturus.track.R
 import com.fakturus.track.models.MonthlyOvertimeDTO
 import kotlin.math.abs
 
@@ -41,27 +45,27 @@ fun MonthlyOvertimeTable(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Monat",
+            text = stringResource(R.string.overview_month),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.weight(1.2f),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Gearbeitet",
+            text = stringResource(R.string.overview_worked),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.End,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Erwartet",
+            text = stringResource(R.string.overview_expected),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.End,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "+/-",
+            text = stringResource(R.string.overview_plus_minus),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.weight(0.8f),
             textAlign = TextAlign.End,
@@ -78,10 +82,15 @@ fun MonthlyOvertimeTable(
         else
             MaterialTheme.colorScheme.error
 
+        val rowDesc = "${month.monthName}: ${formatHours(month.workedHours)} ${stringResource(R.string.overview_worked)}, ${formatHours(month.expectedHours)} ${stringResource(R.string.overview_expected)}, ${formatHours(month.overtimeHours)}"
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(vertical = 6.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = rowDesc
+                },
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -126,7 +135,7 @@ fun MonthlyOvertimeTable(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Gesamt",
+                text = stringResource(R.string.overview_total),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1.2f)

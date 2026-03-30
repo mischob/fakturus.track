@@ -39,13 +39,33 @@ struct SessionRow: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityHint(String(localized: "a11y_session_detail_hint"))
+        .transition(.asymmetric(
+            insertion: .move(edge: .top).combined(with: .opacity),
+            removal: .move(edge: .trailing).combined(with: .opacity)
+        ))
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 onDelete()
             } label: {
-                Label("Loeschen", systemImage: "trash")
+                Label(String(localized: "times_session_delete"), systemImage: "trash")
             }
         }
+    }
+
+    // MARK: - Accessibility
+
+    private var accessibilityDescription: String {
+        let weekday = session.date.weekdayDateShort
+        let start = session.startTime.timeShort
+        let end = session.stopTime?.timeShort ?? "--:--"
+        let net = session.netDuration.formattedHHMM
+        let syncState = session.isSynced
+            ? String(localized: "a11y_sync_done")
+            : String(localized: "a11y_sync_pending")
+        return "\(weekday), \(start) bis \(end), \(net) Nettoarbeitszeit, \(syncState)"
     }
 
     @ViewBuilder
@@ -53,9 +73,11 @@ struct SessionRow: View {
         if session.isSynced {
             Image(systemName: "cloud.fill")
                 .foregroundStyle(Theme.syncDone)
+                .accessibilityLabel(String(localized: "a11y_sync_done"))
         } else if session.isPendingSync {
             Image(systemName: "icloud.and.arrow.up")
                 .foregroundStyle(Theme.syncPending)
+                .accessibilityLabel(String(localized: "a11y_sync_pending"))
         }
     }
 }

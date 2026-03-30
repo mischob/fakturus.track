@@ -38,14 +38,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.fakturus.track.R
 import com.fakturus.track.ui.theme.Vacation
 import com.fakturus.track.util.Holiday
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -154,7 +159,7 @@ fun VacationCalendar(
                 if (month == 1) onMonthChange(year - 1, 12)
                 else onMonthChange(year, month - 1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Vorheriger Monat")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.vacation_previous_month))
             }
             Text(
                 text = "${Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN)} $year",
@@ -164,7 +169,7 @@ fun VacationCalendar(
                 if (month == 12) onMonthChange(year + 1, 1)
                 else onMonthChange(year, month + 1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Naechster Monat")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.vacation_next_month))
             }
         }
 
@@ -206,9 +211,9 @@ fun VacationCalendar(
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
         ) {
-            LegendItem(color = Vacation.copy(alpha = 0.3f), label = "Urlaub")
-            LegendItem(color = Color.Red.copy(alpha = 0.3f), label = "Krank")
-            LegendItem(color = Color(0xFF8B5CF6).copy(alpha = 0.3f), label = "Feiertag")
+            LegendItem(color = Vacation.copy(alpha = 0.3f), label = stringResource(R.string.vacation_label))
+            LegendItem(color = Color.Red.copy(alpha = 0.3f), label = stringResource(R.string.vacation_sick_label))
+            LegendItem(color = Color(0xFF8B5CF6).copy(alpha = 0.3f), label = stringResource(R.string.vacation_holiday_label))
         }
     }
 }
@@ -246,8 +251,22 @@ private fun DayCellComposable(
     val hapticFeedback = LocalHapticFeedback.current
     var showMenu by remember { mutableStateOf(false) }
 
+    // Build accessibility label for this day
+    val dayDescription = cell.date?.let { date ->
+        val dateStr = date.format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.getDefault()))
+        when (cell.type) {
+            DayType.VACATION -> stringResource(R.string.a11y_day_vacation, dateStr)
+            DayType.SICK_DAY -> stringResource(R.string.a11y_day_sick, dateStr)
+            DayType.HOLIDAY -> stringResource(R.string.a11y_day_holiday, dateStr, cell.holidayName ?: "")
+            DayType.WEEKEND -> stringResource(R.string.a11y_day_weekend, dateStr)
+            DayType.WORKDAY -> stringResource(R.string.a11y_day_workday, dateStr)
+            else -> null
+        }
+    }
+
     Box(
         modifier = modifier
+            .then(if (dayDescription != null) Modifier.semantics { contentDescription = dayDescription } else Modifier)
             .then(
                 if (cell.date != null && cell.type != DayType.EMPTY && cell.type != DayType.WEEKEND && cell.type != DayType.HOLIDAY) {
                     Modifier.combinedClickable(
@@ -331,24 +350,24 @@ private fun DayCellComposable(
         ) {
             if (cell.type == DayType.WORKDAY) {
                 DropdownMenuItem(
-                    text = { Text("Urlaub") },
+                    text = { Text(stringResource(R.string.vacation_label)) },
                     leadingIcon = { Icon(Icons.Default.WbSunny, null) },
                     onClick = { onVacationTap(); showMenu = false }
                 )
                 DropdownMenuItem(
-                    text = { Text("Krank") },
+                    text = { Text(stringResource(R.string.vacation_sick_label)) },
                     leadingIcon = { Icon(Icons.Default.LocalHospital, null) },
                     onClick = { onSickDayTap(); showMenu = false }
                 )
             }
             if (cell.type == DayType.VACATION || cell.type == DayType.SICK_DAY) {
                 DropdownMenuItem(
-                    text = { Text("Typ wechseln") },
+                    text = { Text(stringResource(R.string.vacation_type_switch)) },
                     leadingIcon = { Icon(Icons.Default.SwapHoriz, null) },
                     onClick = { onSwitchType(); showMenu = false }
                 )
                 DropdownMenuItem(
-                    text = { Text("Entfernen") },
+                    text = { Text(stringResource(R.string.vacation_remove)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Delete, null,
