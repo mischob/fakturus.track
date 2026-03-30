@@ -2,16 +2,15 @@
 
 ## Scope-Zusammenfassung
 
-Phase 4 ist die **letzte Phase vor dem oeffentlichen Launch**. Sie macht aus der store-reifen Beta-App ein veroeffentlichtes Produkt mit Freemium-Geschaeftsmodell und sorgt fuer die Migration bestehender MAUI-Nutzer:
+Phase 4 ist die **letzte Phase vor dem oeffentlichen Launch**. Sie macht aus der store-reifen Beta-App ein veroeffentlichtes Produkt mit Freemium-Geschaeftsmodell:
 
 - **Feature-Gating & In-App Purchase**: StoreKit 2 (iOS) + Google Play Billing (Android), FREE/STARTER/PRO Tier-System, Paywall-UI, Restore Purchases
 - **App Store Vorbereitung (iOS)**: Screenshots, Beschreibung (DE/EN), Keywords, Privacy Policy, Review Guidelines Compliance
 - **Google Play Store Vorbereitung (Android)**: Screenshots, Store Listing (DE/EN), Data Safety, Content Rating
 - **Final Testing & QA**: Vollstaendiger Regressions-Test (Phase 1-3), Open Beta (TestFlight + Play Internal Testing), Crash-Monitoring Setup
-- **Launch & MAUI-Migration**: App Store Submission, Launch-Kommunikation, MAUI-App Sunset-Hinweis, Migrations-Guide
+- **Launch**: App Store Submission, Launch-Kommunikation
 
-**Zeitraum Phase 4a**: ~4 Wochen + 1 Woche Puffer (E01-E09)
-**Zeitraum Phase 4b**: MAUI-Migration (E10) -- separat nach Phase 4a
+**Zeitraum**: ~4 Wochen + 1 Woche Puffer (E01-E09)
 **Ergebnis**: Veroeffentlichte Apps in App Store und Google Play mit funktionierendem Freemium-Modell
 
 ---
@@ -29,7 +28,6 @@ Phase 4 ist die **letzte Phase vor dem oeffentlichen Launch**. Sie macht aus der
 | E07 | Privacy Policy & Rechtliches | 0.5 Wochen | Keine |
 | E08 | Final Testing & QA | 1.5 Wochen | E01-E04 (Feature-Gating komplett) |
 | E09 | Launch-Submission & Go-Live | 0.5 Wochen | E05, E06, E07, E08 |
-| E10 | MAUI-Migration & Sunset **(Phase 4b)** | 1 Woche | E09 (Apps im Store) -- separat nach Phase 4a |
 
 ---
 
@@ -77,11 +75,6 @@ Phase 4 ist die **letzte Phase vor dem oeffentlichen Launch**. Sie macht aus der
                             | Go-Live     |
                             +------+------+
                                    |
-                            +------v------+
-                            |    E10      |
-                            | MAUI-       |
-                            | Migration   |
-                            +-------------+
 ```
 
 **Erlaeuterung**:
@@ -91,26 +84,23 @@ Phase 4 ist die **letzte Phase vor dem oeffentlichen Launch**. Sie macht aus der
 - **E07 (Privacy Policy)** hat keine Abhaengigkeit und kann jederzeit erstellt werden
 - **E08 (Testing)** erfordert, dass Feature-Gating komplett ist, um alle Tiers testen zu koennen
 - **E09 (Launch)** ist der finale Gate -- alle Store-Vorbereitung, Testing und Rechtliches muessen abgeschlossen sein
-- **E10 (MAUI-Migration, Phase 4b)** beginnt erst nach erfolgreichem Store-Launch und ist NICHT Teil des kritischen Pfads von Phase 4a
-
 ---
 
 ## Parallelitaets-Matrix
 
 **Legende**: P = Parallel moeglich, S = Sequentiell (Abhaengigkeit)
 
-|       | E01 | E02 | E03 | E04 | E05 | E06 | E07 | E08 | E09 | E10 |
-|-------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-| E01   | -   | S   | S   | S   | P   | P   | P   | S   | S   | S   |
-| E02   |     | -   | P   | S   | P   | P   | P   | S   | S   | S   |
-| E03   |     |     | -   | S   | P   | P   | P   | S   | S   | S   |
-| E04   |     |     |     | -   | P   | P   | P   | S   | S   | S   |
-| E05   |     |     |     |     | -   | P   | P   | P   | S   | S   |
-| E06   |     |     |     |     |     | -   | P   | P   | S   | S   |
-| E07   |     |     |     |     |     |     | -   | P   | S   | S   |
-| E08   |     |     |     |     |     |     |     | -   | S   | S   |
-| E09   |     |     |     |     |     |     |     |     | -   | S   |
-| E10   |     |     |     |     |     |     |     |     |     | -   |
+|       | E01 | E02 | E03 | E04 | E05 | E06 | E07 | E08 | E09 |
+|-------|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| E01   | -   | S   | S   | S   | P   | P   | P   | S   | S   |
+| E02   |     | -   | P   | S   | P   | P   | P   | S   | S   |
+| E03   |     |     | -   | S   | P   | P   | P   | S   | S   |
+| E04   |     |     |     | -   | P   | P   | P   | S   | S   |
+| E05   |     |     |     |     | -   | P   | P   | P   | S   |
+| E06   |     |     |     |     |     | -   | P   | P   | S   |
+| E07   |     |     |     |     |     |     | -   | P   | S   |
+| E08   |     |     |     |     |     |     |     | -   | S   |
+| E09   |     |     |     |     |     |     |     |     | -   |
 
 **Maximale Parallelitaet:**
 - Bis zu **5 EPICs** koennen gleichzeitig in Arbeit sein (E01+E05+E06+E07 in Welle 1)
@@ -130,12 +120,9 @@ Pfad B (Store-Vorbereitung -> Launch):
 E05+E06 parallel (1 Wo) + E07 (0.5 Wo) -> E09 (0.5 Wo)
 = 1.5 Wochen (kein Engpass)
 
-Pfad C (MAUI-Migration -- Phase 4b, NICHT im kritischen Pfad):
-E09 (0.5 Wo) -> E10 (1 Wo)
-= 1.5 Wochen (beginnt separat nach Phase 4a)
 ```
 
-**Kritischer Pfad Phase 4a: ~4 Wochen** bei optimaler Parallelisierung + 1 Woche Puffer fuer:
+**Kritischer Pfad: ~4 Wochen** bei optimaler Parallelisierung + 1 Woche Puffer fuer:
 - App Store Review Ablehnung (kann 1-5 Tage kosten)
 - StoreKit 2 / Play Billing Sandbox-Probleme
 - Last-Minute Bug-Fixes nach Beta-Feedback
@@ -188,6 +175,5 @@ Definitive Zuordnung der Features zu den Tiers (Basis: features.md + Preisanalys
 | [epic-07-privacy-legal.md](epic-07-privacy-legal.md) | Privacy Policy & Rechtliches |
 | [epic-08-final-testing.md](epic-08-final-testing.md) | Final Testing & QA |
 | [epic-09-launch.md](epic-09-launch.md) | Launch-Submission & Go-Live |
-| [epic-10-maui-migration.md](epic-10-maui-migration.md) | MAUI-Migration & Sunset |
 | [execution-waves.md](execution-waves.md) | Ausfuehrungsplan in Wellen |
 | [implementation-checklist.md](implementation-checklist.md) | Phase-4-spezifische Checklisten |

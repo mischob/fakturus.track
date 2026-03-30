@@ -2,23 +2,18 @@
 
 ## Uebersicht
 
-Phase 4a wird in 4 Wellen ausgefuehrt (E01-E09). Feature-Gating ist der kritische Pfad. Store-Vorbereitung und Rechtliches laufen parallel dazu.
-
-Welle 5 (MAUI-Migration, E10) ist **Phase 4b** und wird separat nach Phase 4a durchgefuehrt. Sie ist NICHT Teil der Phase-4a-Timeline.
+Phase 4 wird in 4 Wellen ausgefuehrt (E01-E09). Feature-Gating ist der kritische Pfad. Store-Vorbereitung und Rechtliches laufen parallel dazu.
 
 **Parallel-Kapazitaet**: iOS-Agent + Android-Agent + 1 Mensch (Store-Konfiguration, Rechtliches)
 
 ```
-Phase 4a (~4 Wochen):
+Phase 4 (~4 Wochen):
 Woche  24        25        26        27
       +--------+--------+--------+--------+
       | W1              | W2     | W3     | W4
       | Gating-Infra +  | IAP +  | Test + | Launch
       | Store-Vorb. +   | Paywall| Beta   |
       | Legal            |        |        |
-
-Phase 4b (separat danach):
-      | W5: MAUI-Migration
 ```
 
 ---
@@ -163,26 +158,6 @@ Phase 4b (separat danach):
 
 ---
 
-## Welle 5: MAUI-Migration (Phase 4b -- separat nach Phase 4a)
-
-**Ziel**: Bestehende MAUI-Nutzer sind informiert und migriert. MAUI-App wird kontrolliert eingestellt.
-
-**Voraussetzungen**: Phase 4a abgeschlossen (Welle 4, native Apps im Store)
-
-> **Hinweis**: Diese Welle ist NICHT Teil der Phase-4a-Timeline (~4 Wochen). Sie wird als Phase 4b separat danach durchgefuehrt.
-
-| Story-ID | Titel | Plattform | Aufwand |
-|----------|-------|-----------|---------|
-| P4-E10-S01 | MAUI-App Migration-Banner | MAUI | M |
-| P4-E10-S02 | Migrations-Kommunikation | E-Mail | S |
-| P4-E10-S03 | MAUI-App Sunset-Plan | MAUI + Stores | M |
-
-**Reihenfolge**: S01+S02 parallel (Banner + E-Mail am Launch-Tag), S03 nach 4 Wochen Parallelbetrieb.
-
-**Welle 5 DoD**: MAUI-App zeigt Migrations-Banner. E-Mail an alle Nutzer versendet. Nach 4 Wochen: MAUI-App aus Stores entfernt, Repository archiviert.
-
----
-
 ## Zusammenfassung: Story-Counts pro Welle
 
 | Welle | Stories | Aufwand-Schwerpunkt | Wochen |
@@ -191,9 +166,7 @@ Phase 4b (separat danach):
 | W2 | 9 | IAP Integration + Paywall + Compliance | 1 |
 | W3 | 5 | Testing + Beta | 1 |
 | W4 | 3 | Submission + Launch | 0.5 |
-| **Phase 4a Gesamt** | **29 Stories** | | **~4 Wochen** |
-| W5 (Phase 4b) | 3 | MAUI-Migration | 1+ (4 Wo Parallelbetrieb) -- separat |
-| **Gesamt (4a+4b)** | **32 Stories** | | |
+| **Gesamt** | **29 Stories** | | **~4 Wochen** |
 
 ---
 
@@ -223,9 +196,6 @@ PO:    [ASC-Products][PlayProducts]
 
 Crash: [SentrySetup──]
 
---- Phase 4b (separat nach Phase 4a) ---
-MAUI:  [Banner──][E-Mail]
-       [───4 Wo Parallelbetrieb───][Sunset]
 ```
 
 **Lesehinweis**: Bloecke die vertikal uebereinander stehen laufen parallel. Ein Agent bearbeitet Bloecke in seiner Zeile von links nach rechts.
@@ -235,12 +205,8 @@ MAUI:  [Banner──][E-Mail]
 ## Kritischer Pfad (Wellen-Perspektive)
 
 ```
-Phase 4a:
 W1 Feature-Gating (1.5 Wo) -> W2 IAP+Paywall (1 Wo) -> W3 Testing (1 Wo) -> W4 Launch (0.5 Wo)
 = ~4 Wochen (inkl. 1 Woche Puffer)
-
-Phase 4b (MAUI-Migration, separat danach):
-W5: 1 Woche aktive Arbeit + 4 Wochen Parallelbetrieb
 ```
 
 **Groesstes Risiko**: App Store Review Ablehnung. Mitigation: Fruehzeitige Compliance-Pruefung (E05-S03), "Notes for Reviewers" sorgfaeltig ausfuellen, TestFlight Beta als Pre-Validation.

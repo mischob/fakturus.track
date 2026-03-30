@@ -110,19 +110,6 @@ iOS und Android Submissions sind komplett parallel. Der einzige Synchronisations
 
 ---
 
-## Welle 5 (Woche 27-28): MAUI-Migration
-
-```
-MAUI-Agent:      [E10-S01 Banner implementieren]
-PO:              [E10-S02 E-Mail versenden]
-Alle:            [--- 4 Wochen Parallelbetrieb ---]
-PO:              [E10-S03 Sunset-Entscheidung]
-```
-
-Komplett unabhaengig von den nativen Apps. Kann am Launch-Tag beginnen.
-
----
-
 ## Kritische Abhaengigkeitskette
 
 ```
@@ -184,8 +171,6 @@ E01-S01 (Tier + FeatureGate + SubscriptionManager)
 | W2 | E05-S03 (Review Compliance), E06-S03 (Data Safety) | M |
 | W3 | E08-S04 (Beta-Verteilung) | M |
 | W4 | E09-S03 (Koordinierter Launch) | S |
-| W5 | E10-S02 (E-Mail), E10-S03 (Sunset) | M |
-
 ---
 
 ## Checkliste: Wann kann die naechste Welle starten?
@@ -215,9 +200,3 @@ E01-S01 (Tier + FeatureGate + SubscriptionManager)
 - [ ] Crash-Free Rate >= 99.5%
 - [ ] Screenshots und Store Listings final
 
-### Welle 4 -> Welle 5
-
-- [ ] Beide Apps im jeweiligen Store approved
-- [ ] Koordinierter Launch durchgefuehrt
-- [ ] Download auf echtem Geraet verifiziert
-- [ ] IAP mit echtem Geld getestet (Testkauf + Erstattung)

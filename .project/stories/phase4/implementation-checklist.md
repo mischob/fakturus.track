@@ -234,8 +234,6 @@ Am Tag des Launches muessen folgende Dinge geprueft/erledigt sein:
 - [ ] Privacy Policy URL erreichbar
 - [ ] Sentry Dashboard zeigt keine Crashes (nur fuer Nutzer die Crash-Reporting aktiviert haben)
 - [ ] Backend laeuft stabil (Health-Check)
-- [ ] MAUI-App Banner Update eingereicht/veroeffentlicht
-- [ ] E-Mail an bestehende Nutzer verschickt
 - [ ] Release Notes in beiden Stores aktuell
 - [ ] Monitoring: App Store Connect + Play Console Dashboard im Auge behalten (24h)
 
@@ -258,7 +256,7 @@ Falls nach dem Launch kritische Probleme auftreten:
 ### Stufe 3: Rollback (letztes Mittel)
 - iOS: Vorherige Build-Version in App Store Connect aktivieren
 - Android: Staged Rollout auf 0% setzen, vorherigen Build promoten
-- MAUI-App bleibt als Fallback verfuegbar (daher 4 Wochen Parallelbetrieb)
+- Vorherige App-Version als Fallback verfuegbar
 
 ---
 

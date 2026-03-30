@@ -180,12 +180,6 @@ Keine neuen Dateien. Modifikationen nur Bug-Fixes.
 
 Keine Code-Aenderungen. Store-Submission und Go-Live.
 
-### Welle 5: MAUI-Migration (Woche 27-28)
-
-Keine Aenderungen an iOS/Android Code. Aenderungen nur in der MAUI-Codebasis:
-- `Fakturus.Track.Mobile/Views/MigrationBanner.xaml` (NEU)
-- `Fakturus.Track.Mobile/Services/Offline/SyncService.cs` (MOD: HasPendingSyncsAsync Pruefung)
-
 ---
 
 ## Abhaengigkeitsdiagramm (Phase 4 Dateien)

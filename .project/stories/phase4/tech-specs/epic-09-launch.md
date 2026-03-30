@@ -101,8 +101,6 @@ xcodebuild archive \
    - Android: "Go Live" in Play Console
    - Propagation abwarten (~1-2 Stunden)
    - Download auf echtem Geraet testen
-   - MAUI-App Banner Update ausloesen (EPIC 10)
-   - E-Mail an bestehende Nutzer (EPIC 10)
 
 ### Timing
 
@@ -156,4 +154,4 @@ Ausnahme: Wenn Apple ablehnt und Google bereits approved ist, kann der Google-La
 
 - iOS: Vorherigen Build in App Store Connect aktivieren
 - Android: Staged Rollout auf 0%, vorherigen Build promoten
-- MAUI-App bleibt als Fallback verfuegbar (4 Wochen Parallelbetrieb)
+- Vorherige App-Version als Fallback verfuegbar

@@ -34,10 +34,9 @@
                                                                               ┌─────────────┐
                                                                               │  Phase 4    │
                                                                               │  Launch     │
-                                                                              │  Migration  │
                                                                               │  Feature-   │
                                                                               │  Gating     │
-                                                                              │  5 Wochen   │
+                                                                              │  4 Wochen   │
                                                                               └─────────────┘
 ```
 
@@ -262,7 +261,7 @@ Backend-Aenderungen und UX-Durchspezifizierung erfordern.
 
 ## Phase 4: Store-Launch, Feature-Gating & Migration (Mitte September - Mitte Oktober 2026)
 
-**Ziel:** Veroeffentlichung im App Store und Google Play. Feature-Gating fuer Freemium-Modell. MAUI-App Abloesung.
+**Ziel:** Veroeffentlichung im App Store und Google Play. Feature-Gating fuer Freemium-Modell.
 
 > **Marktanalyse-Kontext:** Die gesetzliche Zeiterfassungspflicht tritt 2026 in Kraft.
 > Unternehmen mit 10-50 MA haben 24 Monate Uebergangsfrist (bis ca. Mitte 2028).
@@ -305,16 +304,6 @@ Backend-Aenderungen und UX-Durchspezifizierung erfordern.
 | Play Store Submission | Android |
 | Launch-Kommunikation an Nutzer | -- |
 
-### Meilenstein 4.3: MAUI-Abloesung (Woche 28)
-**Ziel-Datum: 11. Oktober 2026**
-
-| Task | Details |
-|------|---------|
-| In-App-Nachricht in MAUI-App | "Neue native App verfuegbar" |
-| MAUI-App aus Stores entfernen | Nach 4 Wochen Uebergangszeit |
-| MAUI-Projekt archivieren | Code-Repository beibehalten |
-| Backend: MAUI-spezifische Endpunkte pruefen | Normalerweise keine noetig |
-
 ---
 
 ## Risiko-Management
@@ -322,7 +311,6 @@ Backend-Aenderungen und UX-Durchspezifizierung erfordern.
 | Risiko | Massnahme | Verantwortung |
 |--------|-----------|---------------|
 | App Store Ablehnung | Fruehzeitige Review-Guidelines Pruefung | Product Owner |
-| Sync-Konflikte bei Migration | Gleiche Backend-Endpunkte, keine Breaking Changes | Backend-Dev |
 | B2C Token-Kompatibilitaet | Gleiche App-Registration in Phase 1 | DevOps |
 | Performance-Probleme | Kontinuierliches Profiling ab Phase 1 | iOS/Android Dev |
 | Scope Creep | Feature-Freeze nach Phase 2 Definition | Product Owner |
@@ -338,7 +326,6 @@ Backend-Aenderungen und UX-Durchspezifizierung erfordern.
 | Cold Start Time | < 1 Sekunde | Performance Profiling |
 | Sync-Erfolgsrate | >= 99% | Backend Logs |
 | Beta-Tester Zufriedenheit | >= 4/5 | Feedback-Umfrage |
-| MAUI-Migration | 100% Nutzer migriert | Backend User-Agent Analyse |
 
 ### Marktanalyse-basierte Metriken (Post-Launch)
 
