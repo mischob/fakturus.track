@@ -1,6 +1,10 @@
 import SwiftUI
 import SwiftData
 
+extension Notification.Name {
+    static let widgetActionReceived = Notification.Name("widgetActionReceived")
+}
+
 struct TimeTrackingView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ServiceContainer.self) private var services: ServiceContainer?
@@ -129,7 +133,64 @@ struct TimeTrackingView: View {
                     networkMonitor: services?.networkMonitor
                 )
             }
+            processWidgetActions()
             updateSyncStatus()
+            registerWidgetActionObserver()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .widgetActionReceived)) { _ in
+            processWidgetActions()
+        }
+    }
+
+    // MARK: - Widget Actions
+
+    private func registerWidgetActionObserver() {
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            { _, _, _, _, _ in
+                DispatchQueue.main.async {
+                    // Post a local notification that SwiftUI can observe
+                    NotificationCenter.default.post(name: .widgetActionReceived, object: nil)
+                }
+            },
+            SharedDefaults.widgetActionNotification.rawValue,
+            nil,
+            .deliverImmediately
+        )
+    }
+
+    private func processWidgetActions() {
+        guard let vm = viewModel else { return }
+        let defaults = SharedDefaults.defaults
+
+        if defaults.bool(forKey: "widgetAction_start") {
+            defaults.removeObject(forKey: "widgetAction_start")
+            if vm.activeSession == nil {
+                print("[App] Processing widget action: start")
+                vm.startSession()
+            }
+        }
+
+        if defaults.bool(forKey: "widgetAction_stop") {
+            defaults.removeObject(forKey: "widgetAction_stop")
+            if let session = vm.activeSession, session.isRunning {
+                print("[App] Processing widget action: stop")
+                vm.stopSession()
+                vm.finishSession()
+            }
+        }
+
+        if defaults.bool(forKey: "widgetAction_pauseResume") {
+            defaults.removeObject(forKey: "widgetAction_pauseResume")
+            if vm.activeSession != nil {
+                print("[App] Processing widget action: pause/resume")
+                if vm.isPaused {
+                    vm.resumeSession()
+                } else {
+                    vm.pauseSession()
+                }
+            }
         }
     }
 

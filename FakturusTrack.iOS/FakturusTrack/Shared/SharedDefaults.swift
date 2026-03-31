@@ -5,6 +5,9 @@ enum SharedDefaults {
     static let suiteName = "group.com.fakturus.track"
     nonisolated(unsafe) static let defaults = UserDefaults(suiteName: suiteName)!
 
+    // Notification name for cross-process communication
+    static let widgetActionNotification = CFNotificationName("com.fakturus.track.widgetAction" as CFString)
+
     // Keys
     static let isTimerRunningKey = "isTimerRunning"
     static let timerStartDateKey = "timerStartDate"
@@ -31,6 +34,16 @@ enum SharedDefaults {
 
         // Invalidate widget timeline
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    // MARK: - Post notification (widget -> app)
+
+    static func postWidgetActionNotification() {
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            widgetActionNotification,
+            nil, nil, true
+        )
     }
 
     // MARK: - Read (Widget/Watch reads this)
