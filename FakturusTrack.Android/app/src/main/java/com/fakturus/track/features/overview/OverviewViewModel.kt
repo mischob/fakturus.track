@@ -12,10 +12,12 @@ import com.fakturus.track.services.export.CSVExporter
 import com.fakturus.track.services.export.DATEVExporter
 import com.fakturus.track.services.export.PDFReportGenerator
 import com.fakturus.track.util.HolidayCalculator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -99,33 +101,31 @@ class OverviewViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isExporting = true)
             try {
-                val sessions = db.workSessionDao().let { dao ->
-                    // Get all sessions, filter for the month
+                val file = withContext(Dispatchers.IO) {
                     val ym = YearMonth.of(year, month)
                     val from = ym.atDay(1).toString()
                     val to = ym.atEndOfMonth().toString()
-                    dao.getPendingSessions().plus(dao.getSyncedSessions())
-                        .distinctBy { it.id }
-                        .filter { it.date >= from && it.date <= to }
-                }
-                val vacationDays = db.vacationDayDao().getAll().filter {
-                    val ym = YearMonth.of(year, month)
-                    it.date >= ym.atDay(1).toString() && it.date <= ym.atEndOfMonth().toString()
-                }
-                val sickDays = db.sickDayDao().getAll().filter {
-                    val ym = YearMonth.of(year, month)
-                    it.date >= ym.atDay(1).toString() && it.date <= ym.atEndOfMonth().toString()
-                }
-                val settings = db.userSettingsDao().getSettingsOnce() ?: UserSettingsEntity(userId = "")
-                val holidays = HolidayCalculator.holidays(settings.bundesland, year)
+                    val sessions = db.workSessionDao().let { dao ->
+                        dao.getPendingSessions().plus(dao.getSyncedSessions())
+                            .distinctBy { it.id }
+                            .filter { it.date >= from && it.date <= to }
+                    }
+                    val vacationDays = db.vacationDayDao().getAll().filter {
+                        it.date >= from && it.date <= to
+                    }
+                    val sickDays = db.sickDayDao().getAll().filter {
+                        it.date >= from && it.date <= to
+                    }
+                    val settings = db.userSettingsDao().getSettingsOnce() ?: UserSettingsEntity(userId = "")
+                    val holidays = HolidayCalculator.holidays(settings.bundesland, year)
 
-                val generator = PDFReportGenerator(ctx)
-                val file = generator.generateMonthlyReport(
-                    month = month, year = year,
-                    sessions = sessions, vacationDays = vacationDays,
-                    sickDays = sickDays, holidays = holidays,
-                    settings = settings, employeeName = null
-                )
+                    PDFReportGenerator(ctx).generateMonthlyReport(
+                        month = month, year = year,
+                        sessions = sessions, vacationDays = vacationDays,
+                        sickDays = sickDays, holidays = holidays,
+                        settings = settings, employeeName = null
+                    )
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
@@ -174,32 +174,34 @@ class OverviewViewModel(
                 val fromStr = from.toString()
                 val toStr = to.toString()
 
-                val sessions = db.workSessionDao().let { dao ->
-                    dao.getPendingSessions().plus(dao.getSyncedSessions())
-                        .distinctBy { it.id }
-                        .filter { it.date >= fromStr && it.date <= toStr }
-                }
-                val vacationDays = db.vacationDayDao().getAll().filter {
-                    it.date >= fromStr && it.date <= toStr
-                }
-                val sickDays = db.sickDayDao().getAll().filter {
-                    it.date >= fromStr && it.date <= toStr
-                }
-                val settings = db.userSettingsDao().getSettingsOnce() ?: UserSettingsEntity(userId = "")
+                val file = withContext(Dispatchers.IO) {
+                    val sessions = db.workSessionDao().let { dao ->
+                        dao.getPendingSessions().plus(dao.getSyncedSessions())
+                            .distinctBy { it.id }
+                            .filter { it.date >= fromStr && it.date <= toStr }
+                    }
+                    val vacationDays = db.vacationDayDao().getAll().filter {
+                        it.date >= fromStr && it.date <= toStr
+                    }
+                    val sickDays = db.sickDayDao().getAll().filter {
+                        it.date >= fromStr && it.date <= toStr
+                    }
+                    val settings = db.userSettingsDao().getSettingsOnce() ?: UserSettingsEntity(userId = "")
 
-                // Collect holidays for all relevant years
-                val holidays = (from.year..to.year).flatMap { y ->
-                    HolidayCalculator.holidays(settings.bundesland, y)
-                }.filter { it.date in from..to }
+                    val holidays = (from.year..to.year).flatMap { y ->
+                        HolidayCalculator.holidays(settings.bundesland, y)
+                    }.filter { it.date in from..to }
 
-                val csv = CSVExporter.generateCSV(
-                    sessions = sessions, vacationDays = vacationDays,
-                    sickDays = sickDays, holidays = holidays,
-                    settings = settings, from = from, to = to
-                )
+                    val csv = CSVExporter.generateCSV(
+                        sessions = sessions, vacationDays = vacationDays,
+                        sickDays = sickDays, holidays = holidays,
+                        settings = settings, from = from, to = to
+                    )
 
-                val file = File(ctx.cacheDir, fileName)
-                file.writeText(csv, Charsets.UTF_8)
+                    val f = File(ctx.cacheDir, fileName)
+                    f.writeText(csv, Charsets.UTF_8)
+                    f
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
@@ -225,32 +227,35 @@ class OverviewViewModel(
                 val from = ym.atDay(1).toString()
                 val to = ym.atEndOfMonth().toString()
 
-                val sessions = db.workSessionDao().let { dao ->
-                    dao.getPendingSessions().plus(dao.getSyncedSessions())
-                        .distinctBy { it.id }
-                        .filter { it.date >= from && it.date <= to }
-                }
-                val vacationDays = db.vacationDayDao().getAll().filter {
-                    it.date >= from && it.date <= to
-                }
-                val sickDays = db.sickDayDao().getAll().filter {
-                    it.date >= from && it.date <= to
-                }
-                val settings = db.userSettingsDao().getSettingsOnce()
-                    ?: UserSettingsEntity(userId = "")
+                val file = withContext(Dispatchers.IO) {
+                    val sessions = db.workSessionDao().let { dao ->
+                        dao.getPendingSessions().plus(dao.getSyncedSessions())
+                            .distinctBy { it.id }
+                            .filter { it.date >= from && it.date <= to }
+                    }
+                    val vacationDays = db.vacationDayDao().getAll().filter {
+                        it.date >= from && it.date <= to
+                    }
+                    val sickDays = db.sickDayDao().getAll().filter {
+                        it.date >= from && it.date <= to
+                    }
+                    val settings = db.userSettingsDao().getSettingsOnce()
+                        ?: UserSettingsEntity(userId = "")
 
-                val personalNumber = settings.personalNumber ?: ""
+                    val personalNumber = settings.personalNumber ?: ""
 
-                val datev = DATEVExporter.generateExport(
-                    month = month, year = year,
-                    sessions = sessions, vacationDays = vacationDays,
-                    sickDays = sickDays, settings = settings,
-                    personalNumber = personalNumber
-                )
+                    val datev = DATEVExporter.generateExport(
+                        month = month, year = year,
+                        sessions = sessions, vacationDays = vacationDays,
+                        sickDays = sickDays, settings = settings,
+                        personalNumber = personalNumber
+                    )
 
-                val fileName = DATEVExporter.fileName(month, year)
-                val file = File(ctx.cacheDir, fileName)
-                file.writeText(datev, Charsets.UTF_8)
+                    val fileName = DATEVExporter.fileName(month, year)
+                    val f = File(ctx.cacheDir, fileName)
+                    f.writeText(datev, Charsets.UTF_8)
+                    f
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
@@ -269,7 +274,9 @@ class OverviewViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                val summary = apiClient?.getOvertimeSummary(year)
+                val summary = withContext(Dispatchers.IO) {
+                    apiClient?.getOvertimeSummary(year)
+                }
                 if (summary != null) {
                     cache.save(summary, year)
                     _uiState.value = _uiState.value.copy(
