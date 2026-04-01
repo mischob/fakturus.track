@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
                                 app.serviceContainer.consentManager.recordConsent(termsVersion = 1)
                             },
                             onDeclined = {
-                                app.serviceContainer.authManager.signOut(this@MainActivity)
+                                app.serviceContainer.authManager.logout()
                             }
                         )
                     }

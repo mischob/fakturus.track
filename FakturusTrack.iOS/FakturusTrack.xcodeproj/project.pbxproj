@@ -19,6 +19,7 @@
 		1356A1DD0CF0F7CB01C757B1 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CAE0BEFF097B5C8E9EB99AC /* SyncEngine.swift */; };
 		16BFBCC7A682EE173CBFFF64 /* APIClient+Endpoints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE0295825FA90BC871AC6B9 /* APIClient+Endpoints.swift */; };
 		195E98357F9673C32F489B52 /* SyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B76C2F4CE3E7FC7C7722FC /* SyncStatusView.swift */; };
+		1B6D1B21098F2B41F73FA267 /* ConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B59F258B77CA217D17A9293 /* ConsentView.swift */; };
 		2221FC83DFCCA1DE88F7287D /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386585E7993845E312B6F37 /* SharedDefaults.swift */; };
 		22800BDAA875754ECFE6AD35 /* TimerDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5726B94F4B0F38148D9DC718 /* TimerDisplay.swift */; };
 		235CED745E8A668C4B580D23 /* OverviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9181F54DB6E69D0EB5884473 /* OverviewViewModel.swift */; };
@@ -40,6 +41,7 @@
 		53721414EC854EFFB3EEFA74 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C465D82193A665CCA68F39B2 /* Configuration.swift */; };
 		555A41C0126C505F2052FE74 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2382D2605E549B113A3135 /* ServiceContainer.swift */; };
 		55D15DB336D2A02997B5F170 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 458172B7BC5DC3C733049095 /* Localizable.strings */; };
+		58446C453553A23BB1EAE379 /* ConsentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31121E146627393403271F5 /* ConsentManager.swift */; };
 		63111B9383127255082DBA15 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3854AEC191A75F0356FB9485 /* SettingsViewModel.swift */; };
 		64DDD7E47693316C4BA8BDDD /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43089AEE3F9F66E005E64242 /* SubscriptionManager.swift */; };
 		65AFDE964339EF04EA6433EF /* PDFReportGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C7F3C906DE0D4F3D3CF621 /* PDFReportGenerator.swift */; };
@@ -162,6 +164,7 @@
 		836620E269924592661A69AC /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		84B76C2F4CE3E7FC7C7722FC /* SyncStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusView.swift; sourceTree = "<group>"; };
 		850C18AC8DF64DBE44563BAA /* DTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTOs.swift; sourceTree = "<group>"; };
+		8B59F258B77CA217D17A9293 /* ConsentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConsentView.swift; sourceTree = "<group>"; };
 		9005D3E840DADDBF0DF197BE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		9181F54DB6E69D0EB5884473 /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
 		970611F0570A0A12991C3DCF /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
@@ -184,6 +187,7 @@
 		C9F0F8BAC6CB84EC22D1FA5A /* OvertimeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvertimeCard.swift; sourceTree = "<group>"; };
 		CDC9211425116D4FDA5E8F3D /* MonthlyOvertimeTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyOvertimeTable.swift; sourceTree = "<group>"; };
 		CF7DED9C2F143200BC27782F /* WorkdaySelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkdaySelector.swift; sourceTree = "<group>"; };
+		D31121E146627393403271F5 /* ConsentManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConsentManager.swift; sourceTree = "<group>"; };
 		DFB8F8C674197A9BBEF4CF78 /* FakturusTrackWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FakturusTrackWidget.entitlements; sourceTree = "<group>"; };
 		E3A628D5AAF4A4934BDDEE21 /* TimerWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerWidgetProvider.swift; sourceTree = "<group>"; };
 		E89C9E3B0F7A6B46CE96135C /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
@@ -309,6 +313,7 @@
 				036FAB36C6BFC195354389AC /* Network */,
 				BCBBF09AE88898CEB845CFB2 /* Subscription */,
 				C30F3429F66DDDC989FD5ED4 /* Sync */,
+				E7EC39DC0C192C720DEBADAC /* Legal */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -354,6 +359,7 @@
 				90C0B29CD3169B089BD8621D /* Subscription */,
 				30A50FBE916A98C4C013B1FF /* TimeTracking */,
 				6F92E1074BEB62E35077F743 /* Vacation */,
+				F5A759C1B76C6273E2707900 /* Legal */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -461,6 +467,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		E7EC39DC0C192C720DEBADAC /* Legal */ = {
+			isa = PBXGroup;
+			children = (
+				D31121E146627393403271F5 /* ConsentManager.swift */,
+			);
+			name = Legal;
+			path = Legal;
+			sourceTree = "<group>";
+		};
 		ED57D7B2C6DDBD0FDEA1EB80 /* FakturusTrackWidget */ = {
 			isa = PBXGroup;
 			children = (
@@ -484,6 +499,15 @@
 				ED57D7B2C6DDBD0FDEA1EB80 /* FakturusTrackWidget */,
 				DC2E622F9ACA568816957586 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		F5A759C1B76C6273E2707900 /* Legal */ = {
+			isa = PBXGroup;
+			children = (
+				8B59F258B77CA217D17A9293 /* ConsentView.swift */,
+			);
+			name = Legal;
+			path = Legal;
 			sourceTree = "<group>";
 		};
 		F758047FCBA3A1606D5EF7D1 /* Shell */ = {
@@ -510,8 +534,6 @@
 				B929F8D0A920E32252B06B06 /* PBXTargetDependency */,
 			);
 			name = FakturusTrackTests;
-			packageProductDependencies = (
-			);
 			productName = FakturusTrackTests;
 			productReference = 439B2F7941F0397F8F28DC19 /* FakturusTrackTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -528,8 +550,6 @@
 			dependencies = (
 			);
 			name = FakturusTrackWidget;
-			packageProductDependencies = (
-			);
 			productName = FakturusTrackWidget;
 			productReference = 34DD4B1E2E4839F036288B74 /* FakturusTrackWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -579,6 +599,7 @@
 			packageReferences = (
 				6339FDDF1094C7363E2B31E7 /* XCRemoteSwiftPackageReference "microsoft-authentication-library-for-objc" */,
 			);
+			productRefGroup = DC2E622F9ACA568816957586 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -684,6 +705,8 @@
 				D4928EEF2E15C43E3777E69F /* VacationViewModel.swift in Sources */,
 				E8D3DCA1D29484B3202E6284 /* WorkSession.swift in Sources */,
 				34AD0075A481671EEEC9BD18 /* WorkdaySelector.swift in Sources */,
+				1B6D1B21098F2B41F73FA267 /* ConsentView.swift in Sources */,
+				58446C453553A23BB1EAE379 /* ConsentManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

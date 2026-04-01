@@ -209,7 +209,7 @@ struct SettingsView: View {
                     Button(String(localized: "delete_account_confirm"), role: .destructive) {
                         Task {
                             do {
-                                try await services.apiClient?.deleteRaw(path: "/api/account")
+                                try await services.apiClient?.delete("/api/account")
                                 services.consentManager.clearConsent()
                                 vm.logout()
                             } catch {

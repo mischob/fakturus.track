@@ -21,7 +21,7 @@ struct FakturusTrackApp: App {
                                 services.consentManager.recordConsent(termsVersion: 1)
                             },
                             onDeclined: {
-                                services.authManager.signOut()
+                                services.authManager.logout()
                             }
                         )
                     }

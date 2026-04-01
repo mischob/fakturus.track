@@ -141,3 +141,26 @@
 "login_amazon" = "Mit Amazon anmelden";
 "settings_keyboard_done" = "Fertig";
 "vacation_legend_school_holiday" = "Schulferien";
+
+/* Phase 5: Legal Consent */
+"consent_title" = "Nutzungsbedingungen & Datenschutz";
+"consent_subtitle" = "Bitte lies und akzeptiere unsere Nutzungsbedingungen, bevor du fakturus.track nutzt.";
+"consent_privacy_label" = "Datenschutzerklaerung";
+"consent_privacy_hint" = "Bitte oeffne und lies die Datenschutzerklaerung (Kenntnisnahme)";
+"consent_read_privacy" = "Datenschutzerklaerung lesen";
+"consent_terms_label" = "Ich akzeptiere die Nutzungsbedingungen";
+"consent_terms_hint" = "Pflichtfeld gemaess BGB §305";
+"consent_read_terms" = "Nutzungsbedingungen lesen";
+"consent_agree_button" = "Zustimmen und fortfahren";
+"consent_decline_button" = "Ablehnen";
+"consent_decline_title" = "Ohne Zustimmung nicht nutzbar";
+"consent_decline_message" = "Ohne Zustimmung zu den Nutzungsbedingungen kann die App nicht genutzt werden. Moechtest du dich abmelden?";
+"consent_decline_back" = "Zurueck";
+"consent_decline_logout" = "Abmelden";
+
+/* Account Deletion */
+"settings_delete_account" = "Konto loeschen";
+"delete_account_title" = "Konto loeschen?";
+"delete_account_message" = "Dein Konto und alle Daten werden unwiderruflich geloescht. Aktive Abos muessen separat ueber die Store-Einstellungen gekuendigt werden.";
+"delete_account_confirm" = "Endgueltig loeschen";
+"delete_account_success" = "Konto zur Loeschung vorgemerkt";

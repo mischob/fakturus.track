@@ -52,20 +52,16 @@ final class ConsentManager {
         guard let client = apiClient else { return }
 
         do {
-            let data = try await client.fetchRaw(path: "/api/legal/versions")
-            let response = try JSONDecoder().decode(LegalVersionsAPIResponse.self, from: data)
-
+            let response: LegalVersionsAPIResponse = try await client.get("/api/legal/versions")
             let currentTermsVersion = UserDefaults.standard.integer(forKey: Self.termsVersionKey)
 
             for doc in response.documents {
                 if doc.type == "terms_of_service" && doc.requiresReConsent && doc.version > currentTermsVersion {
-                    // New version requires re-consent
                     hasRequiredConsents = false
                     return
                 }
             }
         } catch {
-            // Network error: keep local state
             print("[ConsentManager] Version check failed: \(error)")
         }
     }
@@ -84,13 +80,10 @@ final class ConsentManager {
         guard let client = apiClient else { return }
 
         do {
-            let body: [String: Any] = [
-                "consents": [
-                    ["documentType": "terms_of_service", "documentVersion": termsVersion, "consentGiven": true]
-                ]
-            ]
-            let jsonData = try JSONSerialization.data(withJSONObject: body)
-            try await client.postRaw(path: "/api/legal/consent", body: jsonData)
+            let request = ConsentSubmitRequest(consents: [
+                ConsentSubmitItem(documentType: "terms_of_service", documentVersion: termsVersion, consentGiven: true)
+            ])
+            let _: ConsentStatusResponse = try await client.post("/api/legal/consent", body: request)
             UserDefaults.standard.set(true, forKey: Self.termsSyncedKey)
             print("[ConsentManager] Consent synced to backend")
         } catch {
@@ -99,7 +92,7 @@ final class ConsentManager {
     }
 }
 
-// MARK: - API Response Models
+// MARK: - API Models
 
 private struct LegalVersionsAPIResponse: Decodable {
     let documents: [LegalDocumentAPIInfo]
@@ -112,4 +105,27 @@ private struct LegalDocumentAPIInfo: Decodable {
     let url: String
     let requiresConsent: Bool
     let requiresReConsent: Bool
+}
+
+private struct ConsentSubmitRequest: Encodable {
+    let consents: [ConsentSubmitItem]
+}
+
+private struct ConsentSubmitItem: Encodable {
+    let documentType: String
+    let documentVersion: Int
+    let consentGiven: Bool
+}
+
+private struct ConsentStatusResponse: Decodable {
+    let consents: [ConsentRecord]
+    let allRequiredConsentsGiven: Bool
+    let pendingConsents: [String]
+}
+
+private struct ConsentRecord: Decodable {
+    let documentType: String
+    let documentVersion: Int
+    let consentGiven: Bool
+    let consentTimestamp: String
 }

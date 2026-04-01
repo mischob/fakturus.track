@@ -141,3 +141,26 @@
 "login_amazon" = "Sign in with Amazon";
 "settings_keyboard_done" = "Done";
 "vacation_legend_school_holiday" = "School Holidays";
+
+/* Phase 5: Legal Consent */
+"consent_title" = "Terms & Privacy";
+"consent_subtitle" = "Please read and accept our terms of service before using fakturus.track.";
+"consent_privacy_label" = "Privacy Policy";
+"consent_privacy_hint" = "Please open and read the privacy policy (acknowledgement)";
+"consent_read_privacy" = "Read Privacy Policy";
+"consent_terms_label" = "I accept the Terms of Service";
+"consent_terms_hint" = "Required";
+"consent_read_terms" = "Read Terms of Service";
+"consent_agree_button" = "Agree and continue";
+"consent_decline_button" = "Decline";
+"consent_decline_title" = "Cannot use without consent";
+"consent_decline_message" = "Without accepting the terms of service, the app cannot be used. Would you like to sign out?";
+"consent_decline_back" = "Go back";
+"consent_decline_logout" = "Sign out";
+
+/* Account Deletion */
+"settings_delete_account" = "Delete Account";
+"delete_account_title" = "Delete account?";
+"delete_account_message" = "Your account and all data will be permanently deleted. Active subscriptions must be cancelled separately via Store settings.";
+"delete_account_confirm" = "Delete permanently";
+"delete_account_success" = "Account marked for deletion";

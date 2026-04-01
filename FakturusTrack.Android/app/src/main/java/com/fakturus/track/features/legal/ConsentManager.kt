@@ -6,8 +6,7 @@ import com.fakturus.track.services.api.APIClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
 
 class ConsentManager(private val context: Context) {
     private val prefs = context.getSharedPreferences("consent", Context.MODE_PRIVATE)
@@ -48,16 +47,13 @@ class ConsentManager(private val context: Context) {
     suspend fun checkForVersionUpdates() {
         val client = apiClient ?: return
         try {
-            val data = client.fetchRaw("/api/legal/versions")
-            val json = JSONObject(data)
-            val documents = json.getJSONArray("documents")
+            val response: LegalVersionsResponse = client.get("/api/legal/versions")
             val currentTermsVersion = prefs.getInt("terms_version", 0)
 
-            for (i in 0 until documents.length()) {
-                val doc = documents.getJSONObject(i)
-                if (doc.getString("type") == "terms_of_service" &&
-                    doc.getBoolean("requiresReConsent") &&
-                    doc.getInt("version") > currentTermsVersion
+            for (doc in response.documents) {
+                if (doc.type == "terms_of_service" &&
+                    doc.requiresReConsent &&
+                    doc.version > currentTermsVersion
                 ) {
                     _hasRequiredConsents.value = false
                     return
@@ -76,16 +72,16 @@ class ConsentManager(private val context: Context) {
     private suspend fun syncConsentToBackend(termsVersion: Int) {
         val client = apiClient ?: return
         try {
-            val body = JSONObject().apply {
-                put("consents", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("documentType", "terms_of_service")
-                        put("documentVersion", termsVersion)
-                        put("consentGiven", true)
-                    })
-                })
-            }
-            client.postRaw("/api/legal/consent", body.toString())
+            val request = ConsentSubmitRequest(
+                consents = listOf(
+                    ConsentSubmitItem(
+                        documentType = "terms_of_service",
+                        documentVersion = termsVersion,
+                        consentGiven = true
+                    )
+                )
+            )
+            client.post<ConsentStatusResponse, ConsentSubmitRequest>("/api/legal/consent", request)
             prefs.edit().putBoolean("terms_synced", true).apply()
             Log.i("ConsentManager", "Consent synced to backend")
         } catch (e: Exception) {
@@ -93,3 +89,42 @@ class ConsentManager(private val context: Context) {
         }
     }
 }
+
+// API Models
+@Serializable
+data class LegalVersionsResponse(val documents: List<LegalDocumentInfo>)
+
+@Serializable
+data class LegalDocumentInfo(
+    val type: String,
+    val version: Int,
+    val effectiveDate: String,
+    val url: String,
+    val requiresConsent: Boolean,
+    val requiresReConsent: Boolean
+)
+
+@Serializable
+data class ConsentSubmitRequest(val consents: List<ConsentSubmitItem>)
+
+@Serializable
+data class ConsentSubmitItem(
+    val documentType: String,
+    val documentVersion: Int,
+    val consentGiven: Boolean
+)
+
+@Serializable
+data class ConsentStatusResponse(
+    val consents: List<ConsentRecord>,
+    val allRequiredConsentsGiven: Boolean,
+    val pendingConsents: List<String>
+)
+
+@Serializable
+data class ConsentRecord(
+    val documentType: String,
+    val documentVersion: Int,
+    val consentGiven: Boolean,
+    val consentTimestamp: String
+)
