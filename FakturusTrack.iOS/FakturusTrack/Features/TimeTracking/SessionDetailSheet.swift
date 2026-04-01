@@ -147,6 +147,14 @@ struct SessionDetailSheet: View {
                     .disabled(!isValid)
                 }
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Fertig") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                }
+            }
             .confirmationDialog("Session loeschen?", isPresented: $showDeleteConfirmation) {
                 Button("Loeschen", role: .destructive) {
                     onDelete()
