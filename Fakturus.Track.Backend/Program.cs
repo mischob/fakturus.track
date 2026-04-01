@@ -281,6 +281,19 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// URL rewriting for legal pages: /privacy -> /legal/privacy.html etc.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.TrimEnd('/');
+    if (path is "/privacy" or "/terms" or "/imprint")
+    {
+        context.Request.Path = $"/legal{path}.html";
+    }
+    await next();
+});
+
+app.UseStaticFiles();
+
 // Configure the HTTP request pipeline
 app.UseHttpsRedirection();
 

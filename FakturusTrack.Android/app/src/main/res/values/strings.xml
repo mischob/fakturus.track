@@ -212,4 +212,29 @@
     <string name="login_amazon">Mit Amazon anmelden</string>
     <string name="login_google">Mit Google anmelden</string>
     <string name="login_email">Mit E-Mail anmelden</string>
+
+    <!-- Consent -->
+    <string name="consent_title">Nutzungsbedingungen &amp; Datenschutz</string>
+    <string name="consent_subtitle">Bitte lies und akzeptiere unsere Nutzungsbedingungen, bevor du fakturus.track nutzt.</string>
+    <string name="consent_privacy_label">Datenschutzerklaerung</string>
+    <string name="consent_privacy_hint">Bitte oeffne und lies die Datenschutzerklaerung (Kenntnisnahme)</string>
+    <string name="consent_read_privacy">Datenschutzerklaerung lesen</string>
+    <string name="consent_terms_label">Ich akzeptiere die Nutzungsbedingungen</string>
+    <string name="consent_terms_hint">Pflichtfeld gemaess BGB §305</string>
+    <string name="consent_read_terms">Nutzungsbedingungen lesen</string>
+    <string name="consent_agree_button">Zustimmen und fortfahren</string>
+    <string name="consent_decline_button">Ablehnen</string>
+    <string name="consent_decline_title">Ohne Zustimmung nicht nutzbar</string>
+    <string name="consent_decline_message">Ohne Zustimmung zu den Nutzungsbedingungen kann die App nicht genutzt werden. Moechtest du dich abmelden?</string>
+    <string name="consent_decline_back">Zurueck</string>
+    <string name="consent_decline_logout">Abmelden</string>
+
+    <!-- Account Deletion -->
+    <string name="settings_delete_account">Konto loeschen</string>
+    <string name="delete_account_title">Konto loeschen?</string>
+    <string name="delete_account_message">Dein Konto und alle Daten werden unwiderruflich geloescht. Aktive Abos muessen separat ueber die Store-Einstellungen gekuendigt werden.</string>
+    <string name="delete_account_confirm">Endgueltig loeschen</string>
+    <string name="delete_account_cancel">Abbrechen</string>
+    <string name="delete_account_success">Konto zur Loeschung vorgemerkt</string>
+    <string name="delete_account_error">Fehler beim Loeschen</string>
 </resources>

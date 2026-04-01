@@ -9,6 +9,8 @@ struct SettingsView: View {
     @State private var viewModel: SettingsViewModel?
     @State private var showSchoolHolidays = false
     @State private var showPaywall = false
+    @State private var showDeleteAccountConfirmation = false
+    @State private var deleteAccountError: String?
     @AppStorage("appearance") private var appearance = "system"
 
     var body: some View {
@@ -188,6 +190,35 @@ struct SettingsView: View {
                         Text(String(localized: "settings_logout"))
                         Spacer()
                     }
+                }
+
+                Button(role: .destructive) {
+                    showDeleteAccountConfirmation = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text(String(localized: "settings_delete_account"))
+                        Spacer()
+                    }
+                }
+                .confirmationDialog(
+                    String(localized: "delete_account_title"),
+                    isPresented: $showDeleteAccountConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button(String(localized: "delete_account_confirm"), role: .destructive) {
+                        Task {
+                            do {
+                                try await services.apiClient?.deleteRaw(path: "/api/account")
+                                services.consentManager.clearConsent()
+                                vm.logout()
+                            } catch {
+                                deleteAccountError = error.localizedDescription
+                            }
+                        }
+                    }
+                } message: {
+                    Text(String(localized: "delete_account_message"))
                 }
             }
         }

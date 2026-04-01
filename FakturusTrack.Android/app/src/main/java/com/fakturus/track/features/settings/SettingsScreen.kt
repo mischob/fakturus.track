@@ -15,7 +15,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -450,6 +453,56 @@ fun SettingsScreen(
                         Text(stringResource(R.string.settings_logout))
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // Delete Account
+            item {
+                var showDeleteDialog by remember { mutableStateOf(false) }
+
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                        Text(stringResource(R.string.settings_delete_account))
+                    }
+                }
+
+                if (showDeleteDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = false },
+                        title = { Text(stringResource(R.string.delete_account_title)) },
+                        text = { Text(stringResource(R.string.delete_account_message)) },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showDeleteDialog = false
+                                    // Account deletion handled via coroutine in ViewModel
+                                    viewModel.deleteAccount(
+                                        onSuccess = {
+                                            services.consentManager.clearConsent()
+                                            onLogout()
+                                        }
+                                    )
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) { Text(stringResource(R.string.delete_account_confirm)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteDialog = false }) {
+                                Text(stringResource(R.string.delete_account_cancel))
+                            }
+                        }
+                    )
+                }
+
                 Spacer(Modifier.height(32.dp))
             }
         }

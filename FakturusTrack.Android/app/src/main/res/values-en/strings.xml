@@ -212,4 +212,29 @@
     <string name="login_amazon">Sign in with Amazon</string>
     <string name="login_google">Sign in with Google</string>
     <string name="login_email">Sign in with Email</string>
+
+    <!-- Consent -->
+    <string name="consent_title">Terms &amp; Privacy</string>
+    <string name="consent_subtitle">Please read and accept our terms of service before using fakturus.track.</string>
+    <string name="consent_privacy_label">Privacy Policy</string>
+    <string name="consent_privacy_hint">Please open and read the privacy policy (acknowledgement)</string>
+    <string name="consent_read_privacy">Read Privacy Policy</string>
+    <string name="consent_terms_label">I accept the Terms of Service</string>
+    <string name="consent_terms_hint">Required</string>
+    <string name="consent_read_terms">Read Terms of Service</string>
+    <string name="consent_agree_button">Agree and continue</string>
+    <string name="consent_decline_button">Decline</string>
+    <string name="consent_decline_title">Cannot use without consent</string>
+    <string name="consent_decline_message">Without accepting the terms of service, the app cannot be used. Would you like to sign out?</string>
+    <string name="consent_decline_back">Go back</string>
+    <string name="consent_decline_logout">Sign out</string>
+
+    <!-- Account Deletion -->
+    <string name="settings_delete_account">Delete Account</string>
+    <string name="delete_account_title">Delete account?</string>
+    <string name="delete_account_message">Your account and all data will be permanently deleted. Active subscriptions must be cancelled separately via Store settings.</string>
+    <string name="delete_account_confirm">Delete permanently</string>
+    <string name="delete_account_cancel">Cancel</string>
+    <string name="delete_account_success">Account marked for deletion</string>
+    <string name="delete_account_error">Error deleting account</string>
 </resources>

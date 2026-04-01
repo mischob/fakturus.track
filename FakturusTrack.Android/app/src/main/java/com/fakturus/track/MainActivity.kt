@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.fakturus.track.features.auth.LoginScreen
+import com.fakturus.track.features.legal.ConsentScreen
 import com.fakturus.track.features.shell.MainScreen
 import com.fakturus.track.ui.theme.FakturusTrackTheme
 import kotlinx.coroutines.Dispatchers
@@ -61,11 +62,24 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (isAuthenticated) {
-                    MainScreen(
-                        authManager = authManager,
-                        services = app.serviceContainer,
-                        startTimerOnLaunch = startTimerOnLaunch
-                    )
+                    val hasConsent by app.serviceContainer.consentManager.hasRequiredConsents.collectAsState()
+
+                    if (hasConsent) {
+                        MainScreen(
+                            authManager = authManager,
+                            services = app.serviceContainer,
+                            startTimerOnLaunch = startTimerOnLaunch
+                        )
+                    } else {
+                        ConsentScreen(
+                            onConsented = {
+                                app.serviceContainer.consentManager.recordConsent(termsVersion = 1)
+                            },
+                            onDeclined = {
+                                app.serviceContainer.authManager.signOut(this@MainActivity)
+                            }
+                        )
+                    }
                 } else {
                     LoginScreen(authManager = authManager)
                 }

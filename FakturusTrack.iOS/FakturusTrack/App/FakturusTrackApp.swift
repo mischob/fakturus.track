@@ -13,7 +13,18 @@ struct FakturusTrackApp: App {
         WindowGroup {
             Group {
                 if services.authManager.isAuthenticated {
-                    ContentView()
+                    if services.consentManager.hasRequiredConsents {
+                        ContentView()
+                    } else {
+                        ConsentView(
+                            onConsented: {
+                                services.consentManager.recordConsent(termsVersion: 1)
+                            },
+                            onDeclined: {
+                                services.authManager.signOut()
+                            }
+                        )
+                    }
                 } else {
                     LoginView()
                 }

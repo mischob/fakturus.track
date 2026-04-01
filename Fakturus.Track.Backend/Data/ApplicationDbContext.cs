@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<User> Users { get; set; }
     public DbSet<VacationDay> VacationDays { get; set; }
     public DbSet<SchoolHolidayPeriod> SchoolHolidayPeriods { get; set; }
+    public DbSet<UserConsent> UserConsents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => e.Date);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        // Configure UserConsent entity
+        modelBuilder.Entity<UserConsent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.DocumentType });
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.DocumentType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.AppVersion).HasMaxLength(50);
+            entity.Property(e => e.Platform).HasMaxLength(20);
+            entity.Property(e => e.ConsentTimestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // Configure SchoolHolidayPeriod entity

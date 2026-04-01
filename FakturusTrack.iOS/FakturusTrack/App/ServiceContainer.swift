@@ -11,6 +11,7 @@ final class ServiceContainer {
     // Phase 4: Subscription (initialisiert bei App-Start, NICHT bei Login)
     let subscriptionManager = SubscriptionManager()
     let storeKitManager = StoreKitManager()
+    let consentManager = ConsentManager()
 
     // Lazy-initialized after login
     private(set) var apiClient: APIClient?
@@ -32,6 +33,12 @@ final class ServiceContainer {
         let client = APIClient(authManager: authManager)
         apiClient = client
 
+        // Configure ConsentManager
+        consentManager.configure(apiClient: client)
+        consentManager.checkConsent()
+        Task { await consentManager.syncPendingConsent() }
+        Task { await consentManager.checkForVersionUpdates() }
+
         // Initialize SyncEngine
         let engine = SyncEngine(modelContainer: PersistenceManager.container)
         Task {
@@ -46,5 +53,6 @@ final class ServiceContainer {
         // Tear down
         syncEngine = nil
         apiClient = nil
+        consentManager.configure(apiClient: nil)
     }
 }

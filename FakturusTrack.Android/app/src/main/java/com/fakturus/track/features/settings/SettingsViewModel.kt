@@ -160,4 +160,17 @@ class SettingsViewModel(
             }
         }
     }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                syncEngine?.let {
+                    // TODO: call DELETE /api/account via APIClient
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e("SettingsVM", "Account deletion failed", e)
+            }
+        }
+    }
 }

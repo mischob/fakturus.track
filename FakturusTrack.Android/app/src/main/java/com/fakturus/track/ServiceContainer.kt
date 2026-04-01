@@ -12,6 +12,7 @@ import com.fakturus.track.services.subscription.BillingManager
 import com.fakturus.track.services.subscription.SubscriptionManager
 import com.fakturus.track.services.sync.SyncEngine
 import com.fakturus.track.services.sync.SyncWorker
+import com.fakturus.track.features.legal.ConsentManager
 
 class ServiceContainer(private val context: Context) {
     val authManager: AuthManager by lazy { AuthManager(context) }
@@ -27,6 +28,7 @@ class ServiceContainer(private val context: Context) {
     }
 
     val networkMonitor: NetworkMonitor by lazy { NetworkMonitor(context) }
+    val consentManager = ConsentManager(context)
 
     val database: AppDatabase by lazy {
         Room.databaseBuilder(
@@ -58,6 +60,9 @@ class ServiceContainer(private val context: Context) {
         )
 
         SyncWorker.schedule(context)
+
+        consentManager.configure(apiClient = client)
+        consentManager.checkConsent()
     }
 
     fun onLogout() {
@@ -65,6 +70,7 @@ class ServiceContainer(private val context: Context) {
         apiClient?.close()
         apiClient = null
         syncEngine = null
+        consentManager.configure(apiClient = null)
     }
 
     companion object {

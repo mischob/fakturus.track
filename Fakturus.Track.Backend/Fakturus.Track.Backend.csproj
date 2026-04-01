@@ -31,4 +31,10 @@
 		<PackageReference Include="Nager.Date" Version="1.32.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Update="legal-versions.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>
