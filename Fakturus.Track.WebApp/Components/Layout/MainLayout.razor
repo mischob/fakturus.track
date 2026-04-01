@@ -74,16 +74,13 @@
                             <p class="text-sm font-medium text-white truncate">@context.User.Identity?.Name</p>
                         </div>
                     </div>
-                    <form method="post" action="MicrosoftIdentity/Account/SignOut" class="mt-2">
-                        <AntiforgeryToken />
-                        <button type="submit"
-                                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                            Abmelden
-                        </button>
-                    </form>
+                    <a href="/account/logout"
+                       class="w-full flex items-center gap-3 px-3 py-2 mt-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Abmelden
+                    </a>
                 </Authorized>
             </AuthorizeView>
         </div>

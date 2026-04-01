@@ -23,7 +23,8 @@ WORKDIR /app
 
 # Install PostgreSQL client libraries required for Npgsql
 RUN apt-get update && \
-    apt-get install -y libgssapi-krb5-2 libkrb5-3 libssl3 curl && \
+    apt-get install -y libgssapi-krb5-2 libkrb5-3 libssl3 curl \
+    libfontconfig1 libfreetype6 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=publish /app/publish .

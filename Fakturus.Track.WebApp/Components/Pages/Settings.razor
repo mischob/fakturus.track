@@ -75,6 +75,52 @@ else
             </div>
         </div>
 
+        <!-- Schulferien -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Schulferien</h2>
+                <button @onclick="OpenAddSchoolHoliday"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Hinzufuegen
+                </button>
+            </div>
+            @if (schoolHolidays.Count == 0)
+            {
+                <p class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">Keine Schulferien eingetragen.</p>
+            }
+            else
+            {
+                <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                    @foreach (var period in schoolHolidays.OrderBy(p => p.StartDate))
+                    {
+                        <div class="flex items-center justify-between py-3">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">@period.Name</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">@period.StartDate.ToString("dd.MM.yyyy") - @period.EndDate.ToString("dd.MM.yyyy")</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button @onclick="() => OpenEditSchoolHoliday(period)"
+                                        class="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button @onclick="() => ConfirmDeleteSchoolHoliday(period.Id)"
+                                        class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
         <!-- Save -->
         <div class="flex items-center gap-3">
             <button @onclick="SaveSettings"
@@ -133,13 +179,10 @@ else
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Konto</h2>
             <div class="space-y-3">
-                <form method="post" action="MicrosoftIdentity/Account/SignOut">
-                    <AntiforgeryToken />
-                    <button type="submit"
-                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        Abmelden
-                    </button>
-                </form>
+                <a href="/account/logout"
+                   class="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-center">
+                    Abmelden
+                </a>
                 <button @onclick="() => showDeleteDialog = true"
                         class="w-full px-4 py-2.5 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-medium rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     Konto loeschen
@@ -179,12 +222,88 @@ else
     </div>
 }
 
+<!-- School Holiday Add/Edit Dialog -->
+@if (showSchoolHolidayDialog)
+{
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                @(isEditingSchoolHoliday ? "Schulferien bearbeiten" : "Schulferien hinzufuegen")
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    <input type="text" @bind="schoolHolidayName" placeholder="z.B. Sommerferien 2026"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Von</label>
+                        <input type="date" @bind="schoolHolidayStartDate"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bis</label>
+                        <input type="date" @bind="schoolHolidayEndDate"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end mt-6">
+                <button @onclick="() => showSchoolHolidayDialog = false"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Abbrechen
+                </button>
+                <button @onclick="SaveSchoolHolidayAsync"
+                        disabled="@(string.IsNullOrWhiteSpace(schoolHolidayName))"
+                        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-colors">
+                    Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- School Holiday Delete Dialog -->
+@if (showDeleteSchoolHolidayDialog)
+{
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Schulferien loeschen</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Moechten Sie diesen Ferienzeitraum wirklich loeschen?
+            </p>
+            <div class="flex gap-3 justify-end">
+                <button @onclick="() => showDeleteSchoolHolidayDialog = false"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Abbrechen
+                </button>
+                <button @onclick="DeleteSchoolHolidayAsync"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors">
+                    Loeschen
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private UserSettings settings = new();
     private bool isLoading = true;
     private bool isSaving;
     private bool showSaved;
     private bool showDeleteDialog;
+
+    // School holidays
+    private List<SchoolHolidayPeriod> schoolHolidays = new();
+    private bool showSchoolHolidayDialog;
+    private bool isEditingSchoolHoliday;
+    private Guid editingSchoolHolidayId;
+    private string schoolHolidayName = string.Empty;
+    private DateOnly schoolHolidayStartDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly schoolHolidayEndDate = DateOnly.FromDateTime(DateTime.Today.AddDays(7));
+    private bool showDeleteSchoolHolidayDialog;
+    private Guid deletingSchoolHolidayId;
 
     private readonly (string Label, int Bit)[] workDayOptions = new[]
     {
@@ -196,10 +315,12 @@ else
         try
         {
             settings = await Api.GetUserSettingsAsync();
+            schoolHolidays = await Api.GetSchoolHolidayPeriodsAsync();
         }
         catch
         {
             settings = new();
+            schoolHolidays = new();
         }
         isLoading = false;
     }
@@ -239,11 +360,82 @@ else
         try
         {
             await Api.DeleteAccountAsync();
-            Navigation.NavigateTo("MicrosoftIdentity/Account/SignOut", forceLoad: true);
+            Navigation.NavigateTo("/account/logout", forceLoad: true);
         }
         catch
         {
             showDeleteDialog = false;
         }
+    }
+
+    // School holiday methods
+    private void OpenAddSchoolHoliday()
+    {
+        isEditingSchoolHoliday = false;
+        schoolHolidayName = string.Empty;
+        schoolHolidayStartDate = DateOnly.FromDateTime(DateTime.Today);
+        schoolHolidayEndDate = DateOnly.FromDateTime(DateTime.Today.AddDays(7));
+        showSchoolHolidayDialog = true;
+    }
+
+    private void OpenEditSchoolHoliday(SchoolHolidayPeriod period)
+    {
+        isEditingSchoolHoliday = true;
+        editingSchoolHolidayId = period.Id;
+        schoolHolidayName = period.Name;
+        schoolHolidayStartDate = period.StartDate;
+        schoolHolidayEndDate = period.EndDate;
+        showSchoolHolidayDialog = true;
+    }
+
+    private async Task SaveSchoolHolidayAsync()
+    {
+        try
+        {
+            if (isEditingSchoolHoliday)
+            {
+                await Api.UpdateSchoolHolidayPeriodAsync(editingSchoolHolidayId, new UpdateSchoolHolidayPeriodRequest
+                {
+                    Name = schoolHolidayName,
+                    StartDate = schoolHolidayStartDate,
+                    EndDate = schoolHolidayEndDate
+                });
+            }
+            else
+            {
+                await Api.CreateSchoolHolidayPeriodAsync(new CreateSchoolHolidayPeriodRequest
+                {
+                    Name = schoolHolidayName,
+                    StartDate = schoolHolidayStartDate,
+                    EndDate = schoolHolidayEndDate
+                });
+            }
+            schoolHolidays = await Api.GetSchoolHolidayPeriodsAsync();
+        }
+        catch
+        {
+            // Handle error silently for now
+        }
+        showSchoolHolidayDialog = false;
+    }
+
+    private void ConfirmDeleteSchoolHoliday(Guid id)
+    {
+        deletingSchoolHolidayId = id;
+        showDeleteSchoolHolidayDialog = true;
+    }
+
+    private async Task DeleteSchoolHolidayAsync()
+    {
+        try
+        {
+            await Api.DeleteSchoolHolidayPeriodAsync(deletingSchoolHolidayId);
+            schoolHolidays = await Api.GetSchoolHolidayPeriodsAsync();
+        }
+        catch
+        {
+            // Handle error silently for now
+        }
+        showDeleteSchoolHolidayDialog = false;
     }
 }

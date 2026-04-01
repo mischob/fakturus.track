@@ -7,12 +7,23 @@ using FastEndpoints.AspVersioning;
 using FastEndpoints.Swagger;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Npgsql;
 using Serilog;
 
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers for reverse proxy (Traefik)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Configure Azure Key Vault for Production environment
 if (!builder.Environment.IsDevelopment())
@@ -213,6 +224,7 @@ builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IOvertimeCalculationService, OvertimeCalculationService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<ISchoolHolidayService, SchoolHolidayService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddHttpClient(); // For fetching calendar feed
 
 builder.Services.AddEndpointsApiExplorer();
@@ -291,6 +303,8 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+
+app.UseForwardedHeaders();
 
 app.UseStaticFiles();
 

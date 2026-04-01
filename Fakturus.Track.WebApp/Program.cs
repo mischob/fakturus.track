@@ -1,10 +1,20 @@
 using Fakturus.Track.WebApp.Components;
 using Fakturus.Track.WebApp.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers for reverse proxy (Traefik)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Auth: Azure AD B2C
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
@@ -36,6 +46,8 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -52,6 +64,49 @@ app.MapStaticAssets();
 
 // Map Microsoft Identity UI controllers (/MicrosoftIdentity/Account/SignIn, SignOut)
 app.MapControllers();
+
+// GET-accessible sign-out endpoint (MicrosoftIdentity/Account/SignOut only accepts POST)
+app.MapGet("/account/logout", async (HttpContext httpContext) =>
+{
+    await httpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+    await httpContext.SignOutAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/");
+});
+
+// Export proxy endpoint - forwards export requests to the Backend API with authentication
+app.MapGet("/api/reports/export", async (
+    HttpContext httpContext,
+    ITokenAcquisition tokenAcquisition,
+    IConfiguration config,
+    IHttpClientFactory httpClientFactory) =>
+{
+    try
+    {
+        var scopes = new[] { "https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access" };
+        var token = await tokenAcquisition.GetAccessTokenForUserAsync(scopes);
+
+        var backendUrl = config["ApiSettings:BaseUrl"] ?? "http://fakturus-track-api:80";
+        var query = httpContext.Request.QueryString;
+        var client = httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync($"{backendUrl}/v1/reports/export{query}");
+
+        if (!response.IsSuccessStatusCode)
+            return Results.StatusCode((int)response.StatusCode);
+
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? "export";
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+
+        return Results.File(bytes, contentType, fileName);
+    }
+    catch (Microsoft.Identity.Client.MsalUiRequiredException)
+    {
+        return Results.Redirect("/account/logout");
+    }
+}).RequireAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()

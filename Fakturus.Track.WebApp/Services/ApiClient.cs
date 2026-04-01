@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using Fakturus.Track.WebApp.Models;
+using Microsoft.AspNetCore.Components;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 
 namespace Fakturus.Track.WebApp.Services;
@@ -9,16 +11,18 @@ public class ApiClient
 {
     private readonly HttpClient _http;
     private readonly ITokenAcquisition _tokenAcquisition;
+    private readonly NavigationManager _navigation;
 
     private static readonly string[] ApiScopes = new[]
     {
         "https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access"
     };
 
-    public ApiClient(HttpClient http, ITokenAcquisition tokenAcquisition)
+    public ApiClient(HttpClient http, ITokenAcquisition tokenAcquisition, NavigationManager navigation)
     {
         _http = http;
         _tokenAcquisition = tokenAcquisition;
+        _navigation = navigation;
     }
 
     private async Task SetBearerTokenAsync()
@@ -28,9 +32,14 @@ public class ApiClient
             var token = await _tokenAcquisition.GetAccessTokenForUserAsync(ApiScopes);
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
-        catch
+        catch (MsalUiRequiredException)
         {
-            // Token acquisition failed (user not logged in or token expired)
+            // Token cache lost (e.g. container restart) - force re-login
+            _navigation.NavigateTo("/account/logout", forceLoad: true);
+        }
+        catch (MicrosoftIdentityWebChallengeUserException)
+        {
+            _navigation.NavigateTo("/account/logout", forceLoad: true);
         }
     }
 
@@ -118,6 +127,29 @@ public class ApiClient
     {
         var result = await GetAsync<OvertimeSummary>($"v1/overtime-summary?year={year}");
         return result ?? new();
+    }
+
+    // School Holidays
+    public async Task<List<SchoolHolidayPeriod>> GetSchoolHolidayPeriodsAsync(int? year = null)
+    {
+        var path = year.HasValue ? $"v1/school-holidays?year={year}" : "v1/school-holidays";
+        var result = await GetAsync<List<SchoolHolidayPeriod>>(path);
+        return result ?? new();
+    }
+
+    public async Task<SchoolHolidayPeriod?> CreateSchoolHolidayPeriodAsync(CreateSchoolHolidayPeriodRequest request)
+    {
+        return await PostAsync<SchoolHolidayPeriod, CreateSchoolHolidayPeriodRequest>("v1/school-holidays", request);
+    }
+
+    public async Task UpdateSchoolHolidayPeriodAsync(Guid id, UpdateSchoolHolidayPeriodRequest request)
+    {
+        await PutAsync($"v1/school-holidays/{id}", request);
+    }
+
+    public async Task DeleteSchoolHolidayPeriodAsync(Guid id)
+    {
+        await DeleteAsync($"v1/school-holidays/{id}");
     }
 
     // Legal / Consent (authenticated)
