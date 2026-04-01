@@ -44,6 +44,6 @@ public class DeleteAccountEndpoint(ApplicationDbContext db, ILogger<DeleteAccoun
         await db.SaveChangesAsync(ct);
 
         logger.LogInformation("Account data deleted for user {UserId}", userId);
-        await SendOkAsync(ct);
+        HttpContext.Response.StatusCode = 204;
     }
 }
