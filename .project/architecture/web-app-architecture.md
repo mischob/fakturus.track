@@ -10,13 +10,12 @@ Gleiche Philosophie wie die nativen Apps: **Einfachheit und Direktheit ueber Abs
 
 ### Entscheidung: Neues Projekt (nicht Umbau)
 
-**Neues Projekt `Fakturus.Track.WebApp/`**, nicht Umbau des bestehenden WASM-Frontends.
+**Neues Projekt `Fakturus.Track.WebApp/`**. Das alte Blazor WASM Frontend (`Fakturus.Track.Frontend/`) wurde entfernt.
 
-Begruendung:
-- Blazor Server und Blazor WASM sind fundamental unterschiedlich: Server haelt den State serverseitig, WASM laeuft komplett im Browser. Das aendert alles -- Auth, State Management, API-Calls, Offline-Logik.
-- Das alte Frontend hat WASM-spezifischen Code: `LocalStorageService`, `SyncService`, `VacationSyncService`, `TrackAuthMessageHandler` (MSAL.js Token-Injection). All das ist fuer Server irrelevant.
-- Sauberer Start ohne die technischen Schulden (BetaAccess-Service, alte Sync-Logik).
-- Die wiederverwendbaren Teile (Models, API-Interfaces, Tailwind-Config) sind ueberschaubar und werden einfach kopiert und angepasst.
+Begruendung fuer den Neubau statt Umbau:
+- Blazor Server und Blazor WASM sind fundamental unterschiedlich: Server haelt den State serverseitig, WASM laeuft komplett im Browser.
+- Das alte Frontend hatte WASM-spezifischen Code (LocalStorage, Sync, MSAL.js Token-Injection) der fuer Server irrelevant ist.
+- Sauberer Start ohne technische Schulden.
 
 ### Entscheidung: Blazor Server (nicht WASM, nicht United)
 

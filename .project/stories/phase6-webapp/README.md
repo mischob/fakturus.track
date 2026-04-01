@@ -26,7 +26,7 @@ NICHT im Scope:
 
 ## Technologie
 
-- **Blazor Server** (ASP.NET 8) -- ersetzt das veraltete Blazor WASM Frontend
+- **Blazor Server** (ASP.NET 10) -- das alte Blazor WASM Frontend wurde entfernt
 - **Tailwind CSS** mit bestehender Design-System-Farbpalette
 - **Azure AD B2C** (gleicher Tenant wie Mobile-Apps)
 - **Stripe** fuer Subscriptions (Web-Abo muss kompatibel mit Mobile-Abos sein)

@@ -83,6 +83,7 @@ Nur **2 Schichten** zwischen User und Backend:
 | [shared-concepts.md](shared-concepts.md) | Plattformuebergreifende Konzepte (API, Sync, Auth) |
 | [data-layer.md](data-layer.md) | Lokale Datenbank, Caching, Datenmodelle |
 | [security-concept.md](security-concept.md) | Token Storage, DSGVO, Verschluesselung |
+| [web-app-architecture.md](web-app-architecture.md) | Blazor Server Web-App Architektur |
 | [adr/](adr/) | Architecture Decision Records |
 
 ## ADR-Uebersicht

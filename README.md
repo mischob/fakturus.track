@@ -10,7 +10,6 @@ Zeiterfassungs-App fuer den deutschen Markt mit nativen Mobile-Apps und Web-App.
 | `Fakturus.Track.WebApp` | Blazor Server, Tailwind CSS | Web-App unter `track.fakturus.com` (Desktop/Tablet) |
 | `FakturusTrack.iOS` | SwiftUI, SwiftData | Native iOS App |
 | `FakturusTrack.Android` | Jetpack Compose, Room | Native Android App |
-| `Fakturus.Track.Frontend` | Blazor WASM (VERALTET) | Wird durch WebApp ersetzt |
 
 ## Architektur
 
