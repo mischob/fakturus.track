@@ -10,8 +10,36 @@ struct SchoolHolidaysScreen: View {
     @State private var formStartDate = Date()
     @State private var formEndDate = Date()
 
+    @State private var isImporting = false
+    @State private var importError: String?
+
     var body: some View {
         List {
+            // Auto-import section
+            Section {
+                Button {
+                    Task { await importSchoolHolidays() }
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.down.circle")
+                        Text("Schulferien automatisch laden")
+                        Spacer()
+                        if isImporting {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isImporting)
+
+                if let error = importError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            } footer: {
+                Text("Laedt die Schulferien fuer \(viewModel.bundesland) aus einer oeffentlichen Datenquelle (ferien-api.de).")
+            }
+
             if viewModel.schoolHolidays.isEmpty {
                 Section {
                     VStack(spacing: 12) {
@@ -111,6 +139,17 @@ struct SchoolHolidaysScreen: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private func importSchoolHolidays() async {
+        isImporting = true
+        importError = nil
+        do {
+            try await viewModel.importSchoolHolidays()
+        } catch {
+            importError = "Import fehlgeschlagen: \(error.localizedDescription)"
+        }
+        isImporting = false
     }
 
     private func formatted(_ date: Date) -> String {

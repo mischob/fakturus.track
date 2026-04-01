@@ -138,6 +138,51 @@ final class SettingsViewModel {
         loadSchoolHolidays()
     }
 
+    // MARK: - Import School Holidays from API
+
+    func importSchoolHolidays() async throws {
+        let year = Calendar.current.component(.year, from: Date())
+        let stateCode = bundesland.uppercased()
+        let url = URL(string: "https://ferien-api.de/api/v1/holidays/\(stateCode)/\(year)")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        struct FerienApiHoliday: Decodable {
+            let start: String
+            let end: String
+            let name: String
+        }
+
+        let holidays = try JSONDecoder().decode([FerienApiHoliday].self, from: data)
+
+        // Delete all existing school holidays
+        let descriptor = FetchDescriptor<SchoolHolidayPeriod>()
+        let existing = (try? modelContext.fetch(descriptor)) ?? []
+        for period in existing {
+            modelContext.delete(period)
+        }
+
+        // Insert new ones
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        for h in holidays {
+            guard let startDate = dateFormatter.date(from: h.start),
+                  let endDate = dateFormatter.date(from: h.end) else { continue }
+
+            let displayName = h.name.split(separator: " ").first.map { String($0).capitalized } ?? h.name
+
+            let period = SchoolHolidayPeriod(
+                name: displayName,
+                startDate: startDate,
+                endDate: endDate
+            )
+            modelContext.insert(period)
+        }
+
+        try? modelContext.save()
+        loadSchoolHolidays()
+    }
+
     // MARK: - Logout
 
     func logout() {
