@@ -1,0 +1,227 @@
+@page "/urlaub"
+@rendermode InteractiveServer
+@inject ApiClient Api
+
+<PageTitle>Urlaub - fakturus.track</PageTitle>
+
+<h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Urlaub</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Calendar -->
+    <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <!-- Month Navigation -->
+        <div class="flex items-center justify-between mb-6">
+            <button @onclick="PreviousMonth"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                @currentDate.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("de-DE"))
+            </h2>
+            <button @onclick="NextMonth"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Day Headers -->
+        <div class="grid grid-cols-7 gap-1 mb-2">
+            @foreach (var day in new[] { "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So" })
+            {
+                <div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2">@day</div>
+            }
+        </div>
+
+        <!-- Calendar Grid -->
+        <div class="grid grid-cols-7 gap-1">
+            @foreach (var day in calendarDays)
+            {
+                @if (day == null)
+                {
+                    <div class="aspect-square"></div>
+                }
+                else
+                {
+                    var date = day.Value;
+                    var vacDay = GetVacationDay(date);
+                    var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
+                    var isToday = date == DateOnly.FromDateTime(DateTime.Today);
+
+                    <button @onclick="() => ToggleDay(date)"
+                            class="aspect-square rounded-lg text-sm font-medium flex items-center justify-center transition-all
+                                   @(vacDay?.Type == VacationDayType.Vacation ? "bg-primary-500 text-white hover:bg-primary-600" :
+                                     vacDay?.Type == VacationDayType.Sick ? "bg-red-500 text-white hover:bg-red-600" :
+                                     vacDay?.Type == VacationDayType.Holiday ? "bg-green-500 text-white hover:bg-green-600" :
+                                     isWeekend ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" :
+                                     isToday ? "ring-2 ring-primary-500 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800" :
+                                     "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800")">
+                        @date.Day
+                    </button>
+                }
+            }
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-primary-500"></span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Urlaub</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-red-500"></span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Krank</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-green-500"></span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Feiertag</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Wochenende</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="space-y-6">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Urlaubskonto</h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">@remainingDays</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Tage verbleibend</p>
+                </div>
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-primary-500 rounded-full transition-all"
+                         style="width: @(totalDays > 0 ? Math.Min(100, (int)((double)takenDays / totalDays * 100)) : 0)%"></div>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500 dark:text-gray-400">Genommen: @takenDays</span>
+                    <span class="text-gray-500 dark:text-gray-400">Gesamt: @totalDays</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Aktionen</h3>
+            <div class="space-y-2">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Klicken Sie auf einen Tag im Kalender, um Urlaub oder Krankheitstage einzutragen.
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Erneut klicken wechselt den Typ oder entfernt den Eintrag.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime currentDate = DateTime.Now;
+    private List<VacationDay> vacationDays = new();
+    private List<DateOnly?> calendarDays = new();
+    private int remainingDays;
+    private int takenDays;
+    private int totalDays = 30;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            vacationDays = await Api.GetVacationDaysAsync(currentDate.Year);
+            var settings = await Api.GetUserSettingsAsync();
+            totalDays = settings.VacationDaysPerYear;
+        }
+        catch
+        {
+            vacationDays = new();
+        }
+
+        takenDays = vacationDays.Count(v => v.Type == VacationDayType.Vacation);
+        remainingDays = totalDays - takenDays;
+        BuildCalendar();
+    }
+
+    private void BuildCalendar()
+    {
+        calendarDays.Clear();
+        var firstDay = new DateOnly(currentDate.Year, currentDate.Month, 1);
+        var daysInMonth = DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
+
+        // Monday=0 offset
+        int startOffset = ((int)firstDay.DayOfWeek + 6) % 7;
+        for (int i = 0; i < startOffset; i++)
+        {
+            calendarDays.Add(null);
+        }
+        for (int d = 1; d <= daysInMonth; d++)
+        {
+            calendarDays.Add(new DateOnly(currentDate.Year, currentDate.Month, d));
+        }
+    }
+
+    private VacationDay? GetVacationDay(DateOnly date)
+    {
+        return vacationDays.FirstOrDefault(v => v.Date == date);
+    }
+
+    private async Task ToggleDay(DateOnly date)
+    {
+        var existing = GetVacationDay(date);
+        if (existing == null)
+        {
+            try
+            {
+                var newDay = await Api.AddVacationDayAsync(date, VacationDayType.Vacation);
+                vacationDays.Add(newDay);
+            }
+            catch { }
+        }
+        else if (existing.Type == VacationDayType.Vacation)
+        {
+            // Switch to sick
+            try
+            {
+                await Api.DeleteVacationDayAsync(existing.Id);
+                vacationDays.Remove(existing);
+                var newDay = await Api.AddVacationDayAsync(date, VacationDayType.Sick);
+                vacationDays.Add(newDay);
+            }
+            catch { }
+        }
+        else
+        {
+            // Remove
+            try
+            {
+                await Api.DeleteVacationDayAsync(existing.Id);
+                vacationDays.Remove(existing);
+            }
+            catch { }
+        }
+
+        takenDays = vacationDays.Count(v => v.Type == VacationDayType.Vacation);
+        remainingDays = totalDays - takenDays;
+    }
+
+    private async Task PreviousMonth()
+    {
+        currentDate = currentDate.AddMonths(-1);
+        await LoadData();
+    }
+
+    private async Task NextMonth()
+    {
+        currentDate = currentDate.AddMonths(1);
+        await LoadData();
+    }
+}

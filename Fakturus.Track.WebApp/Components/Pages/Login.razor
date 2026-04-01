@@ -1,0 +1,42 @@
+@page "/login"
+@layout LegalLayout
+@attribute [AllowAnonymous]
+
+<PageTitle>Anmelden - fakturus.track</PageTitle>
+
+<div class="min-h-[60vh] flex items-center justify-center">
+    <div class="max-w-sm w-full text-center">
+        <!-- Logo -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+                fakturus<span class="text-primary-600 dark:text-primary-400">.track</span>
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Zeiterfassung einfach gemacht</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Willkommen</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Melden Sie sich an, um fortzufahren</p>
+
+            <a href="MicrosoftIdentity/Account/SignIn"
+               class="w-full inline-flex items-center justify-center gap-3 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                Mit Microsoft anmelden
+            </a>
+        </div>
+
+        <p class="mt-6 text-xs text-gray-400 dark:text-gray-500">
+            Mit der Anmeldung stimmen Sie unseren
+            <a href="/terms" class="hover:underline text-gray-500 dark:text-gray-400">AGB</a>
+            und der
+            <a href="/privacy" class="hover:underline text-gray-500 dark:text-gray-400">Datenschutzerklaerung</a>
+            zu.
+        </p>
+    </div>
+</div>

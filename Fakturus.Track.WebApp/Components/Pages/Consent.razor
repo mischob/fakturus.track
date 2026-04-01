@@ -1,0 +1,118 @@
+@page "/consent"
+@rendermode InteractiveServer
+@inject ConsentService ConsentService
+@inject NavigationManager Navigation
+
+<PageTitle>Zustimmung - fakturus.track</PageTitle>
+
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                fakturus<span class="text-primary-600 dark:text-primary-400">.track</span>
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Zeiterfassung einfach gemacht</p>
+        </div>
+
+        <!-- Consent Card -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nutzungsbedingungen</h2>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Bevor Sie fakturus.track nutzen koennen, muessen Sie unseren Nutzungsbedingungen zustimmen.
+            </p>
+
+            <!-- AGB Checkbox -->
+            <label class="flex items-start gap-3 mb-6 cursor-pointer group">
+                <input type="checkbox" @bind="agbAccepted"
+                       class="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-primary-600 focus:ring-primary-500 bg-white dark:bg-gray-800" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                    Ich habe die
+                    <a href="/terms" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">Allgemeinen Geschaeftsbedingungen</a>
+                    gelesen und stimme diesen zu. Die
+                    <a href="/privacy" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">Datenschutzerklaerung</a>
+                    habe ich zur Kenntnis genommen.
+                </span>
+            </label>
+
+            <!-- Accept Button -->
+            <button @onclick="AcceptConsent"
+                    disabled="@(!agbAccepted || isSubmitting)"
+                    class="w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors">
+                @if (isSubmitting)
+                {
+                    <span class="inline-flex items-center gap-2 justify-center">
+                        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Wird verarbeitet...
+                    </span>
+                }
+                else
+                {
+                    <span>Zustimmen und fortfahren</span>
+                }
+            </button>
+
+            <!-- Decline Link -->
+            <div class="text-center mt-4">
+                <button @onclick="() => showDeclineDialog = true"
+                        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                    Ablehnen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Decline Dialog -->
+@if (showDeclineDialog)
+{
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Zustimmung ablehnen?</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Ohne Zustimmung zu den Nutzungsbedingungen koennen Sie fakturus.track leider nicht verwenden. Sie werden abgemeldet.
+            </p>
+            <div class="flex gap-3 justify-end">
+                <button @onclick="() => showDeclineDialog = false"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Zurueck
+                </button>
+                <button @onclick="DeclineAndLogout"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors">
+                    Ablehnen und abmelden
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool agbAccepted;
+    private bool isSubmitting;
+    private bool showDeclineDialog;
+
+    private async Task AcceptConsent()
+    {
+        if (!agbAccepted) return;
+        isSubmitting = true;
+        try
+        {
+            await ConsentService.AcceptConsentsAsync();
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch
+        {
+            // Handle error
+        }
+        isSubmitting = false;
+    }
+
+    private void DeclineAndLogout()
+    {
+        Navigation.NavigateTo("MicrosoftIdentity/Account/SignOut", forceLoad: true);
+    }
+}

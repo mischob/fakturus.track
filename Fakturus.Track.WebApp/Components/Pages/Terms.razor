@@ -1,0 +1,103 @@
+@page "/terms"
+@layout LegalLayout
+@attribute [AllowAnonymous]
+@rendermode InteractiveServer
+@inject ApiClient Api
+
+<PageTitle>AGB - fakturus.track</PageTitle>
+
+<article class="prose dark:prose-invert max-w-none">
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(htmlContent))
+    {
+        @((MarkupString)htmlContent)
+    }
+    else
+    {
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Allgemeine Geschaeftsbedingungen</h1>
+
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Stand: 01.01.2026</p>
+
+        <h2>1. Geltungsbereich</h2>
+        <p>
+            Diese Allgemeinen Geschaeftsbedingungen (AGB) gelten fuer die Nutzung der Webanwendung
+            fakturus.track, bereitgestellt von der fakturus GmbH.
+        </p>
+
+        <h2>2. Leistungsbeschreibung</h2>
+        <p>
+            fakturus.track ist eine Zeiterfassungsanwendung, die folgende Funktionen bietet:
+        </p>
+        <ul>
+            <li>Erfassung von Arbeitszeiten (Start, Pause, Ende)</li>
+            <li>Verwaltung von Urlaubs- und Krankheitstagen</li>
+            <li>Berechnung von Ueberstunden</li>
+            <li>Export von Berichten (PDF, CSV, DATEV)</li>
+        </ul>
+
+        <h2>3. Nutzungsvoraussetzungen</h2>
+        <p>
+            Die Nutzung setzt eine Registrierung ueber Microsoft Azure AD B2C voraus.
+            Der Nutzer ist fuer die Sicherheit seiner Zugangsdaten verantwortlich.
+        </p>
+
+        <h2>4. Verfuegbarkeit</h2>
+        <p>
+            Wir bemuehen uns um eine hohe Verfuegbarkeit der Anwendung, koennen jedoch keine
+            ununterbrochene Erreichbarkeit garantieren. Wartungsarbeiten werden nach Moeglichkeit
+            im Voraus angekuendigt.
+        </p>
+
+        <h2>5. Datenschutz</h2>
+        <p>
+            Informationen zur Verarbeitung personenbezogener Daten finden Sie in unserer
+            <a href="/privacy" class="text-primary-600 dark:text-primary-400 hover:underline">Datenschutzerklaerung</a>.
+        </p>
+
+        <h2>6. Haftung</h2>
+        <p>
+            Die Haftung der fakturus GmbH ist auf Vorsatz und grobe Fahrlaessigkeit beschraenkt.
+            Fuer die Richtigkeit der erfassten Arbeitszeiten ist der Nutzer selbst verantwortlich.
+        </p>
+
+        <h2>7. Kuendigung</h2>
+        <p>
+            Der Nutzer kann sein Konto jederzeit ueber die Einstellungen loeschen. Die fakturus GmbH
+            behaelt sich das Recht vor, den Zugang bei Verstoessen gegen diese AGB zu sperren.
+        </p>
+
+        <h2>8. Aenderungen der AGB</h2>
+        <p>
+            Wir behalten uns vor, diese AGB zu aendern. Ueber wesentliche Aenderungen werden
+            Nutzer per E-Mail informiert.
+        </p>
+
+        <h2>9. Anwendbares Recht</h2>
+        <p>
+            Es gilt das Recht der Bundesrepublik Deutschland. Gerichtsstand ist Koeln.
+        </p>
+    }
+</article>
+
+@code {
+    private string? htmlContent;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            htmlContent = await Api.GetLegalContentAsync("terms");
+        }
+        catch
+        {
+            htmlContent = null;
+        }
+        isLoading = false;
+    }
+}
