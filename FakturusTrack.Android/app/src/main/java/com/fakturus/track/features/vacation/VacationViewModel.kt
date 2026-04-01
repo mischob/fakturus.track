@@ -108,14 +108,20 @@ class VacationViewModel(
     fun toggleSickDay(date: LocalDate) {
         viewModelScope.launch {
             try {
+                val dateStr = date.toString()
                 val allDays = database.sickDayDao().getAll()
-                val existing = allDays.firstOrNull { it.date == date.toString() }
+                val existing = allDays.firstOrNull { it.date == dateStr }
 
                 if (existing != null) {
                     database.sickDayDao().delete(existing)
                 } else {
+                    // Remove vacation day for this date if exists (same as iOS)
+                    val vacDays = database.vacationDayDao().getAll()
+                    vacDays.firstOrNull { it.date == dateStr }?.let {
+                        database.vacationDayDao().delete(it)
+                    }
                     database.sickDayDao().insert(
-                        SickDayEntity(date = date.toString())
+                        SickDayEntity(date = dateStr)
                     )
                 }
 

@@ -70,18 +70,25 @@ class TimeTrackingViewModel(
                 val session = dao.getActiveSession()
                 _activeSession.value = session
 
-                // Crash recovery: check if a pause was running
+                // Crash recovery: restore full pause state
                 if (session != null) {
-                    _accumulatedPauseMinutes.value = session.pauseMinutes
-                    val savedPauseStart = prefs?.getString("currentPauseStart", null)
-                    if (savedPauseStart != null) {
-                        try {
-                            _currentPauseStart.value = Instant.parse(savedPauseStart)
-                            _isPaused.value = true
-                        } catch (_: Exception) {
-                            prefs.edit().remove("currentPauseStart").apply()
+                    val wasPaused = prefs?.getBoolean("isPaused", false) == true
+                    val savedAccumulated = prefs?.getInt("accumulatedPauseMinutes", session.pauseMinutes) ?: session.pauseMinutes
+                    _accumulatedPauseMinutes.value = savedAccumulated
+
+                    if (wasPaused) {
+                        val savedPauseStart = prefs?.getString("currentPauseStart", null)
+                        if (savedPauseStart != null) {
+                            try {
+                                _currentPauseStart.value = Instant.parse(savedPauseStart)
+                                _isPaused.value = true
+                            } catch (_: Exception) {
+                                clearPausePrefs()
+                            }
                         }
                     }
+                } else {
+                    clearPausePrefs()
                 }
             } catch (e: Exception) {
                 _error.value = "Fehler beim Laden der aktiven Sitzung"
@@ -102,6 +109,10 @@ class TimeTrackingViewModel(
                 )
                 dao.insert(session)
                 _activeSession.value = session
+                _accumulatedPauseMinutes.value = 0
+                _isPaused.value = false
+                _currentPauseStart.value = null
+                clearPausePrefs()
                 updateWidgetState()
             } catch (e: Exception) {
                 _error.value = "Fehler beim Starten der Sitzung"
@@ -151,7 +162,7 @@ class TimeTrackingViewModel(
                 _hasShown6h.value = false
                 _hasShown9h.value = false
                 _hasShown10h.value = false
-                prefs?.edit()?.remove("currentPauseStart")?.apply()
+                clearPausePrefs()
                 updateWidgetState()
 
                 // Trigger sync after finishing session
@@ -225,6 +236,10 @@ class TimeTrackingViewModel(
                 dao.delete(session)
                 if (session.id == _activeSession.value?.id) {
                     _activeSession.value = null
+                    _isPaused.value = false
+                    _accumulatedPauseMinutes.value = 0
+                    _currentPauseStart.value = null
+                    clearPausePrefs()
                 }
 
                 // If synced, try API DELETE immediately or queue as pending delete
@@ -276,7 +291,7 @@ class TimeTrackingViewModel(
         _isPaused.value = true
         val now = Instant.now()
         _currentPauseStart.value = now
-        prefs?.edit()?.putString("currentPauseStart", now.toString())?.apply()
+        persistPauseState()
         updateWidgetState()
     }
 
@@ -306,8 +321,31 @@ class TimeTrackingViewModel(
 
         _isPaused.value = false
         _currentPauseStart.value = null
-        prefs?.edit()?.remove("currentPauseStart")?.apply()
+        persistPauseState()
         updateWidgetState()
+    }
+
+    private fun persistPauseState() {
+        prefs?.edit()
+            ?.putBoolean("isPaused", _isPaused.value)
+            ?.putInt("accumulatedPauseMinutes", _accumulatedPauseMinutes.value)
+            ?.apply {
+                val start = _currentPauseStart.value
+                if (start != null) {
+                    putString("currentPauseStart", start.toString())
+                } else {
+                    remove("currentPauseStart")
+                }
+            }
+            ?.apply()
+    }
+
+    private fun clearPausePrefs() {
+        prefs?.edit()
+            ?.remove("isPaused")
+            ?.remove("accumulatedPauseMinutes")
+            ?.remove("currentPauseStart")
+            ?.apply()
     }
 
     fun dismissArbZGBanner() {
