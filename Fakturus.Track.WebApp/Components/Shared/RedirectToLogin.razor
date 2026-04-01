@@ -3,6 +3,7 @@
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo($"login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}", forceLoad: false);
+        // forceLoad: true triggers a real HTTP redirect, which the OIDC middleware intercepts
+        Navigation.NavigateTo("MicrosoftIdentity/Account/SignIn", forceLoad: true);
     }
 }

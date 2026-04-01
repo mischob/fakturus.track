@@ -6,6 +6,7 @@ public class CreateWorkSessionRequest
     public DateOnly Date { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime? StopTime { get; set; }
+    public int PauseMinutes { get; set; }
 }
 
 public class UpdateWorkSessionRequest
@@ -13,14 +14,12 @@ public class UpdateWorkSessionRequest
     public DateOnly? Date { get; set; }
     public DateTime? StartTime { get; set; }
     public DateTime? StopTime { get; set; }
-}
-
-public class SyncWorkSessionsRequest
-{
-    public List<WorkSession> Sessions { get; set; } = new();
+    public int? PauseMinutes { get; set; }
+    public bool? IsFinished { get; set; }
 }
 
 public class CreateVacationDayRequest
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
     public DateOnly Date { get; set; }
 }

@@ -1,114 +1,159 @@
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using Fakturus.Track.WebApp.Models;
+using Microsoft.Identity.Web;
 
 namespace Fakturus.Track.WebApp.Services;
 
 public class ApiClient
 {
     private readonly HttpClient _http;
+    private readonly ITokenAcquisition _tokenAcquisition;
 
-    public ApiClient(HttpClient http)
+    private static readonly string[] ApiScopes = new[]
+    {
+        "https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access"
+    };
+
+    public ApiClient(HttpClient http, ITokenAcquisition tokenAcquisition)
     {
         _http = http;
+        _tokenAcquisition = tokenAcquisition;
     }
 
+    private async Task SetBearerTokenAsync()
+    {
+        try
+        {
+            var token = await _tokenAcquisition.GetAccessTokenForUserAsync(ApiScopes);
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        catch
+        {
+            // Token acquisition failed (user not logged in or token expired)
+        }
+    }
+
+    private async Task<T?> GetAsync<T>(string path)
+    {
+        await SetBearerTokenAsync();
+        return await _http.GetFromJsonAsync<T>(path);
+    }
+
+    private async Task<TResponse?> PostAsync<TResponse, TBody>(string path, TBody body)
+    {
+        await SetBearerTokenAsync();
+        var response = await _http.PostAsJsonAsync(path, body);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TResponse>();
+    }
+
+    private async Task PutAsync<TBody>(string path, TBody body)
+    {
+        await SetBearerTokenAsync();
+        var response = await _http.PutAsJsonAsync(path, body);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task DeleteAsync(string path)
+    {
+        await SetBearerTokenAsync();
+        var response = await _http.DeleteAsync(path);
+        response.EnsureSuccessStatusCode();
+    }
+
+    // Work Sessions
     public async Task<List<WorkSession>> GetWorkSessionsAsync()
     {
-        var result = await _http.GetFromJsonAsync<List<WorkSession>>("api/worksessions");
+        var result = await GetAsync<List<WorkSession>>("v1/work-sessions");
         return result ?? new();
     }
 
-    public async Task<List<WorkSession>> GetWorkSessionsByMonthAsync(int year, int month)
+    public async Task<WorkSession?> CreateWorkSessionAsync(CreateWorkSessionRequest request)
     {
-        var result = await _http.GetFromJsonAsync<List<WorkSession>>($"api/worksessions?year={year}&month={month}");
+        return await PostAsync<WorkSession, CreateWorkSessionRequest>("v1/work-sessions", request);
+    }
+
+    public async Task UpdateWorkSessionAsync(Guid id, UpdateWorkSessionRequest request)
+    {
+        await PutAsync($"v1/work-sessions/{id}", request);
+    }
+
+    public async Task DeleteWorkSessionAsync(Guid id)
+    {
+        await DeleteAsync($"v1/work-sessions/{id}");
+    }
+
+    // Vacation Days
+    public async Task<List<VacationDay>> GetVacationDaysAsync()
+    {
+        var result = await GetAsync<List<VacationDay>>("v1/vacation-days");
         return result ?? new();
     }
 
-    public async Task<WorkSession?> GetTodaySessionAsync()
+    public async Task<VacationDay?> CreateVacationDayAsync(CreateVacationDayRequest request)
     {
-        return await _http.GetFromJsonAsync<WorkSession?>("api/worksessions/today");
-    }
-
-    public async Task<WorkSession> StartSessionAsync()
-    {
-        var response = await _http.PostAsync("api/worksessions/start", null);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<WorkSession>())!;
-    }
-
-    public async Task<WorkSession> StopSessionAsync(Guid id)
-    {
-        var response = await _http.PostAsync($"api/worksessions/{id}/stop", null);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<WorkSession>())!;
-    }
-
-    public async Task<WorkSession> FinishSessionAsync(Guid id)
-    {
-        var response = await _http.PostAsync($"api/worksessions/{id}/finish", null);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<WorkSession>())!;
-    }
-
-    public async Task<WorkSession> ResumeSessionAsync(Guid id)
-    {
-        var response = await _http.PostAsync($"api/worksessions/{id}/resume", null);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<WorkSession>())!;
-    }
-
-    public async Task<List<VacationDay>> GetVacationDaysAsync(int year)
-    {
-        var result = await _http.GetFromJsonAsync<List<VacationDay>>($"api/vacation?year={year}");
-        return result ?? new();
-    }
-
-    public async Task<VacationDay> AddVacationDayAsync(DateOnly date, VacationDayType type)
-    {
-        var response = await _http.PostAsJsonAsync("api/vacation", new { Date = date, Type = type });
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<VacationDay>())!;
+        return await PostAsync<VacationDay, CreateVacationDayRequest>("v1/vacation-days", request);
     }
 
     public async Task DeleteVacationDayAsync(Guid id)
     {
-        await _http.DeleteAsync($"api/vacation/{id}");
+        await DeleteAsync($"v1/vacation-days/{id}");
     }
 
+    // Settings
     public async Task<UserSettings> GetUserSettingsAsync()
     {
-        var result = await _http.GetFromJsonAsync<UserSettings>("api/settings");
+        var result = await GetAsync<UserSettings>("v1/settings");
         return result ?? new();
     }
 
     public async Task SaveUserSettingsAsync(UserSettings settings)
     {
-        await _http.PutAsJsonAsync("api/settings", settings);
+        await PutAsync("v1/settings", settings);
     }
 
+    // Overtime
     public async Task<OvertimeSummary> GetOvertimeSummaryAsync(int year)
     {
-        var result = await _http.GetFromJsonAsync<OvertimeSummary>($"api/reports/overtime?year={year}");
+        var result = await GetAsync<OvertimeSummary>($"v1/overtime-summary?year={year}");
         return result ?? new();
     }
 
-    public async Task<string> GetLegalContentAsync(string type)
+    // Legal / Consent (authenticated)
+    public async Task<ConsentStatusResponse?> GetConsentStatusAsync()
     {
-        return await _http.GetStringAsync($"api/legal/{type}");
+        try
+        {
+            return await GetAsync<ConsentStatusResponse>("api/legal/consent");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
-    public async Task AcceptConsentsAsync()
+    public async Task<ConsentStatusResponse?> SubmitConsentAsync(ConsentSubmitRequest request)
     {
-        await _http.PostAsync("api/consent/accept", null);
+        return await PostAsync<ConsentStatusResponse, ConsentSubmitRequest>("api/legal/consent", request);
     }
 
-    public async Task<bool> HasAcceptedConsentsAsync()
+    // Legal versions (public, no token needed)
+    public async Task<LegalVersionsResponse?> GetLegalVersionsAsync()
     {
-        var result = await _http.GetFromJsonAsync<bool>("api/consent/status");
-        return result;
+        try
+        {
+            return await _http.GetFromJsonAsync<LegalVersionsResponse>("api/legal/versions");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
+    // Account
     public async Task DeleteAccountAsync()
     {
-        await _http.DeleteAsync("api/account");
+        await DeleteAsync("api/account");
     }
 }

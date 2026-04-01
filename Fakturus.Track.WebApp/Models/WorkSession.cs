@@ -7,6 +7,7 @@ public class WorkSession
     public DateOnly Date { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime? StopTime { get; set; }
+    public int PauseMinutes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? SyncedAt { get; set; }

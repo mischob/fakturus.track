@@ -1,3 +1,5 @@
+using Fakturus.Track.WebApp.Models;
+
 namespace Fakturus.Track.WebApp.Services;
 
 public class ConsentService
@@ -19,7 +21,8 @@ public class ConsentService
     {
         try
         {
-            _hasConsents = await _apiClient.HasAcceptedConsentsAsync();
+            var status = await _apiClient.GetConsentStatusAsync();
+            _hasConsents = status?.AllRequiredConsentsGiven ?? false;
         }
         catch
         {
@@ -27,10 +30,25 @@ public class ConsentService
         }
     }
 
-    public async Task AcceptConsentsAsync()
+    public async Task AcceptConsentsAsync(int termsVersion = 1)
     {
-        await _apiClient.AcceptConsentsAsync();
-        _hasConsents = true;
+        try
+        {
+            var request = new ConsentSubmitRequest
+            {
+                Consents = new List<ConsentItem>
+                {
+                    new() { DocumentType = "terms_of_service", DocumentVersion = termsVersion, ConsentGiven = true }
+                }
+            };
+            var result = await _apiClient.SubmitConsentAsync(request);
+            _hasConsents = result?.AllRequiredConsentsGiven ?? true;
+        }
+        catch
+        {
+            // Accept locally even if backend fails — will sync later
+            _hasConsents = true;
+        }
         OnConsentChanged?.Invoke();
     }
 }

@@ -102,9 +102,9 @@
             <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                 <span class="text-sm text-gray-600 dark:text-gray-400">Startzeit</span>
                 <span class="text-sm font-medium text-gray-900 dark:text-white">
-                    @if (Timer.CurrentSession != null)
+                    @if (Timer.ActiveSession != null)
                     {
-                        @Timer.CurrentSession.StartTime.ToLocalTime().ToString("HH:mm")
+                        @Timer.ActiveSession.StartTime.ToLocalTime().ToString("HH:mm")
                     }
                     else
                     {
@@ -114,7 +114,7 @@
             </div>
             <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                 <span class="text-sm text-gray-600 dark:text-gray-400">Pause</span>
-                <span class="text-sm font-medium text-gray-900 dark:text-white">@FormatTimeSpan(Timer.PauseDuration)</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">@FormatTimeSpan(TimeSpan.FromMinutes(Timer.PauseMinutes))</span>
             </div>
             <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                 <span class="text-sm text-gray-600 dark:text-gray-400">Netto-Arbeitszeit</span>
@@ -125,7 +125,7 @@
                 <span class="text-sm font-medium text-gray-900 dark:text-white">@targetHours.ToString("F1") h</span>
             </div>
 
-            @if (Timer.Elapsed.TotalHours > 6 && Timer.PauseDuration.TotalMinutes < 30)
+            @if (Timer.Elapsed.TotalHours > 6 && Timer.PauseMinutes < 30)
             {
                 <div class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                     <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,8 +317,8 @@
     }
 
     private async Task StartTimer() => await Timer.StartAsync();
-    private async Task PauseTimer() => await Timer.PauseAsync();
-    private async Task ResumeTimer() => await Timer.ResumeAsync();
+    private Task PauseTimer() { Timer.Pause(); return Task.CompletedTask; }
+    private Task ResumeTimer() { Timer.Resume(); return Task.CompletedTask; }
     private async Task StopTimer() => await Timer.StopAsync();
     private async Task FinishTimer() => await Timer.FinishAsync();
 

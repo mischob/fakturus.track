@@ -137,7 +137,7 @@
     {
         try
         {
-            vacationDays = await Api.GetVacationDaysAsync(currentDate.Year);
+            vacationDays = await Api.GetVacationDaysAsync();
             var settings = await Api.GetUserSettingsAsync();
             totalDays = settings.VacationDaysPerYear;
         }
@@ -181,7 +181,7 @@
         {
             try
             {
-                var newDay = await Api.AddVacationDayAsync(date, VacationDayType.Vacation);
+                var newDay = await Api.CreateVacationDayAsync(new CreateVacationDayRequest { Date = date });
                 vacationDays.Add(newDay);
             }
             catch { }
@@ -193,7 +193,7 @@
             {
                 await Api.DeleteVacationDayAsync(existing.Id);
                 vacationDays.Remove(existing);
-                var newDay = await Api.AddVacationDayAsync(date, VacationDayType.Sick);
+                var newDay = await Api.CreateVacationDayAsync(new CreateVacationDayRequest { Date = date });
                 vacationDays.Add(newDay);
             }
             catch { }

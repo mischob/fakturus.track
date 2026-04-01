@@ -1,24 +1,10 @@
 @page "/terms"
 @layout LegalLayout
 @attribute [AllowAnonymous]
-@rendermode InteractiveServer
-@inject ApiClient Api
 
 <PageTitle>AGB - fakturus.track</PageTitle>
 
 <article class="prose dark:prose-invert max-w-none">
-    @if (isLoading)
-    {
-        <div class="flex items-center justify-center py-12">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        </div>
-    }
-    else if (!string.IsNullOrEmpty(htmlContent))
-    {
-        @((MarkupString)htmlContent)
-    }
-    else
-    {
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Allgemeine Geschaeftsbedingungen</h1>
 
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Stand: 01.01.2026</p>
@@ -81,23 +67,4 @@
         <p>
             Es gilt das Recht der Bundesrepublik Deutschland. Gerichtsstand ist Koeln.
         </p>
-    }
 </article>
-
-@code {
-    private string? htmlContent;
-    private bool isLoading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            htmlContent = await Api.GetLegalContentAsync("terms");
-        }
-        catch
-        {
-            htmlContent = null;
-        }
-        isLoading = false;
-    }
-}

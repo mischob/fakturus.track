@@ -14,13 +14,15 @@ public class TimerService : IDisposable
 {
     private readonly ApiClient _apiClient;
     private System.Timers.Timer? _timer;
-    private WorkSession? _currentSession;
+    private WorkSession? _activeSession;
+    private int _accumulatedPauseMinutes;
+    private DateTime? _pauseStartUtc;
 
     public TimerState State { get; private set; } = TimerState.Idle;
-    public WorkSession? CurrentSession => _currentSession;
+    public WorkSession? ActiveSession => _activeSession;
     public TimeSpan Elapsed { get; private set; }
-    public TimeSpan PauseDuration { get; private set; }
-    public DateTime? PauseStartedAt { get; private set; }
+    public int PauseMinutes => _accumulatedPauseMinutes +
+        (_pauseStartUtc.HasValue ? (int)(DateTime.UtcNow - _pauseStartUtc.Value).TotalMinutes : 0);
 
     public event Action? OnStateChanged;
 
@@ -29,18 +31,20 @@ public class TimerService : IDisposable
         _apiClient = apiClient;
     }
 
+    /// Load active (unfinished) session from backend
     public async Task InitializeAsync()
     {
         try
         {
-            _currentSession = await _apiClient.GetTodaySessionAsync();
-            if (_currentSession != null && !_currentSession.IsFinished)
+            var sessions = await _apiClient.GetWorkSessionsAsync();
+            _activeSession = sessions.FirstOrDefault(s => !s.IsFinished);
+
+            if (_activeSession != null)
             {
-                if (_currentSession.StopTime.HasValue)
+                _accumulatedPauseMinutes = _activeSession.PauseMinutes;
+                if (_activeSession.StopTime.HasValue && !_activeSession.IsFinished)
                 {
-                    State = TimerState.Paused;
-                    PauseStartedAt = _currentSession.StopTime.Value;
-                    Elapsed = _currentSession.StopTime.Value - _currentSession.StartTime;
+                    State = TimerState.Stopped;
                 }
                 else
                 {
@@ -55,56 +59,101 @@ public class TimerService : IDisposable
         }
     }
 
+    /// Start a new session — persists immediately to backend (circuit-disconnect safe)
     public async Task StartAsync()
     {
-        _currentSession = await _apiClient.StartSessionAsync();
-        State = TimerState.Running;
-        PauseDuration = TimeSpan.Zero;
-        StartTicking();
-        OnStateChanged?.Invoke();
-    }
-
-    public async Task PauseAsync()
-    {
-        if (_currentSession == null) return;
-        _currentSession = await _apiClient.StopSessionAsync(_currentSession.Id);
-        State = TimerState.Paused;
-        PauseStartedAt = DateTime.UtcNow;
-        StopTicking();
-        OnStateChanged?.Invoke();
-    }
-
-    public async Task ResumeAsync()
-    {
-        if (_currentSession == null) return;
-        if (PauseStartedAt.HasValue)
+        var now = DateTime.UtcNow;
+        var request = new CreateWorkSessionRequest
         {
-            PauseDuration += DateTime.UtcNow - PauseStartedAt.Value;
-            PauseStartedAt = null;
-        }
-        _currentSession = await _apiClient.ResumeSessionAsync(_currentSession.Id);
+            Id = Guid.NewGuid(),
+            Date = DateOnly.FromDateTime(now),
+            StartTime = now,
+            StopTime = null,
+            PauseMinutes = 0
+        };
+
+        _activeSession = await _apiClient.CreateWorkSessionAsync(request);
+        _accumulatedPauseMinutes = 0;
+        _pauseStartUtc = null;
         State = TimerState.Running;
         StartTicking();
         OnStateChanged?.Invoke();
     }
 
+    /// Stop the timer (set stop time, but don't finish yet)
     public async Task StopAsync()
     {
-        if (_currentSession == null) return;
-        _currentSession = await _apiClient.StopSessionAsync(_currentSession.Id);
+        if (_activeSession == null) return;
+
+        if (State == TimerState.Paused && _pauseStartUtc.HasValue)
+        {
+            _accumulatedPauseMinutes += (int)Math.Ceiling((DateTime.UtcNow - _pauseStartUtc.Value).TotalMinutes);
+            _pauseStartUtc = null;
+        }
+
+        var request = new UpdateWorkSessionRequest
+        {
+            Date = _activeSession.Date,
+            StartTime = _activeSession.StartTime,
+            StopTime = DateTime.UtcNow,
+            PauseMinutes = _accumulatedPauseMinutes
+        };
+
+        await _apiClient.UpdateWorkSessionAsync(_activeSession.Id, request);
+        _activeSession.StopTime = request.StopTime;
         State = TimerState.Stopped;
         StopTicking();
         OnStateChanged?.Invoke();
     }
 
+    /// Finish and save the session
     public async Task FinishAsync()
     {
-        if (_currentSession == null) return;
-        _currentSession = await _apiClient.FinishSessionAsync(_currentSession.Id);
+        if (_activeSession == null) return;
+
+        if (State == TimerState.Paused && _pauseStartUtc.HasValue)
+        {
+            _accumulatedPauseMinutes += (int)Math.Ceiling((DateTime.UtcNow - _pauseStartUtc.Value).TotalMinutes);
+            _pauseStartUtc = null;
+        }
+
+        var stopTime = _activeSession.StopTime ?? DateTime.UtcNow;
+        var request = new UpdateWorkSessionRequest
+        {
+            Date = _activeSession.Date,
+            StartTime = _activeSession.StartTime,
+            StopTime = stopTime,
+            PauseMinutes = _accumulatedPauseMinutes,
+            IsFinished = true
+        };
+
+        await _apiClient.UpdateWorkSessionAsync(_activeSession.Id, request);
+        _activeSession = null;
         State = TimerState.Idle;
         Elapsed = TimeSpan.Zero;
-        PauseDuration = TimeSpan.Zero;
+        _accumulatedPauseMinutes = 0;
         StopTicking();
+        OnStateChanged?.Invoke();
+    }
+
+    /// Pause the timer
+    public void Pause()
+    {
+        if (State != TimerState.Running) return;
+        _pauseStartUtc = DateTime.UtcNow;
+        State = TimerState.Paused;
+        StopTicking();
+        OnStateChanged?.Invoke();
+    }
+
+    /// Resume from pause
+    public void Resume()
+    {
+        if (State != TimerState.Paused || _pauseStartUtc == null) return;
+        _accumulatedPauseMinutes += (int)Math.Ceiling((DateTime.UtcNow - _pauseStartUtc.Value).TotalMinutes);
+        _pauseStartUtc = null;
+        State = TimerState.Running;
+        StartTicking();
         OnStateChanged?.Invoke();
     }
 
@@ -114,9 +163,11 @@ public class TimerService : IDisposable
         _timer = new System.Timers.Timer(1000);
         _timer.Elapsed += (_, _) =>
         {
-            if (_currentSession != null)
+            if (_activeSession != null)
             {
-                Elapsed = DateTime.UtcNow - _currentSession.StartTime - PauseDuration;
+                var totalPause = TimeSpan.FromMinutes(_accumulatedPauseMinutes);
+                Elapsed = DateTime.UtcNow - _activeSession.StartTime - totalPause;
+                if (Elapsed < TimeSpan.Zero) Elapsed = TimeSpan.Zero;
             }
             OnStateChanged?.Invoke();
         };

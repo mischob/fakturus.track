@@ -174,7 +174,10 @@
     {
         try
         {
-            sessions = await Api.GetWorkSessionsByMonthAsync(currentDate.Year, currentDate.Month);
+            var allSessions = await Api.GetWorkSessionsAsync();
+            sessions = allSessions
+                .Where(s => s.Date.Year == currentDate.Year && s.Date.Month == currentDate.Month)
+                .ToList();
         }
         catch
         {

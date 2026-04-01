@@ -1,37 +1,43 @@
 namespace Fakturus.Track.WebApp.Models;
 
-public record LegalVersionsResponse(
-    List<LegalDocumentInfo> Documents
-);
+public class LegalVersionsResponse
+{
+    public List<LegalDocumentInfo> Documents { get; set; } = new();
+}
 
-public record LegalDocumentInfo(
-    string Type,
-    int Version,
-    string EffectiveDate,
-    string Url,
-    bool RequiresConsent,
-    bool RequiresReConsent
-);
+public class LegalDocumentInfo
+{
+    public string Type { get; set; } = "";
+    public int Version { get; set; }
+    public string EffectiveDate { get; set; } = "";
+    public string Url { get; set; } = "";
+    public bool RequiresConsent { get; set; }
+    public bool RequiresReConsent { get; set; }
+}
 
-public record ConsentSubmitRequest(
-    List<ConsentItem> Consents
-);
+public class ConsentSubmitRequest
+{
+    public List<ConsentItem> Consents { get; set; } = new();
+}
 
-public record ConsentItem(
-    string DocumentType,
-    int DocumentVersion,
-    bool ConsentGiven
-);
+public class ConsentItem
+{
+    public string DocumentType { get; set; } = "";
+    public int DocumentVersion { get; set; }
+    public bool ConsentGiven { get; set; }
+}
 
-public record ConsentStatusResponse(
-    List<ConsentRecord> Consents,
-    bool AllRequiredConsentsGiven,
-    List<string> PendingConsents
-);
+public class ConsentStatusResponse
+{
+    public List<ConsentRecord> Consents { get; set; } = new();
+    public bool AllRequiredConsentsGiven { get; set; }
+    public List<string> PendingConsents { get; set; } = new();
+}
 
-public record ConsentRecord(
-    string DocumentType,
-    int DocumentVersion,
-    bool ConsentGiven,
-    DateTime ConsentTimestamp
-);
+public class ConsentRecord
+{
+    public string DocumentType { get; set; } = "";
+    public int DocumentVersion { get; set; }
+    public bool ConsentGiven { get; set; }
+    public DateTime ConsentTimestamp { get; set; }
+}
