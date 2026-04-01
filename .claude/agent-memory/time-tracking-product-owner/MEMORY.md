@@ -4,3 +4,4 @@
 - [Marketing Integration](project_marketing_integration.md) -- Pricing tiers, critical gaps (breaks/export/sick days), +2 week timeline shift
 - [Phase 1 Story-Planung](project_phase1_stories.md) -- 10 EPICs, 48 Stories, 7 Waves, kritischer Pfad 7.5 Wochen
 - [Phase 5 Legal Compliance](project_phase5_legal.md) -- 4 EPICs, 19 Stories, Consent-Flow + Backend + Store Compliance, ersetzt P4-E07
+- [Phase 6 Web-App](project_phase6_webapp.md) -- Blazor Server web-app replacing WASM, 8 EPICs, Stripe payments, desktop-first

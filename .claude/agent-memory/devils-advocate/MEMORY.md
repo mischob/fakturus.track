@@ -1,2 +1,3 @@
 - [Native Migration](project_native_migration.md) -- MAUI-to-native migration, key arch decisions, known doc discrepancies, Phase 1 review findings
 - [Phase 5 Legal Review](project_phase5_legal_review.md) -- Consent vs contract basis is critical open question, SemVer is YAGNI, missing AVV/Art.30
+- [Phase 6 Web-App Review](project_phase6_webapp_review.md) -- Timer persistence is critical gap, consent still unresolved, abo conflict model missing
