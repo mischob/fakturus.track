@@ -1,6 +1,10 @@
 # Manual Deployment Guide for Fakturus.Track
 
-This guide describes the manual steps to deploy the Fakturus.Track Blazor WebAssembly application and Fakturus.Track API to a Hetzner server with Azure Key Vault integration for secrets management.
+This guide describes the manual steps to deploy the Fakturus.Track Blazor Server Web-App and API to a Hetzner server with Azure Key Vault integration for secrets management.
+
+> **Migration Note**: The old Blazor WASM frontend (`fakturus-track-ui`) has been replaced by the
+> Blazor Server Web-App (`fakturus-track-webapp`). When upgrading, stop and remove the old
+> `fakturus-track-ui` container before deploying.
 
 ## Prerequisites
 
@@ -141,15 +145,19 @@ docker build -f Fakturus.Track.Backend/Dockerfile -t registry.fakturus.com/faktu
 docker push registry.fakturus.com/fakturus-track-api:latest
 ```
 
-### 2. Build and Push Blazor WebAssembly Image
+### 2. Build and Push Web-App Image (Blazor Server)
 
 ```bash
-# Build the Blazor WebAssembly image
-docker build -f Fakturus.Track.Frontend/Dockerfile -t registry.fakturus.com/fakturus-track-ui:latest .
+# Build the Blazor Server Web-App image (replaces old WASM frontend)
+docker build -f Fakturus.Track.WebApp/Dockerfile -t registry.fakturus.com/fakturus-track-webapp:latest .
 
 # Push to your registry
-docker push registry.fakturus.com/fakturus-track-ui:latest
+docker push registry.fakturus.com/fakturus-track-webapp:latest
 ```
+
+> **Note**: The old Blazor WASM frontend (`Fakturus.Track.Frontend/`) has been replaced by the
+> Blazor Server Web-App (`Fakturus.Track.WebApp/`). The container name changed from
+> `fakturus-track-ui` to `fakturus-track-webapp`.
 
 ## Server Deployment
 
@@ -221,21 +229,36 @@ services:
       start_period: 40s
 
   fakturus-track-ui:
-    image: registry.fakturus.com/fakturus-track-ui:latest
-    container_name: fakturus-track-ui
+    image: registry.fakturus.com/fakturus-track-webapp:latest
+    container_name: fakturus-track-webapp
     restart: unless-stopped
     ports:
       - 8092:80
     networks:
       - proxy
+      - fakturus-internal
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ApiSettings__BaseUrl=http://fakturus-track-api:80
+      - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
+      - AzureAdB2C__Domain=fakturus.onmicrosoft.com
+      - AzureAdB2C__TenantId=17c44991-367b-4d16-b818-1c268d2faed5
+      - AzureAdB2C__ClientId=3fb35bc6-8825-495e-b0a2-18e00352f968
+      - AzureAdB2C__CallbackPath=/signin-oidc
+      - AzureAdB2C__SignedOutCallbackPath=/signout-callback-oidc
+      - AzureAdB2C__SignUpSignInPolicyId=B2C_1_BetaSignInOnly
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fakturus-track-ui.rule=Host(`track.fakturus.com`)"
-      - "traefik.http.routers.fakturus-track-ui.entrypoints=https"
-      - "traefik.http.routers.fakturus-track-ui.tls=true"
-      - "traefik.http.routers.fakturus-track-ui.tls.certresolver=letsencrypt"
-      - "traefik.http.services.fakturus-track-ui.loadbalancer.server.port=80"
+      - "traefik.http.routers.fakturus-track-webapp.rule=Host(`track.fakturus.com`)"
+      - "traefik.http.routers.fakturus-track-webapp.entrypoints=https"
+      - "traefik.http.routers.fakturus-track-webapp.tls=true"
+      - "traefik.http.routers.fakturus-track-webapp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fakturus-track-webapp.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy"
+    depends_on:
+      fakturus-track-api:
+        condition: service_healthy
 ```
 
 ### 3. DNS Configuration
