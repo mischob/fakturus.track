@@ -12,6 +12,7 @@ struct SessionDetailSheet: View {
     @State private var editStartTime: Date
     @State private var editStopTime: Date
     @State private var editPauseMinutes: String
+    @State private var hasStopTime: Bool
     @State private var showDeleteConfirmation = false
     @State private var validationError: String?
 
@@ -27,8 +28,9 @@ struct SessionDetailSheet: View {
         self.onDelete = onDelete
         _editDate = State(initialValue: session.date)
         _editStartTime = State(initialValue: session.startTime)
-        _editStopTime = State(initialValue: session.stopTime ?? Date())
+        _editStopTime = State(initialValue: session.stopTime ?? session.startTime.addingTimeInterval(3600))
         _editPauseMinutes = State(initialValue: String(session.pauseMinutes))
+        _hasStopTime = State(initialValue: session.stopTime != nil)
     }
 
     private var pauseMinutes: Int { Int(editPauseMinutes) ?? 0 }
@@ -42,7 +44,10 @@ struct SessionDetailSheet: View {
     }
 
     private var isValid: Bool {
-        editStopTime > editStartTime && bruttoDuration <= 86400
+        if hasStopTime {
+            return editStopTime > editStartTime && bruttoDuration <= 86400
+        }
+        return true
     }
 
     var body: some View {
@@ -52,7 +57,16 @@ struct SessionDetailSheet: View {
                     DatePicker("Datum", selection: $editDate, displayedComponents: .date)
                         .environment(\.locale, Locale(identifier: "de_DE"))
                     DatePicker("Start", selection: $editStartTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
+                    if hasStopTime {
+                        DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
+                    } else {
+                        HStack {
+                            Text("Ende")
+                            Spacer()
+                            Text("Laeuft noch")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     HStack {
                         Text("Pause (min)")
                         Spacer()
@@ -108,7 +122,7 @@ struct SessionDetailSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Speichern") {
-                        onSave(editDate, editStartTime, editStopTime, pauseMinutes)
+                        onSave(editDate, editStartTime, hasStopTime ? editStopTime : nil, pauseMinutes)
                         dismiss()
                     }
                     .disabled(!isValid)
@@ -128,6 +142,7 @@ struct SessionDetailSheet: View {
     }
 
     private func validate() {
+        guard hasStopTime else { validationError = nil; return }
         if editStopTime <= editStartTime {
             validationError = "Endzeit muss nach Startzeit liegen"
         } else if bruttoDuration > 86400 {

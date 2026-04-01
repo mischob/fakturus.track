@@ -21,7 +21,7 @@ Ein robustes, plattformuebergreifend konsistentes Feature-Gating-System, das Fea
 - Wenn ein Nutzer sein Abo kuendigt, werden Premium-Features gesperrt
 - Bereits exportierte PDFs/CSVs bleiben erhalten
 - Erfasste Krankheitstage und Urlaubstage bleiben sichtbar (Read-Only), aber neue koennen nicht angelegt werden
-- Historie wird auf 30 Tage eingeschraenkt (aeltere Eintraege werden ausgeblendet, nicht geloescht)
+- Historie wird auf 365 Tage eingeschraenkt (aeltere Eintraege werden ausgeblendet, nicht geloescht)
 
 ---
 
@@ -75,7 +75,7 @@ Ein robustes, plattformuebergreifend konsistentes Feature-Gating-System, das Fea
 **Geschaetzter Aufwand**: L
 
 **Akzeptanzkriterien**:
-- [ ] **Zeiten-Tab (History)**: Im FREE-Tier nur die letzten 30 Tage sichtbar. Aeltere Eintraege: dezenter Hinweis "Aeltere Eintraege verfuegbar mit STARTER"
+- [ ] **Zeiten-Tab (History)**: Im FREE-Tier nur die letzten 365 Tage sichtbar. Aeltere Eintraege: dezenter Hinweis "Aeltere Eintraege verfuegbar mit STARTER"
 - [ ] **Urlaub-Tab**: Im FREE-Tier gesperrt. Tab zeigt Paywall-Teaser mit Beschreibung + Upgrade-Button
 - [ ] **Gesamt-Tab**: Ueberstunden-Dashboard im FREE-Tier verfuegbar (gemaess features.md: FREE). Keine Feature-Gate-Einschraenkung.
 - [ ] **Export-Bereich (Settings)**: PDF/CSV im FREE-Tier gesperrt, DATEV im FREE+STARTER gesperrt. Jeweils mit Lock-Icon und Tier-Badge
@@ -137,7 +137,7 @@ Ein robustes, plattformuebergreifend konsistentes Feature-Gating-System, das Fea
   - Urlaubstage: Sichtbar (Read-Only), neue nicht anlegbar
   - Krankheitstage: Sichtbar (Read-Only), neue nicht anlegbar
   - Exportierte Dateien: Bleiben auf dem Geraet
-  - History: Wird auf 30 Tage eingeschraenkt (aeltere ausgeblendet)
+  - History: Wird auf 365 Tage eingeschraenkt (aeltere ausgeblendet)
   - Laufender Timer: Funktioniert weiter (FREE-Feature)
   - Widgets: Funktionieren weiter (FREE-Feature gemaess features.md)
 - [ ] Bei Tier-Upgrade von FREE zu STARTER/PRO:

@@ -153,10 +153,10 @@ final class SubscriptionManager {
         UserDefaults.standard.set(newTier.rawValue, forKey: tierCacheKey)
     }
 
-    /// History-Filter: nur 30 Tage im FREE-Tier
+    /// History-Filter: nur 365 Tage im FREE-Tier
     var historyDateLimit: Date? {
         guard currentTier < .starter else { return nil }
-        return Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        return Calendar.current.date(byAdding: .day, value: -365, to: Date())
     }
 }
 ```
@@ -179,7 +179,7 @@ class SubscriptionManager(private val context: Context) {
 
     val historyDateLimit: LocalDate?
         get() = if (_tier.value < Tier.STARTER) {
-            LocalDate.now().minusDays(30)
+            LocalDate.now().minusDays(365)
         } else null
 
     private fun loadCachedTier(): Tier {
@@ -445,7 +445,7 @@ if subscriptionManager.isAvailable(.sickDays) {
 Daten werden NIE geloescht. Bei FREE-Tier:
 - Urlaubstage: Sichtbar mit `opacity(0.6)` + Lock-Badge, nicht editierbar
 - Krankheitstage: Sichtbar mit `opacity(0.6)`, nicht editierbar
-- History > 30 Tage: Ausgeblendet (nicht in Query-Ergebnis)
+- History > 365 Tage: Ausgeblendet (nicht in Query-Ergebnis)
 - Exportierte Dateien: Bleiben auf dem Geraet
 
 Bei Upgrade: Sofort alles wieder verfuegbar. Kein Sync noetig.

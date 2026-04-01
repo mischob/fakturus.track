@@ -61,8 +61,10 @@ fun SessionDetailSheet(
 
     val sessionDate = remember(session.id) { LocalDate.parse(session.date) }
     val sessionStart = remember(session.id) { Instant.parse(session.startTime) }
+    val hasStopTime = remember(session.id) { session.stopTime != null }
     val sessionStop = remember(session.id) {
-        session.stopTime?.let { Instant.parse(it) } ?: Instant.now()
+        session.stopTime?.let { Instant.parse(it) }
+            ?: sessionStart.plusSeconds(3600)
     }
 
     var editDate by remember(session.id) { mutableStateOf(sessionDate) }
@@ -84,7 +86,9 @@ fun SessionDetailSheet(
     val stopZoned = ZonedDateTime.of(editDate, editStopTime, zone)
     val bruttoMinutes = maxOf(0, Duration.between(startZoned, stopZoned).toMinutes())
     val nettoMinutes = maxOf(0, bruttoMinutes - editPauseMinutes)
-    val isValid = editStopTime.isAfter(editStartTime) && bruttoMinutes <= 1440
+    val isValid = if (hasStopTime) {
+        editStopTime.isAfter(editStartTime) && bruttoMinutes <= 1440
+    } else true
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -121,11 +125,21 @@ fun SessionDetailSheet(
             }
 
             // Stop time
-            OutlinedButton(
-                onClick = { showStopTimePicker = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Ende: %02d:%02d".format(editStopTime.hour, editStopTime.minute))
+            if (hasStopTime) {
+                OutlinedButton(
+                    onClick = { showStopTimePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Ende: %02d:%02d".format(editStopTime.hour, editStopTime.minute))
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false
+                ) {
+                    Text("Ende: Laeuft noch")
+                }
             }
 
             // Pause
@@ -165,7 +179,7 @@ fun SessionDetailSheet(
                 }
             }
 
-            if (!isValid && editStopTime <= editStartTime) {
+            if (hasStopTime && !isValid && editStopTime <= editStartTime) {
                 Text(
                     text = "Endzeit muss nach Startzeit liegen",
                     style = MaterialTheme.typography.labelSmall,
@@ -204,11 +218,13 @@ fun SessionDetailSheet(
                 Button(
                     onClick = {
                         val startInstant = ZonedDateTime.of(editDate, editStartTime, zone).toInstant()
-                        val stopInstant = ZonedDateTime.of(editDate, editStopTime, zone).toInstant()
+                        val stopInstant = if (hasStopTime) {
+                            ZonedDateTime.of(editDate, editStopTime, zone).toInstant().toString()
+                        } else null
                         onSave(
                             editDate.toString(),
                             startInstant.toString(),
-                            stopInstant.toString(),
+                            stopInstant,
                             editPauseMinutes
                         )
                     },

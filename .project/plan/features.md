@@ -9,7 +9,7 @@
 - **[FREE]** / **[STARTER]** / **[PRO]** / **[TEAM]** -- Tier-Zuordnung (siehe Preismodell)
 
 > **Hinweis Preismodell (aus Marktanalyse):** fakturus.track wird ein Freemium-Modell nutzen:
-> FREE (1 User, 30 Tage Historie), STARTER (2,99 EUR/User/Monat), PRO (4,99 EUR), TEAM (ab 3,99 EUR, ab 5 User).
+> FREE (1 User, 365 Tage Historie), STARTER (2,99 EUR/User/Monat), PRO (4,99 EUR), TEAM (ab 3,99 EUR, ab 5 User).
 > Features sind nach Tier markiert. Details in `/marketing/preisanalyse.md`.
 
 ---

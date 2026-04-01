@@ -154,7 +154,7 @@ Definitive Zuordnung der Features zu den Tiers (Basis: features.md + Preisanalys
 | Kalender-Integration | - | - | x |
 
 **FREE-Einschraenkungen:**
-- Historie begrenzt auf 30 Tage (aeltere Eintraege werden ausgeblendet, nicht geloescht)
+- Historie begrenzt auf 365 Tage (aeltere Eintraege werden ausgeblendet, nicht geloescht)
 - Kein Export
 - Kein Urlaub/Krankheitstage
 

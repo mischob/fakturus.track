@@ -213,7 +213,11 @@ struct TimeTrackingView: View {
 
     private var groupedByMonth: [(key: String, value: [WorkSession])] {
         Dictionary(grouping: finishedSessions) { $0.monthKey }
-            .sorted { $0.key > $1.key }
+            .sorted { a, b in
+                let dateA = a.value.map(\.date).max() ?? .distantPast
+                let dateB = b.value.map(\.date).max() ?? .distantPast
+                return dateA > dateB
+            }
     }
 
     // MARK: - Empty State

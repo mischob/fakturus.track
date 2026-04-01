@@ -162,7 +162,7 @@
     <string name="paywall_upgrade_button">Upgrade now</string>
     <string name="paywall_required_tier">Requires</string>
     <string name="paywall_feature_timer">Timer &amp; Breaks</string>
-    <string name="paywall_feature_history_30">History (30 days)</string>
+    <string name="paywall_feature_history_30">History (365 days)</string>
     <string name="paywall_feature_holidays">Public Holidays</string>
     <string name="paywall_feature_overtime">Overtime Dashboard</string>
     <string name="paywall_feature_widgets">Widgets</string>

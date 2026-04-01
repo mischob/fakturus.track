@@ -37,7 +37,7 @@ FakturusTrack/
 
   Features/
     TimeTracking/
-      TimeTrackingView.swift                +History 30-Tage-Filter im FREE-Tier
+      TimeTrackingView.swift                +History 365-Tage-Filter im FREE-Tier
       MonthGroup.swift                      +"Aeltere Eintraege mit STARTER" Hinweis
     Vacation/
       VacationScreen.swift                  +PaywallTeaser wenn FREE-Tier
@@ -87,7 +87,7 @@ app/src/main/java/com/fakturus/track/
 
   features/
     timetracking/
-      TimeTrackingScreen.kt                 +History 30-Tage-Filter im FREE-Tier
+      TimeTrackingScreen.kt                 +History 365-Tage-Filter im FREE-Tier
       MonthGroup.kt                         +"Aeltere Eintraege" Hinweis
     vacation/
       VacationScreen.kt                     +PaywallTeaserCard wenn FREE

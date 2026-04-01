@@ -105,7 +105,9 @@ fun TimeTrackingScreen(services: ServiceContainer) {
         val finishedSessions = sessions.filter { it.isFinished }
         val grouped = finishedSessions
             .groupBy { it.monthKey }
-            .toSortedMap(compareByDescending { it })
+            .entries
+            .sortedByDescending { entry -> entry.value.maxOf { it.date } }
+            .associate { it.key to it.value }
 
         PullToRefreshBox(
             isRefreshing = isSyncing,

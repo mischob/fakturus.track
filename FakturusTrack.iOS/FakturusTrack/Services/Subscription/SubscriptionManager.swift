@@ -37,9 +37,9 @@ final class SubscriptionManager {
         UserDefaults.standard.set(newTier.rawValue, forKey: tierCacheKey)
     }
 
-    /// History-Filter: nur 30 Tage im FREE-Tier
+    /// History-Filter: nur 365 Tage im FREE-Tier
     var historyDateLimit: Date? {
         guard currentTier < .starter else { return nil }
-        return Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        return Calendar.current.date(byAdding: .day, value: -365, to: Date())
     }
 }

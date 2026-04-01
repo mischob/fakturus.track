@@ -24,7 +24,7 @@ Alle Konventionen aus den vorherigen Phasen gelten unveraendert:
    - Timer (Start/Stop/Finish) -- ArbZG Zeiterfassungspflicht
    - Pausenerfassung -- ArbZG Pausenpflicht
    - Feiertage -- korrekte Soll-Stunden-Berechnung
-   - Basis-History (30 Tage) -- Nachweispflicht
+   - Basis-History (365 Tage) -- Nachweispflicht
    - Offline-Sync -- Funktionsfaehigkeit ohne Netzwerk
 
 2. **Kein Feature wird komplett versteckt**:

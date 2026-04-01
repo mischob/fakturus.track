@@ -275,7 +275,7 @@ struct PaywallFeature {
 
 private let paywallFeatures: [PaywallFeature] = [
     PaywallFeature(name: "Timer & Pausen", gate: nil, free: true, starter: true, pro: true),
-    PaywallFeature(name: "History (30 Tage)", gate: nil, free: true, starter: true, pro: true),
+    PaywallFeature(name: "History (365 Tage)", gate: nil, free: true, starter: true, pro: true),
     PaywallFeature(name: "Feiertage", gate: nil, free: true, starter: true, pro: true),
     PaywallFeature(name: "History (unbegrenzt)", gate: .csvExport, free: false, starter: true, pro: true),
     PaywallFeature(name: "Widgets", gate: nil, free: true, starter: true, pro: true),

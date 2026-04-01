@@ -123,7 +123,7 @@ Entscheidung: **Option A** -- anonymisierte Crash-Reports ohne User-Bezug fallen
 | Szenario | Erwartetes Verhalten | iOS | Android |
 |----------|---------------------|-----|---------|
 | FREE: Timer starten/stoppen | Funktioniert | [ ] | [ ] |
-| FREE: History > 30 Tage | Aeltere ausgeblendet, Upgrade-Hinweis | [ ] | [ ] |
+| FREE: History > 365 Tage | Aeltere ausgeblendet, Upgrade-Hinweis | [ ] | [ ] |
 | FREE: Urlaub-Tab oeffnen | PaywallTeaser angezeigt | [ ] | [ ] |
 | FREE: Gesamt-Tab oeffnen | Dashboard-Cards gesperrt | [ ] | [ ] |
 | FREE: Export antippen | Lock-Icon, Paywall oeffnet sich | [ ] | [ ] |
@@ -134,7 +134,7 @@ Entscheidung: **Option A** -- anonymisierte Crash-Reports ohne User-Bezug fallen
 | PRO: Alle Features | Alles freigeschaltet | [ ] | [ ] |
 | Upgrade FREE->STARTER | Sofort freigeschaltet, Lock weg | [ ] | [ ] |
 | Upgrade STARTER->PRO | Sofort freigeschaltet | [ ] | [ ] |
-| Downgrade PRO->FREE | Daten Read-Only, History 30 Tage | [ ] | [ ] |
+| Downgrade PRO->FREE | Daten Read-Only, History 365 Tage | [ ] | [ ] |
 | Offline + STARTER | Gecachter Tier, Features verfuegbar | [ ] | [ ] |
 | App-Neustart + Abo | Tier korrekt wiederhergestellt | [ ] | [ ] |
 | Restore Purchases | Abo wiederhergestellt nach Reinstall | [ ] | [ ] |

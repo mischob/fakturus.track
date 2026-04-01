@@ -84,7 +84,7 @@ Umfassende Qualitaetssicherung aller Features aus Phase 1-4. Die App ist crash-f
   - [ ] Lokalisierung: DE komplett, EN komplett (Geraetesprache wechseln)
   - [ ] DATEV-Export: Korrekt formatierte Datei generieren
 - [ ] **Phase-4-Features (Gating)**:
-  - [ ] FREE-Tier: Nur Timer + History (30 Tage) + Pausen + Feiertage
+  - [ ] FREE-Tier: Nur Timer + History (365 Tage) + Pausen + Feiertage
   - [ ] STARTER-Tier: + Export, Urlaub, Krank, Widgets, Dashboard
   - [ ] PRO-Tier: + DATEV, Schulferien, Kalender-Integration
   - [ ] Tier-Wechsel: Upgrade und Downgrade korrekt
@@ -117,7 +117,7 @@ Umfassende Qualitaetssicherung aller Features aus Phase 1-4. Die App ist crash-f
   - [ ] Kauf abbrechen: Keine Aenderung, kein Fehler
   - [ ] Restore Purchases: Nach App-Neuinstallation Abo wiederherstellen
 - [ ] **Downgrade-Szenarien**:
-  - [ ] STARTER -> FREE: Urlaub/Krank Read-Only, History auf 30 Tage, Widgets zeigen Hinweis
+  - [ ] STARTER -> FREE: Urlaub/Krank Read-Only, History auf 365 Tage, Widgets zeigen Hinweis
   - [ ] PRO -> STARTER: DATEV/Schulferien gesperrt, Rest funktioniert
   - [ ] PRO -> FREE: Alles gesperrt bis auf Kern-Features
 - [ ] **Offline-Szenarien**:

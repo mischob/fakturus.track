@@ -34,7 +34,7 @@ class SubscriptionManager(private val context: Context) {
 
     val historyDateLimit: LocalDate?
         get() = if (_tier.value < Tier.STARTER) {
-            LocalDate.now().minusDays(30)
+            LocalDate.now().minusDays(365)
         } else null
 
     private fun loadCachedTier(): Tier {

@@ -72,7 +72,7 @@ KOSTENLOS STARTEN
 - Arbeitszeit per Knopfdruck erfassen
 - Pausen automatisch tracken
 - Feiertage nach Bundesland
-- 30 Tage History
+- 365 Tage History
 
 STARTER (ab 2,99 EUR/Monat)
 - Unbegrenzte History

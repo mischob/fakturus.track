@@ -95,7 +95,7 @@ Begruendung:
 |                                                                  |
 |  - Start/Stop    Alles aus Free   Alles aus        Alles aus    |
 |  - 1 Geraet        plus:          Starter plus:    Pro plus:    |
-|  - 30 Tage       - Unbegr. Hist.  - Projekte       - Admin-     |
+|  - 365 Tage      - Unbegr. Hist.  - Projekte       - Admin-     |
 |    Historie      - PDF-Export      - DATEV-Export     Dashboard  |
 |  - Ueberstunden  - Kalender-      - Mehrere        - Rollen &   |
 |  - Feiertage       Import           Geraete          Rechte     |
@@ -141,7 +141,7 @@ Begruendung:
 ### 3.5 Monetarisierungs-Strategie
 
 #### Phase 1: Nutzer gewinnen (0-6 Monate)
-- Free-Tier grosszuegig gestalten (30 Tage Historie, Offline, Mobile)
+- Free-Tier grosszuegig gestalten (365 Tage Historie, Offline, Mobile)
 - Kein Druck zum Upgrade -- Qualitaet des Produkts soll ueberzeugen
 - Fokus auf App Store Reviews und organische Sichtbarkeit
 
