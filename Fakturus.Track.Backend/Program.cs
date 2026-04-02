@@ -224,6 +224,7 @@ builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IOvertimeCalculationService, OvertimeCalculationService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<ISchoolHolidayService, SchoolHolidayService>();
+builder.Services.AddScoped<ISickDayService, SickDayService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddHttpClient(); // For fetching calendar feed
 

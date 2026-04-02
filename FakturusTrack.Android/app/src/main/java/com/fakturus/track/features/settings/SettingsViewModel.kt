@@ -14,6 +14,7 @@ import com.fakturus.track.R
 import com.fakturus.track.services.subscription.BillingManager
 import com.fakturus.track.services.subscription.SubscriptionManager
 import com.fakturus.track.services.subscription.Tier
+import com.fakturus.track.services.api.APIClient
 import com.fakturus.track.services.sync.SyncEngine
 import com.fakturus.track.settingsDataStore
 import kotlinx.coroutines.Job
@@ -30,6 +31,7 @@ import java.time.Instant
 class SettingsViewModel(
     private val database: AppDatabase,
     private val syncEngine: SyncEngine? = null,
+    private val apiClient: APIClient? = null,
     private val context: Context? = null,
     private val billingManager: BillingManager? = null,
     private val subscriptionManager: SubscriptionManager? = null
@@ -164,9 +166,7 @@ class SettingsViewModel(
     fun deleteAccount(onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                syncEngine?.let {
-                    // TODO: call DELETE /api/account via APIClient
-                }
+                apiClient?.delete("/api/account")
                 onSuccess()
             } catch (e: Exception) {
                 Log.e("SettingsVM", "Account deletion failed", e)

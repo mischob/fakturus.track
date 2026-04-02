@@ -31,6 +31,9 @@ public class DeleteAccountEndpoint(ApplicationDbContext db, ILogger<DeleteAccoun
         var vacationDays = await db.VacationDays.Where(v => v.UserId == userId).ToListAsync(ct);
         db.VacationDays.RemoveRange(vacationDays);
 
+        var sickDays = await db.SickDays.Where(s => s.UserId == userId).ToListAsync(ct);
+        db.SickDays.RemoveRange(sickDays);
+
         var schoolHolidays = await db.SchoolHolidayPeriods.Where(s => s.UserId == userId).ToListAsync(ct);
         db.SchoolHolidayPeriods.RemoveRange(schoolHolidays);
 

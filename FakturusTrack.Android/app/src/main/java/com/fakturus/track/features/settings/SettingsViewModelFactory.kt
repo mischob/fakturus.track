@@ -15,6 +15,7 @@ class SettingsViewModelFactory(
             return SettingsViewModel(
                 database = services.database,
                 syncEngine = services.syncEngine,
+                apiClient = services.apiClient,
                 context = context,
                 billingManager = services.billingManager,
                 subscriptionManager = services.subscriptionManager
