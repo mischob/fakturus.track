@@ -84,6 +84,9 @@ Oeffne `FakturusTrack.Android/` in Android Studio. Build und auf Emulator/Geraet
 
 ### Docker-Images bauen
 
+Die Dockerfiles erzwingen `linux/amd64` via `--platform` in den FROM-Anweisungen.
+Falls du auf Apple Silicon (M1/M2/M3) baust, wird automatisch fuer den Hetzner Server (x86_64) cross-kompiliert.
+
 ```bash
 # Backend API
 docker build -f Fakturus.Track.Backend/Dockerfile -t registry.fakturus.com/fakturus-track-api:latest .
