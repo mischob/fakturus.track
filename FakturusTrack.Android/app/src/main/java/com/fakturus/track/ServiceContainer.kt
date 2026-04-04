@@ -7,12 +7,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.fakturus.track.models.AppDatabase
 import com.fakturus.track.services.api.APIClient
 import com.fakturus.track.services.auth.AuthManager
+import com.fakturus.track.services.auth.OfflineSessionManager
 import com.fakturus.track.services.network.NetworkMonitor
 import com.fakturus.track.services.subscription.BillingManager
 import com.fakturus.track.services.subscription.SubscriptionManager
 import com.fakturus.track.services.sync.SyncEngine
 import com.fakturus.track.services.sync.SyncWorker
 import com.fakturus.track.features.legal.ConsentManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ServiceContainer(private val context: Context) {
     val authManager: AuthManager by lazy { AuthManager(context) }
@@ -45,6 +49,19 @@ class ServiceContainer(private val context: Context) {
 
     var syncEngine: SyncEngine? = null
         private set
+
+    // Hintergrund-Token-Refresh bei Netzwerkwechsel verdrahten
+    fun setupBackgroundRefresh() {
+        networkMonitor.setOnBecameOnline {
+            CoroutineScope(Dispatchers.IO).launch {
+                authManager.attemptBackgroundTokenRefresh()
+                // Wenn Refresh erfolgreich und Sync-Engine vorhanden, synchronisieren
+                if (!authManager.isOfflineMode.value) {
+                    syncEngine?.syncAll()
+                }
+            }
+        }
+    }
 
     fun onLogin() {
         val client = APIClient(

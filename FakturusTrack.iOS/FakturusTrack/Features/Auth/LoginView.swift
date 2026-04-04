@@ -3,8 +3,11 @@ import AuthenticationServices
 
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(NetworkMonitor.self) private var networkMonitor
     @State private var isLoading = false
     @State private var errorMessage: String?
+
+    var loginContext: LoginContext = .normal
 
     var body: some View {
         VStack(spacing: 32) {
@@ -26,6 +29,12 @@ struct LoginView: View {
 
             Spacer()
 
+            // Offline-Hinweis
+            if !networkMonitor.isConnected {
+                offlineInfoBox
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             // Login Buttons
             VStack(spacing: 12) {
                 SignInWithAppleButton(.signIn) { _ in
@@ -41,7 +50,7 @@ struct LoginView: View {
                 loginButton(String(localized: "login_amazon"), icon: "cart.fill", provider: .amazon)
                 loginButton(String(localized: "login_email"), icon: "envelope.fill", provider: .email)
             }
-            .disabled(isLoading)
+            .disabled(isLoading || !networkMonitor.isConnected)
 
             if isLoading {
                 ProgressView()
@@ -57,6 +66,34 @@ struct LoginView: View {
             Spacer()
         }
         .padding(.horizontal, 32)
+        .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
+    }
+
+    @ViewBuilder
+    private var offlineInfoBox: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "wifi.slash")
+                .foregroundStyle(.white)
+            Text(offlineMessage)
+                .font(.callout)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var offlineMessage: String {
+        switch loginContext {
+        case .firstLogin:
+            return "Fuer die erste Anmeldung wird eine Internetverbindung benoetigt."
+        case .sessionExpired:
+            return "Ihre Sitzung ist abgelaufen. Bitte stellen Sie eine Internetverbindung her, um sich erneut anzumelden."
+        case .normal:
+            return "Keine Internetverbindung. Bitte stellen Sie eine Verbindung her, um sich anzumelden."
+        }
     }
 
     private func loginButton(_ title: String, icon: String, provider: LoginProvider) -> some View {

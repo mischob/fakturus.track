@@ -104,6 +104,9 @@ dependencies {
     // Play Billing
     implementation(libs.billing.ktx)
 
+    // Security (EncryptedSharedPreferences for offline session)
+    implementation(libs.security.crypto)
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation(libs.serialization.json)

@@ -17,6 +17,10 @@ final class ServiceContainer {
     private(set) var apiClient: APIClient?
     private(set) var syncEngine: SyncEngine?
 
+    // Offline-Login State
+    var loginContext: LoginContext = .normal
+    var isResolvingStartState = true
+
     init() {
         // StoreKit bei App-Start initialisieren (NICHT erst bei Login!)
         // Grund: Abo-Status und Produkte muessen sofort verfuegbar sein,
@@ -24,6 +28,35 @@ final class ServiceContainer {
         Task {
             await storeKitManager.configure(subscriptionManager: subscriptionManager)
         }
+
+        // Hintergrund-Token-Refresh bei Netzwerkwechsel
+        networkMonitor.setOnBecameOnline { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                await self.authManager.attemptBackgroundTokenRefresh()
+                // Wenn Refresh erfolgreich und Sync-Engine vorhanden, synchronisieren
+                if !self.authManager.isOfflineMode, let engine = self.syncEngine {
+                    await engine.syncAll()
+                }
+            }
+        }
+    }
+
+    func resolveStartState() async {
+        isResolvingStartState = true
+        let (result, context) = await authManager.resolveStartState(networkMonitor: networkMonitor)
+        loginContext = context
+
+        switch result {
+        case .authenticated:
+            onLogin()
+            Task { await syncEngine?.syncAll() }
+        case .offlineWithSession:
+            onLogin()
+        case .loginRequired, .loginRequiredNoNetwork:
+            break
+        }
+        isResolvingStartState = false
     }
 
     func onLogin() {

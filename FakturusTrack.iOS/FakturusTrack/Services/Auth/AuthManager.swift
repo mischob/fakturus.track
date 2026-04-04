@@ -23,17 +23,32 @@ enum AuthError: Error {
     case failed(String)
 }
 
+enum AppStartResult {
+    case authenticated
+    case offlineWithSession
+    case loginRequired
+    case loginRequiredNoNetwork
+}
+
+enum LoginContext {
+    case normal
+    case sessionExpired
+    case firstLogin
+}
+
 @Observable @MainActor
 final class AuthManager {
     var isAuthenticated = false
+    var isOfflineMode = false
     var currentAccount: MSALAccount?
     private(set) var accessToken: String?
+    private var tokenExpiry: Date?
 
     private var msalApp: MSALPublicClientApplication?
+    private let offlineSessionManager = OfflineSessionManager()
 
     init() {
         configureMSAL()
-        Task { await checkExistingSession() }
     }
 
     private func configureMSAL() {
@@ -60,35 +75,77 @@ final class AuthManager {
         }
     }
 
-    private func checkExistingSession() async {
-        guard let msalApp else {
-            print("[AuthManager] Skipping session check - msalApp is nil")
-            return
-        }
+    // MARK: - App Start Decision Logic
 
-        // Retry up to 3 times - Keychain can be unavailable briefly after app launch
-        for attempt in 1...3 {
+    func resolveStartState(networkMonitor: NetworkMonitor) async -> (result: AppStartResult, context: LoginContext) {
+        let isOnline = networkMonitor.isConnected
+
+        if isOnline {
+            // Online: MSAL darf Netzwerk nutzen
+            guard let msalApp else {
+                return (.loginRequired, .normal)
+            }
             do {
                 let accounts = try msalApp.allAccounts()
                 guard let account = accounts.first else {
-                    print("[AuthManager] No accounts found in keychain")
-                    return
+                    return (.loginRequired, .normal)
                 }
+                currentAccount = account
                 let token = try await acquireTokenSilently()
                 accessToken = token
-                currentAccount = account
+                updateOfflineSession()
                 isAuthenticated = true
-                print("[AuthManager] Restored existing session (attempt \(attempt))")
-                return
+                print("[AuthManager] Online: restored session via silent refresh")
+                return (.authenticated, .normal)
             } catch {
-                print("[AuthManager] Session check attempt \(attempt) failed: \(error.localizedDescription)")
-                if attempt < 3 {
-                    try? await Task.sleep(for: .seconds(1))
-                }
+                return (.loginRequired, .normal)
             }
         }
-        print("[AuthManager] Could not restore session after 3 attempts")
+
+        // Offline: KEIN MSAL-Netzwerkaufruf!
+        // Nur lokalen Cache pruefen (Access Token noch gueltig?)
+        if let token = accessToken, let expiry = tokenExpiry, expiry > Date() {
+            isAuthenticated = true
+            isOfflineMode = true
+            print("[AuthManager] Offline: cached access token still valid")
+            return (.offlineWithSession, .normal)
+        }
+
+        // Access Token abgelaufen/nicht vorhanden -> Offline-Session pruefen
+        if let session = offlineSessionManager.load() {
+            if session.isValid {
+                isAuthenticated = true
+                isOfflineMode = true
+                print("[AuthManager] Offline: valid offline session (userId: \(session.userId), \(session.daysUntilExpiry) days left)")
+                return (.offlineWithSession, .normal)
+            } else {
+                print("[AuthManager] Offline: session expired (\(session.daysUntilExpiry) days until expiry)")
+                return (.loginRequiredNoNetwork, .sessionExpired)
+            }
+        }
+
+        // Noch nie eingeloggt
+        print("[AuthManager] Offline: no session found (first login)")
+        return (.loginRequiredNoNetwork, .firstLogin)
     }
+
+    // MARK: - Background Token Refresh (offline -> online)
+
+    func attemptBackgroundTokenRefresh() async {
+        guard isOfflineMode else { return }
+
+        do {
+            let token = try await acquireTokenSilently(forceRefresh: true)
+            accessToken = token
+            isOfflineMode = false
+            updateOfflineSession()
+            print("[AuthManager] Background refresh successful, exiting offline mode")
+        } catch {
+            print("[AuthManager] Background refresh failed: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Interactive Login
 
     func acquireTokenInteractively(provider: LoginProvider) async throws {
         guard let msalApp else {
@@ -114,8 +171,11 @@ final class AuthManager {
         do {
             let result = try await msalApp.acquireToken(with: params)
             accessToken = result.accessToken
+            tokenExpiry = result.expiresOn
             currentAccount = result.account
             isAuthenticated = true
+            isOfflineMode = false
+            updateOfflineSession()
             print("[AuthManager] Login successful")
         } catch let error as NSError {
             print("[AuthManager] Login error: \(error.domain) code=\(error.code) \(error.localizedDescription)")
@@ -126,6 +186,8 @@ final class AuthManager {
             throw AuthError.failed(error.localizedDescription)
         }
     }
+
+    // MARK: - Silent Token Refresh
 
     func acquireTokenSilently(forceRefresh: Bool = false) async throws -> String {
         guard let msalApp else { throw AuthError.notAuthenticated }
@@ -145,18 +207,37 @@ final class AuthManager {
         do {
             let result = try await msalApp.acquireTokenSilent(with: params)
             accessToken = result.accessToken
+            tokenExpiry = result.expiresOn
+            updateOfflineSession()
             return result.accessToken
         } catch {
             throw AuthError.tokenExpired
         }
     }
 
+    // MARK: - Logout
+
     func logout() {
         guard let msalApp, let account = currentAccount else { return }
         try? msalApp.remove(account)
         accessToken = nil
+        tokenExpiry = nil
         currentAccount = nil
         isAuthenticated = false
+        isOfflineMode = false
+        offlineSessionManager.delete()
+        print("[AuthManager] Logged out, offline session deleted")
+    }
+
+    // MARK: - Offline Session Helpers
+
+    private func updateOfflineSession() {
+        guard let account = currentAccount else { return }
+        let session = OfflineSession(
+            userId: account.identifier ?? "",
+            lastSuccessfulAuth: Date()
+        )
+        try? offlineSessionManager.save(session)
     }
 
     // MARK: - Top ViewController Helper

@@ -12,7 +12,15 @@ struct FakturusTrackApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if services.authManager.isAuthenticated {
+                if services.isResolvingStartState {
+                    // Splash / Loading waehrend resolveStartState laeuft
+                    VStack(spacing: 16) {
+                        Image(systemName: "clock.badge.checkmark")
+                            .font(.system(size: 72))
+                            .foregroundStyle(.tint)
+                        ProgressView()
+                    }
+                } else if services.authManager.isAuthenticated {
                     if services.consentManager.hasRequiredConsents {
                         ContentView()
                     } else {
@@ -26,7 +34,7 @@ struct FakturusTrackApp: App {
                         )
                     }
                 } else {
-                    LoginView()
+                    LoginView(loginContext: services.loginContext)
                 }
             }
             .preferredColorScheme(colorSchemeFor(appearance))
@@ -37,14 +45,16 @@ struct FakturusTrackApp: App {
             .environment(services.subscriptionManager)
             .environment(services.storeKitManager)
             .task {
+                await services.resolveStartState()
                 await services.storeKitManager.listenForTransactions()
             }
             .onChange(of: services.authManager.isAuthenticated) { _, isAuthenticated in
-                if isAuthenticated {
+                if isAuthenticated && !services.isResolvingStartState {
+                    // Nur bei interaktivem Login (nicht bei resolveStartState)
                     print("[App] Login detected, initializing services...")
                     services.onLogin()
                     Task { await services.syncEngine?.syncAll() }
-                } else {
+                } else if !isAuthenticated {
                     print("[App] Logout detected, tearing down services...")
                     services.onLogout()
                 }

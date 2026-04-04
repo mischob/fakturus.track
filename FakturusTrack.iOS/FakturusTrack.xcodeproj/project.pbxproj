@@ -11,6 +11,8 @@
 		052D9F7D13FA17B5768457C1 /* TimerWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A628D5AAF4A4934BDDEE21 /* TimerWidgetProvider.swift */; };
 		05449BE83C8847B740A9E292 /* ActiveSessionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E725FD736191CB6C8D28A1 /* ActiveSessionCard.swift */; };
 		07D1CAEBF1E1647330CFD021 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45FE9957A7650F0AB4D6AA26 /* AuthManager.swift */; };
+		A1B2C3D4E5F60718A9B0C1D2 /* OfflineSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6071829A0B1C2D3 /* OfflineSession.swift */; };
+		C3D4E5F607182930B1C2D3E4 /* OfflineSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A41C2D3E4F5 /* OfflineSessionManager.swift */; };
 		0B9D7DBCFFB51A6120F37F00 /* SchoolHolidayPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = A842F027BB1A0B2F14B63F89 /* SchoolHolidayPeriod.swift */; };
 		0EF6CF45290D60689B574DD0 /* DATEVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0195C93EAA06DAB6FD2457 /* DATEVExporter.swift */; };
 		0F3203C76390D9C153575805 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 412F3A4ED5D1544480AF1A26 /* OfflineBanner.swift */; };
@@ -143,6 +145,8 @@
 		43089AEE3F9F66E005E64242 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		439B2F7941F0397F8F28DC19 /* FakturusTrackTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FakturusTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45FE9957A7650F0AB4D6AA26 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6071829A0B1C2D3 /* OfflineSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineSession.swift; sourceTree = "<group>"; };
+		D4E5F60718293A41C2D3E4F5 /* OfflineSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineSessionManager.swift; sourceTree = "<group>"; };
 		48C84B01DF330C04B79E4ABD /* TimeTrackingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeTrackingViewModelTests.swift; sourceTree = "<group>"; };
 		496C547F19A414D04B088436 /* HolidayCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayCalculator.swift; sourceTree = "<group>"; };
 		4970B650749C82224F363B23 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -226,6 +230,7 @@
 			isa = PBXGroup;
 			children = (
 				850C18AC8DF64DBE44563BAA /* DTOs.swift */,
+				B2C3D4E5F6071829A0B1C2D3 /* OfflineSession.swift */,
 				719D9B8A416F3837CC3AA702 /* PendingDelete.swift */,
 				5215300DB76BBDD4AE0F5927 /* PersistenceManager.swift */,
 				A842F027BB1A0B2F14B63F89 /* SchoolHolidayPeriod.swift */,
@@ -395,6 +400,7 @@
 			isa = PBXGroup;
 			children = (
 				45FE9957A7650F0AB4D6AA26 /* AuthManager.swift */,
+				D4E5F60718293A41C2D3E4F5 /* OfflineSessionManager.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -669,6 +675,8 @@
 				9198F2FCABCB4742BC07122D /* MonthlyOvertimeTable.swift in Sources */,
 				4A69BCBD69BC0F5F7E3FE926 /* NetworkMonitor.swift in Sources */,
 				0F3203C76390D9C153575805 /* OfflineBanner.swift in Sources */,
+				A1B2C3D4E5F60718A9B0C1D2 /* OfflineSession.swift in Sources */,
+				C3D4E5F607182930B1C2D3E4 /* OfflineSessionManager.swift in Sources */,
 				2727ABD61959870EB28617DA /* OvertimeCard.swift in Sources */,
 				D5D8EE16CD18B9ADF04ACE17 /* OverviewScreen.swift in Sources */,
 				235CED745E8A668C4B580D23 /* OverviewViewModel.swift in Sources */,
