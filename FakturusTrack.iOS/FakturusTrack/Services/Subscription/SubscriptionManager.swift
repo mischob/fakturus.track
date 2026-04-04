@@ -7,17 +7,17 @@ final class SubscriptionManager {
 
     private let tierCacheKey = "cached_subscription_tier"
 
-    /// TestFlight + Debug: Alle Features frei. App Store Release: normales Abo-System.
-    private static var isTestFlightOrDebug: Bool {
+    /// TestFlight: Alle Features frei. Debug + App Store Release: normales Abo-System.
+    private static var isTestFlight: Bool {
         #if DEBUG
-        return true
+        return false
         #else
         return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
         #endif
     }
 
     init() {
-        if Self.isTestFlightOrDebug {
+        if Self.isTestFlight {
             currentTier = .pro
         } else {
             let cached = UserDefaults.standard.integer(forKey: tierCacheKey)
@@ -31,8 +31,8 @@ final class SubscriptionManager {
 
     /// Wird von StoreKitManager aufgerufen bei Kauf/Verlaengerung/Kuendigung
     func updateTier(_ newTier: Tier) {
-        // TestFlight/Debug: immer Pro, StoreKit-Updates ignorieren
-        guard !Self.isTestFlightOrDebug else { return }
+        // TestFlight: immer Pro, StoreKit-Updates ignorieren
+        guard !Self.isTestFlight else { return }
         currentTier = newTier
         UserDefaults.standard.set(newTier.rawValue, forKey: tierCacheKey)
     }

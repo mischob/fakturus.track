@@ -10,7 +10,12 @@ final class StoreKitManager {
     private(set) var products: [Product] = []
 
     // Product IDs
-    static let productIDs: Set<String> = ["starter_monthly", "pro_monthly"]
+    static let productIDs: Set<String> = [
+        "com.fakturus.track.starter.monthly",
+        "com.fakturus.track.starter.yearly",
+        "com.fakturus.track.pro.monthly",
+        "com.fakturus.track.pro.yearly",
+    ]
 
     // MARK: - Setup
 
@@ -27,11 +32,13 @@ final class StoreKitManager {
     // MARK: - Produkte laden
 
     func fetchProducts() async {
+        print("[StoreKit] Fetching products: \(Self.productIDs)")
         do {
             products = try await Product.products(for: Self.productIDs)
-                .sorted { $0.price < $1.price } // Starter zuerst
+                .sorted { $0.price < $1.price }
+            print("[StoreKit] Loaded \(products.count) products: \(products.map { "\($0.id) (\($0.displayPrice))" })")
         } catch {
-            print("StoreKit: Failed to fetch products: \(error)")
+            print("[StoreKit] Failed to fetch products: \(error)")
         }
     }
 

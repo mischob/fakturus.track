@@ -12,8 +12,12 @@ enum Tier: Int, Comparable, Codable, Sendable {
     /// Product-ID Mapping (StoreKit 2)
     init?(productID: String) {
         switch productID {
-        case "starter_monthly": self = .starter
-        case "pro_monthly": self = .pro
+        case "com.fakturus.track.starter.monthly",
+             "com.fakturus.track.starter.yearly":
+            self = .starter
+        case "com.fakturus.track.pro.monthly",
+             "com.fakturus.track.pro.yearly":
+            self = .pro
         default: return nil
         }
     }

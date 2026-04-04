@@ -142,40 +142,8 @@ struct PaywallView: View {
     @ViewBuilder
     private var purchaseButtons: some View {
         VStack(spacing: 12) {
-            if let starterProduct = storeKitManager.products.first(where: { $0.id == "starter_monthly" }) {
-                Button {
-                    Task { await purchase(starterProduct) }
-                } label: {
-                    HStack {
-                        Text(String(localized: "paywall_subscribe_starter"))
-                        Spacer()
-                        Text("\(starterProduct.displayPrice)/\(String(localized: "paywall_month"))")
-                            .fontWeight(.bold)
-                    }
-                    .font(.headline)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 20)
-                }
-                .buttonStyle(.bordered)
-                .disabled(isPurchasing)
-            }
-
-            if let proProduct = storeKitManager.products.first(where: { $0.id == "pro_monthly" }) {
-                Button {
-                    Task { await purchase(proProduct) }
-                } label: {
-                    HStack {
-                        Text(String(localized: "paywall_subscribe_pro"))
-                        Spacer()
-                        Text("\(proProduct.displayPrice)/\(String(localized: "paywall_month"))")
-                            .fontWeight(.bold)
-                    }
-                    .font(.headline)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 20)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isPurchasing)
+            ForEach(storeKitManager.products, id: \.id) { product in
+                purchaseButton(for: product)
             }
 
             if isPurchasing {
@@ -240,6 +208,34 @@ struct PaywallView: View {
     }
 
     // MARK: - Purchase
+
+    @ViewBuilder
+    private func purchaseButton(for product: Product) -> some View {
+        let label = HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(product.displayName)
+                    .font(.headline)
+                Text(product.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(product.displayPrice)
+                .fontWeight(.bold)
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 20)
+
+        if product.id.contains(".pro.") {
+            Button { Task { await purchase(product) } } label: { label }
+                .buttonStyle(.borderedProminent)
+                .disabled(isPurchasing)
+        } else {
+            Button { Task { await purchase(product) } } label: { label }
+                .buttonStyle(.bordered)
+                .disabled(isPurchasing)
+        }
+    }
 
     private func purchase(_ product: Product) async {
         isPurchasing = true

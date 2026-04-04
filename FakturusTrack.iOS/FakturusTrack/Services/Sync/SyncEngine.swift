@@ -47,6 +47,8 @@ actor SyncEngine {
                 try await syncSickDays()
             } catch APIError.notFound {
                 print("[SyncEngine] Sick days endpoint not available (404), skipping")
+            } catch APIError.serverError(let code) {
+                print("[SyncEngine] Sick days server error (\(code)), skipping")
             }
             print("[SyncEngine] Syncing user settings...")
             try await syncUserSettings()
