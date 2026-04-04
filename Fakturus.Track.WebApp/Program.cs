@@ -11,6 +11,8 @@ using Serilog.Formatting.Compact;
 // Configure Serilog (Fakturus Logging-Standard: JSON on stdout)
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
     .Enrich.WithProperty("service",
         Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-webapp")
     .Enrich.FromLogContext()
