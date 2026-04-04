@@ -5,8 +5,21 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Serilog;
+using Serilog.Formatting.Compact;
+
+// Configure Serilog (Fakturus Logging-Standard: JSON on stdout)
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.WithProperty("service",
+        Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-webapp")
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 // Configure forwarded headers for reverse proxy (Traefik)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -47,6 +60,18 @@ builder.Services.AddRazorComponents()
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+// Trace-ID middleware (Fakturus Logging-Standard)
+app.Use(async (context, next) =>
+{
+    var traceId = context.Request.Headers["X-Trace-Id"].FirstOrDefault()
+                  ?? Guid.NewGuid().ToString();
+    using (Serilog.Context.LogContext.PushProperty("trace_id", traceId))
+    {
+        context.Response.Headers["X-Trace-Id"] = traceId;
+        await next();
+    }
+});
 
 if (!app.Environment.IsDevelopment())
 {
@@ -112,4 +137,16 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .RequireAuthorization(); // Forces OIDC redirect for unauthenticated users at HTTP level
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception e)
+{
+    Log.Fatal(e, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

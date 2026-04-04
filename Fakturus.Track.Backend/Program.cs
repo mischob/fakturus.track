@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Npgsql;
 using Serilog;
+using Serilog.Formatting.Compact;
 
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -41,10 +42,14 @@ if (!builder.Environment.IsDevelopment())
     }
 }
 
-// Configure Serilog
+// Configure Serilog (Fakturus Logging-Standard: JSON on stdout)
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
     .ReadFrom.Configuration(builder.Configuration)
-    .WriteTo.Console()
+    .Enrich.WithProperty("service",
+        Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-api")
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -294,6 +299,18 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Trace-ID middleware (Fakturus Logging-Standard)
+app.Use(async (context, next) =>
+{
+    var traceId = context.Request.Headers["X-Trace-Id"].FirstOrDefault()
+                  ?? Guid.NewGuid().ToString();
+    using (Serilog.Context.LogContext.PushProperty("trace_id", traceId))
+    {
+        context.Response.Headers["X-Trace-Id"] = traceId;
+        await next();
+    }
+});
+
 // URL rewriting for legal pages: /privacy -> /legal/privacy.html etc.
 app.Use(async (context, next) =>
 {
@@ -331,6 +348,10 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine(e);
+    Log.Fatal(e, "Application terminated unexpectedly");
     throw;
+}
+finally
+{
+    Log.CloseAndFlush();
 }

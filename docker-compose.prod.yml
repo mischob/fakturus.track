@@ -22,6 +22,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
       - APP_VERSION=${APP_VERSION:-1.0.0}
+      - SERVICE_NAME=fakturus-track-api
+      - LOG_LEVEL=info
       - KeyVault__VaultUrl=https://fakturus.vault.azure.net/
       - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
       - AzureAdB2C__Domain=fakturus.onmicrosoft.com
@@ -56,6 +58,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
+      - SERVICE_NAME=fakturus-track-webapp
+      - LOG_LEVEL=info
       - ApiSettings__BaseUrl=http://fakturus-track-api:80
       - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
       - AzureAdB2C__Domain=fakturus.onmicrosoft.com
