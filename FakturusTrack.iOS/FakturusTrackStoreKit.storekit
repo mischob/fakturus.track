@@ -1,0 +1,166 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "75100360",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6761371416",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_compatibilityTimeRate" : {
+      "3" : 6
+    },
+    "_developerTeamID" : "2879WTRWHY",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 797013934.54538095,
+    "_locale" : "de",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "DEU",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 15
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "22008688",
+      "localizations" : [
+
+      ],
+      "name" : "Fakturus Track Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "3.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6761488274",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro Funktionen für einen Monat",
+              "displayName" : "Pro (Monatlich)",
+              "locale" : "de"
+            }
+          ],
+          "productID" : "com.fakturus.track.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "pro_monthly",
+          "subscriptionGroupID" : "22008688",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "44.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6761488216",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro Funktionen für ein ganzes Jahr",
+              "displayName" : "Pro (Jährlich)",
+              "locale" : "de"
+            }
+          ],
+          "productID" : "com.fakturus.track.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "pro_yearly",
+          "subscriptionGroupID" : "22008688",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 4,
+          "internalID" : "6761487893",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Starter Funktionen monatlich kündbar",
+              "displayName" : "Starter (Monatlich)",
+              "locale" : "de"
+            }
+          ],
+          "productID" : "com.fakturus.track.starter.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "starter_monthly",
+          "subscriptionGroupID" : "22008688",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "24.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "6761488100",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Starter Funktionspaket für ein ganzes Jahr",
+              "displayName" : "Starter (Jährlich)",
+              "locale" : "de"
+            }
+          ],
+          "productID" : "com.fakturus.track.starter.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "starter_yearly",
+          "subscriptionGroupID" : "22008688",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
