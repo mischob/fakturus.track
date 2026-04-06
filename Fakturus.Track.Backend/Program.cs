@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Npgsql;
 using System.Diagnostics;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
@@ -57,7 +58,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Configure OpenTelemetry Tracing (Phase 2a)
+// Configure OpenTelemetry Tracing + Metrics
 var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4317";
 var serviceName = Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-api";
 
@@ -67,7 +68,6 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation(opts =>
         {
-            // Filter out health checks and static files
             opts.Filter = ctx =>
                 !ctx.Request.Path.StartsWithSegments("/health") &&
                 !ctx.Request.Path.StartsWithSegments("/v1/health") &&
@@ -76,9 +76,15 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
         .AddNpgsql()
+        .AddOtlpExporter(opts => opts.Endpoint = new Uri(otelEndpoint)))
+    .WithMetrics(metrics => metrics
+        .AddMeter("Microsoft.AspNetCore.Hosting")
+        .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+        .AddMeter("System.Net.Http")
         .AddOtlpExporter(opts =>
         {
             opts.Endpoint = new Uri(otelEndpoint);
+            opts.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
         }));
 
 // Add services to the container
