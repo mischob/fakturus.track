@@ -24,6 +24,7 @@ services:
       - APP_VERSION=${APP_VERSION:-1.0.0}
       - SERVICE_NAME=fakturus-track-api
       - LOG_LEVEL=info
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - KeyVault__VaultUrl=https://fakturus.vault.azure.net/
       - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
       - AzureAdB2C__Domain=fakturus.onmicrosoft.com

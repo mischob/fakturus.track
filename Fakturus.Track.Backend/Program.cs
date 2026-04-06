@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Npgsql;
+using System.Diagnostics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -53,6 +56,30 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configure OpenTelemetry Tracing (Phase 2a)
+var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4317";
+var serviceName = Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-api";
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(serviceName: serviceName, serviceVersion: "1.0.0"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(opts =>
+        {
+            // Filter out health checks and static files
+            opts.Filter = ctx =>
+                !ctx.Request.Path.StartsWithSegments("/health") &&
+                !ctx.Request.Path.StartsWithSegments("/v1/health") &&
+                !ctx.Request.Path.StartsWithSegments("/swagger");
+        })
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddNpgsql()
+        .AddOtlpExporter(opts =>
+        {
+            opts.Endpoint = new Uri(otelEndpoint);
+        }));
 
 // Add services to the container
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -299,12 +326,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Trace-ID middleware (Fakturus Logging-Standard)
+// Trace-ID middleware: Use OpenTelemetry Activity trace ID for log correlation
 app.Use(async (context, next) =>
 {
-    var traceId = context.Request.Headers["X-Trace-Id"].FirstOrDefault()
-                  ?? Guid.NewGuid().ToString();
+    var activity = Activity.Current;
+    var traceId = activity?.TraceId.ToString() ?? Guid.NewGuid().ToString();
+    var spanId = activity?.SpanId.ToString() ?? "";
     using (Serilog.Context.LogContext.PushProperty("trace_id", traceId))
+    using (Serilog.Context.LogContext.PushProperty("span_id", spanId))
     {
         context.Response.Headers["X-Trace-Id"] = traceId;
         await next();
