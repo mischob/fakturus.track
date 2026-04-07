@@ -1,0 +1,28 @@
+{
+  "documents": [
+    {
+      "type": "privacy_policy",
+      "version": 1,
+      "effectiveDate": "2026-04-01",
+      "url": "https://track.fakturus.com/privacy",
+      "requiresConsent": false,
+      "requiresReConsent": false
+    },
+    {
+      "type": "terms_of_service",
+      "version": 1,
+      "effectiveDate": "2026-04-01",
+      "url": "https://track.fakturus.com/terms",
+      "requiresConsent": true,
+      "requiresReConsent": false
+    },
+    {
+      "type": "imprint",
+      "version": 1,
+      "effectiveDate": "2026-04-01",
+      "url": "https://track.fakturus.com/imprint",
+      "requiresConsent": false,
+      "requiresReConsent": false
+    }
+  ]
+}

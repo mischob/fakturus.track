@@ -1,0 +1,340 @@
+@page "/"
+@rendermode InteractiveServer
+@inject TimerService Timer
+@inject ApiClient Api
+@implements IDisposable
+
+<PageTitle>Dashboard - fakturus.track</PageTitle>
+
+<h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dashboard</h1>
+
+<!-- Timer + Today Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Timer Widget -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Zeiterfassung</h2>
+
+        <!-- Timer Display -->
+        <div class="text-center mb-6">
+            <div class="text-5xl font-mono font-bold text-gray-900 dark:text-white mb-2">
+                @FormatTimeSpan(Timer.Elapsed)
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                @switch (Timer.State)
+                {
+                    case TimerState.Idle:
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                            Bereit
+                        </span>
+                        break;
+                    case TimerState.Running:
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Laeuft
+                        </span>
+                        break;
+                    case TimerState.Paused:
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                            Pausiert
+                        </span>
+                        break;
+                    case TimerState.Stopped:
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                            Gestoppt
+                        </span>
+                        break;
+                }
+            </div>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="flex justify-center gap-3">
+            @switch (Timer.State)
+            {
+                case TimerState.Idle:
+                    <button @onclick="StartTimer"
+                            class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                        Start
+                    </button>
+                    break;
+                case TimerState.Running:
+                    <button @onclick="PauseTimer"
+                            class="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors">
+                        Pause
+                    </button>
+                    <button @onclick="StopTimer"
+                            class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                        Stop
+                    </button>
+                    break;
+                case TimerState.Paused:
+                    <button @onclick="ResumeTimer"
+                            class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                        Fortsetzen
+                    </button>
+                    <button @onclick="FinishTimer"
+                            class="px-6 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors">
+                        Beenden
+                    </button>
+                    break;
+                case TimerState.Stopped:
+                    <button @onclick="ResumeTimer"
+                            class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                        Fortsetzen
+                    </button>
+                    <button @onclick="FinishTimer"
+                            class="px-6 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors">
+                        Beenden
+                    </button>
+                    break;
+            }
+        </div>
+    </div>
+
+    <!-- Today's Stats -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Heute</h2>
+
+        <div class="space-y-4">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Startzeit</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                    @if (Timer.ActiveSession != null)
+                    {
+                        @Timer.ActiveSession.StartTime.ToLocalTime().ToString("HH:mm")
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">--:--</span>
+                    }
+                </span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Pause</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">@FormatTimeSpan(TimeSpan.FromMinutes(Timer.PauseMinutes))</span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Netto-Arbeitszeit</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">@FormatTimeSpan(Timer.Elapsed)</span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Soll-Stunden</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">@targetHours.ToString("F1") h</span>
+            </div>
+
+            @if (Timer.Elapsed.TotalHours > 6 && Timer.PauseMinutes < 30)
+            {
+                <div class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <span class="text-sm text-yellow-800 dark:text-yellow-200">ArbZG: Mindestens 30 Min. Pause nach 6 Stunden erforderlich</span>
+                </div>
+            }
+            @if (Timer.Elapsed.TotalHours > 10)
+            {
+                <div class="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm text-red-800 dark:text-red-200">ArbZG: Maximale Arbeitszeit von 10 Stunden ueberschritten</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Ueberstunden diesen Monat</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    @if (overtimeSummary != null)
+                    {
+                        var currentMonth = overtimeSummary.MonthlyOvertime.FirstOrDefault(m => m.Month == DateTime.Now.Month && m.Year == DateTime.Now.Year);
+                        var hours = currentMonth?.OvertimeHours ?? 0;
+                        <span class="@(hours >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")">
+                            @(hours >= 0 ? "+" : "")@hours.ToString("F1") h
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">--</span>
+                    }
+                </p>
+            </div>
+            <div class="p-3 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
+                <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Resturlaub</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    @if (overtimeSummary != null)
+                    {
+                        @overtimeSummary.VacationDaysRemaining<span class="text-base font-normal text-gray-500"> / @overtimeSummary.VacationDaysPerYear Tage</span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">--</span>
+                    }
+                </p>
+            </div>
+            <div class="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Entries -->
+<div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Letzte Eintraege</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-100 dark:border-gray-800">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Start</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ende</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Netto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                @if (recentSessions.Any())
+                {
+                    @foreach (var session in recentSessions)
+                    {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td class="px-6 py-3 text-sm text-gray-900 dark:text-gray-100">@session.Date.ToString("dd.MM.yyyy")</td>
+                            <td class="px-6 py-3 text-sm text-gray-600 dark:text-gray-400">@session.StartTime.ToLocalTime().ToString("HH:mm")</td>
+                            <td class="px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                @if (session.StopTime.HasValue)
+                                {
+                                    @session.StopTime.Value.ToLocalTime().ToString("HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-gray-400">--:--</span>
+                                }
+                            </td>
+                            <td class="px-6 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                @if (session.StopTime.HasValue)
+                                {
+                                    @FormatTimeSpan(session.StopTime.Value - session.StartTime)
+                                }
+                                else
+                                {
+                                    <span class="text-gray-400">--:--</span>
+                                }
+                            </td>
+                            <td class="px-6 py-3 text-sm">
+                                @if (session.IsSynced)
+                                {
+                                    <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        Synchronisiert
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                        Ausstehend
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            Keine Eintraege vorhanden
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<WorkSession> recentSessions = new();
+    private OvertimeSummary? overtimeSummary;
+    private decimal targetHours = 8.0m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Timer.OnStateChanged += HandleTimerStateChanged;
+        await Timer.InitializeAsync();
+
+        try
+        {
+            var allSessions = await Api.GetWorkSessionsAsync();
+            recentSessions = allSessions.OrderByDescending(s => s.Date).Take(5).ToList();
+
+            overtimeSummary = await Api.GetOvertimeSummaryAsync(DateTime.Now.Year);
+
+            var settings = await Api.GetUserSettingsAsync();
+            // Calculate daily target: weekly hours / number of work days
+            int workDayCount = 0;
+            for (int i = 0; i < 7; i++)
+            {
+                if ((settings.WorkDays & (1 << i)) != 0) workDayCount++;
+            }
+            if (workDayCount > 0)
+            {
+                targetHours = settings.WorkHoursPerWeek / workDayCount;
+            }
+        }
+        catch
+        {
+            // API not available
+        }
+    }
+
+    private async Task StartTimer() => await Timer.StartAsync();
+    private Task PauseTimer() { Timer.Pause(); return Task.CompletedTask; }
+    private Task ResumeTimer() { Timer.Resume(); return Task.CompletedTask; }
+    private async Task StopTimer() => await Timer.StopAsync();
+    private async Task FinishTimer() => await Timer.FinishAsync();
+
+    private void HandleTimerStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string FormatTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalSeconds < 0) ts = TimeSpan.Zero;
+        return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+    }
+
+    public void Dispose()
+    {
+        Timer.OnStateChanged -= HandleTimerStateChanged;
+    }
+}

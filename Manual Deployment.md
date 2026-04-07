@@ -1,6 +1,7 @@
 # Manual Deployment Guide for Fakturus.Track
 
-This guide describes the manual steps to deploy the Fakturus.Track Blazor WebAssembly application and Fakturus.Track API to a Hetzner server with Azure Key Vault integration for secrets management.
+This guide describes the manual steps to deploy the Fakturus.Track Blazor Server Web-App and API to a Hetzner server with Azure Key Vault integration for secrets management.
+
 
 ## Prerequisites
 
@@ -141,15 +142,16 @@ docker build -f Fakturus.Track.Backend/Dockerfile -t registry.fakturus.com/faktu
 docker push registry.fakturus.com/fakturus-track-api:latest
 ```
 
-### 2. Build and Push Blazor WebAssembly Image
+### 2. Build and Push Web-App Image (Blazor Server)
 
 ```bash
-# Build the Blazor WebAssembly image
-docker build -f Fakturus.Track.Frontend/Dockerfile -t registry.fakturus.com/fakturus-track-ui:latest .
+# Build the Blazor Server Web-App image
+docker build -f Fakturus.Track.WebApp/Dockerfile -t registry.fakturus.com/fakturus-track-webapp:latest .
 
 # Push to your registry
-docker push registry.fakturus.com/fakturus-track-ui:latest
+docker push registry.fakturus.com/fakturus-track-webapp:latest
 ```
+
 
 ## Server Deployment
 
@@ -220,22 +222,37 @@ services:
       retries: 3
       start_period: 40s
 
-  fakturus-track-ui:
-    image: registry.fakturus.com/fakturus-track-ui:latest
-    container_name: fakturus-track-ui
+  fakturus-track-webapp:
+    image: registry.fakturus.com/fakturus-track-webapp:latest
+    container_name: fakturus-track-webapp
     restart: unless-stopped
     ports:
       - 8092:80
     networks:
       - proxy
+      - fakturus-internal
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ApiSettings__BaseUrl=http://fakturus-track-api:80
+      - AzureAdB2C__Instance=https://fakturus.b2clogin.com/
+      - AzureAdB2C__Domain=fakturus.onmicrosoft.com
+      - AzureAdB2C__TenantId=17c44991-367b-4d16-b818-1c268d2faed5
+      - AzureAdB2C__ClientId=3fb35bc6-8825-495e-b0a2-18e00352f968
+      - AzureAdB2C__CallbackPath=/signin-oidc
+      - AzureAdB2C__SignedOutCallbackPath=/signout-callback-oidc
+      - AzureAdB2C__SignUpSignInPolicyId=B2C_1_BetaSignInOnly
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fakturus-track-ui.rule=Host(`track.fakturus.com`)"
-      - "traefik.http.routers.fakturus-track-ui.entrypoints=https"
-      - "traefik.http.routers.fakturus-track-ui.tls=true"
-      - "traefik.http.routers.fakturus-track-ui.tls.certresolver=letsencrypt"
-      - "traefik.http.services.fakturus-track-ui.loadbalancer.server.port=80"
+      - "traefik.http.routers.fakturus-track-webapp.rule=Host(`track.fakturus.com`)"
+      - "traefik.http.routers.fakturus-track-webapp.entrypoints=https"
+      - "traefik.http.routers.fakturus-track-webapp.tls=true"
+      - "traefik.http.routers.fakturus-track-webapp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fakturus-track-webapp.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy"
+    depends_on:
+      fakturus-track-api:
+        condition: service_healthy
 ```
 
 ### 3. DNS Configuration
@@ -268,7 +285,7 @@ docker-compose ps
 ```bash
 # Check container logs
 docker-compose logs -f fakturus-track-api
-docker-compose logs -f fakturus-track-ui
+docker-compose logs -f fakturus-track-webapp
 
 # Check if containers are running
 docker ps | grep fakturus-track
@@ -332,19 +349,11 @@ docker-compose pull
 # CORRECT: Rolling update
 docker-compose up -d --no-deps --force-recreate fakturus-track-api
 sleep 15
-docker-compose up -d --no-deps --force-recreate fakturus-track-ui
+docker-compose up -d --no-deps --force-recreate fakturus-track-webapp
 
 # Remove old images
 docker image prune -f
 ```
-
-**Why Rolling Updates Matter**:
-- Blazor WASM uses content-hashed filenames (e.g., `System.Private.CoreLib.abc123.wasm`)
-- If clients load during a non-atomic deployment, they may get:
-  - Old `blazor.boot.json` pointing to old file names
-  - New files on the server (old names return 404)
-- Result: 404 errors on framework files, app won't load
-- Solution: Update containers atomically, one at a time
 
 ### 2. Update Secrets in Key Vault
 
@@ -370,7 +379,7 @@ docker-compose logs -f
 
 # View specific service logs
 docker-compose logs -f fakturus-track-api
-docker-compose logs -f fakturus-track-ui
+docker-compose logs -f fakturus-track-webapp
 ```
 
 ### 2. Health Checks
@@ -481,7 +490,7 @@ openssl s_client -connect track.fakturus.com:443 -servername track.fakturus.com
 7. **API not accessible**:
    - Verify Traefik routing rules
    - Check if API container is healthy: `docker-compose ps`
-   - Test internal connectivity: `docker-compose exec fakturus-track-ui curl http://fakturus-track-api`
+   - Test internal connectivity: `docker-compose exec fakturus-track-webapp curl http://fakturus-track-api`
 
 8. **SSL certificate issues**:
    - Check Traefik configuration
@@ -557,7 +566,7 @@ echo "Waiting for API to be ready..."
 sleep 15
 
 # Update UI (this is critical - must be atomic)
-docker-compose up -d --no-deps --force-recreate fakturus-track-ui
+docker-compose up -d --no-deps --force-recreate fakturus-track-webapp
 
 # Wait for services to be ready
 sleep 30
@@ -617,47 +626,22 @@ chmod +x /opt/fakturus-track/deploy.sh
 - Consider implementing automated backups for database
 - For any issues during deployment, check the container logs and Traefik dashboard for routing information
 
-## Blazor WASM Cache Strategy
-
-**CRITICAL**: Blazor WebAssembly apps require special cache handling to avoid version mismatch issues.
-
-### Key Points:
-
-1. **Boot files must NEVER be cached**:
-   - `index.html`
-   - `/_framework/blazor.boot.json`
-   - `/_framework/blazor.webassembly.js`
-   - These files tell the browser which versioned files to load
-
-2. **Framework files can be cached forever**:
-   - `/_framework/*.wasm`, `*.dll`, `*.dat`
-   - These have content hashes in their names (e.g., `System.Private.CoreLib.abc123.wasm`)
-   - When content changes, filename changes → automatic cache busting
-
-3. **Atomic deployment is essential**:
-   - Always use rolling updates (`--no-deps --force-recreate`)
-   - Never use `docker-compose down && up` (causes mixed version state)
-   - Update services one at a time
-
-4. **SPA fallback must not catch framework files**:
-   - `/_framework/` paths must return 404 if file is missing
-   - Never rewrite framework paths to `index.html`
-
-For detailed information, see `CACHE_STRATEGY.md` in the project root.
-
 ## Azure AD B2C Configuration
 
-### Blazor WebAssembly Configuration
+### Web-App Configuration (Blazor Server)
 
-Ensure your `wwwroot/appsettings.json` in the Blazor app contains:
+The Web-App uses OpenID Connect (server-side) via `Microsoft.Identity.Web`. Configuration is in `appsettings.json`:
 
 ```json
 {
   "AzureAdB2C": {
-    "Authority": "https://fakturus.b2clogin.com/fakturus.onmicrosoft.com/B2C_1_fakt_sign_in",
+    "Instance": "https://fakturus.b2clogin.com/",
+    "Domain": "fakturus.onmicrosoft.com",
+    "TenantId": "17c44991-367b-4d16-b818-1c268d2faed5",
     "ClientId": "3fb35bc6-8825-495e-b0a2-18e00352f968",
-    "ValidateAuthority": false,
-    "ApiScope": "https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access"
+    "CallbackPath": "/signin-oidc",
+    "SignedOutCallbackPath": "/signout-callback-oidc",
+    "SignUpSignInPolicyId": "B2C_1_BetaSignInOnly"
   },
   "ApiSettings": {
     "BaseUrl": "https://api.track.fakturus.com"
@@ -670,31 +654,9 @@ Ensure your `wwwroot/appsettings.json` in the Blazor app contains:
 Ensure your Azure B2C application registration includes:
 
 - **Redirect URIs**: 
-  - `https://track.fakturus.com/authentication/login-callback`
-  - `https://track.fakturus.com/authentication/logout-callback`
-- **Implicit grant**: Enable ID tokens and Access tokens
+  - `https://track.fakturus.com/signin-oidc`
+  - `https://track.fakturus.com/signout-callback-oidc`
 - **API permissions**: Configured for your API scope (`https://fakturus.onmicrosoft.com/74fd0ed2-8865-4bad-b002-7d867ad8791a/access`)
 
-### CORS Configuration
-
-Your API should be configured to allow CORS from your Blazor app. This is handled in `Program.cs`:
-
-```csharp
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        if (builder.Environment.IsDevelopment())
-            policy.WithOrigins("https://localhost:7086", "http://localhost:5138", "https://localhost:7003", "http://localhost:7003")
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-        else
-            policy.WithOrigins("https://track.fakturus.com")
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-    });
-});
-```
+Note: Blazor Server uses server-side token handling. No CORS configuration is needed for the Web-App since API calls are made server-to-server.
 

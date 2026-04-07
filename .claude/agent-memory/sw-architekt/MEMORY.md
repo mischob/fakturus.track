@@ -1,0 +1,3 @@
+- [Native App Migration](project_native_apps.md) -- MAUI->Native Migration, Phase 1 ab April 2026
+- [Flache Architektur](feedback_flat_architecture.md) -- Keine Clean Architecture, kein Hilt, keine UseCases
+- [Phase 1 Tech-Specs](project_phase1_techspecs.md) -- Technische Umsetzungsplanung komplett (Blueprint, 10 Specs, Parallel-Guide, Checklist)

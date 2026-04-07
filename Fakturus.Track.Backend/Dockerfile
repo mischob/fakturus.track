@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore as distinct layers
@@ -23,7 +23,8 @@ WORKDIR /app
 
 # Install PostgreSQL client libraries required for Npgsql
 RUN apt-get update && \
-    apt-get install -y libgssapi-krb5-2 libkrb5-3 libssl3 curl && \
+    apt-get install -y libgssapi-krb5-2 libkrb5-3 libssl3 curl \
+    libfontconfig1 libfreetype6 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=publish /app/publish .

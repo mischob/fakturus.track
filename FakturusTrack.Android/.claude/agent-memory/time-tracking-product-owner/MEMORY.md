@@ -1,0 +1,1 @@
+- [Phase 2 Planung](project_phase2_planning.md) -- 6 EPICs, 47 Stories, 8.5 Wochen, kritischer Pfad 6 Wochen, Kalender ist groesstes Risiko

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fakturus Track</string>
+
+    <!-- Tabs -->
+    <string name="times_tab_title">Times</string>
+    <string name="vacation_tab_title">Vacation</string>
+    <string name="overview_tab_title">Overview</string>
+    <string name="settings_tab_title">Settings</string>
+
+    <!-- Timer -->
+    <string name="times_timer_start">Start</string>
+    <string name="times_timer_stop">Stop</string>
+    <string name="times_timer_pause">Pause</string>
+    <string name="times_timer_resume">Resume</string>
+    <string name="times_timer_finish">Done</string>
+    <string name="times_session_running">Active session</string>
+    <string name="times_session_stopped">Stopped</string>
+    <string name="times_session_paused">Paused</string>
+    <string name="times_session_idle">Ready for next entry</string>
+    <string name="times_session_edit">Edit session</string>
+    <string name="times_session_save">Save</string>
+    <string name="times_session_delete">Delete</string>
+    <string name="times_session_delete_title">Delete session?</string>
+    <string name="times_session_delete_message">This session will be permanently deleted.</string>
+    <string name="times_label_start">Start</string>
+    <string name="times_label_date">Date</string>
+    <string name="times_label_end">End</string>
+    <string name="times_label_brutto">Gross</string>
+    <string name="times_label_netto">Net</string>
+    <string name="times_label_pause_minutes">Break (minutes)</string>
+    <string name="times_label_pause_format">Break: %d min</string>
+    <string name="times_validation_end_after_start">End time must be after start time</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+
+    <!-- Plurals -->
+    <plurals name="times_history_entries">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+
+    <!-- Vacation -->
+    <string name="vacation_remaining">Remaining vacation</string>
+    <string name="vacation_days_remaining">%1$d of %2$d vacation days</string>
+    <string name="vacation_holiday">Public holiday</string>
+    <string name="vacation_sick_day">Sick day</string>
+    <string name="vacation_label">Vacation</string>
+    <string name="vacation_sick_label">Sick</string>
+    <string name="vacation_holiday_label">Holiday</string>
+    <string name="vacation_type_switch">Switch type</string>
+    <string name="vacation_remove">Remove</string>
+    <string name="vacation_previous_month">Previous month</string>
+    <string name="vacation_next_month">Next month</string>
+
+    <!-- Overview -->
+    <string name="overview_overtime">Overtime</string>
+    <string name="overview_vacation">Vacation</string>
+    <string name="overview_holidays">Holidays</string>
+    <string name="overview_sick_days">Sick days</string>
+    <string name="overview_worked">Worked</string>
+    <string name="overview_expected">Expected</string>
+    <string name="overview_total">Total</string>
+    <string name="overview_month">Month</string>
+    <string name="overview_export">Export</string>
+    <string name="overview_export_pdf">PDF Export</string>
+    <string name="overview_export_csv">CSV Export</string>
+    <string name="overview_export_datev">DATEV Export</string>
+    <string name="overview_export_datev_beta">BETA</string>
+    <string name="overview_export_creating">Creating...</string>
+    <string name="overview_export_pdf_label">PDF Timesheet</string>
+    <string name="overview_export_csv_label">CSV Export</string>
+    <string name="overview_export_datev_label">DATEV Lodas Export</string>
+    <string name="overview_export_select_month">Select month</string>
+    <string name="overview_export_quarter">Quarter</string>
+    <string name="overview_export_year">Year %d</string>
+    <string name="overview_export_share">Share</string>
+    <string name="overview_last_updated">Last updated: %s</string>
+    <string name="overview_load_error">Could not load overview</string>
+    <string name="overview_plus_minus">+/-</string>
+
+    <!-- Settings -->
+    <string name="settings_section_worktime">Work time</string>
+    <string name="settings_work_hours">Weekly hours</string>
+    <string name="settings_work_days">Work days</string>
+    <string name="settings_section_vacation">Vacation</string>
+    <string name="settings_vacation_days">Vacation days per year</string>
+    <string name="settings_section_region">Region</string>
+    <string name="settings_bundesland">State</string>
+    <string name="settings_section_school_holidays">School holidays</string>
+    <string name="settings_school_holidays_manage">Manage school holidays</string>
+    <string name="settings_section_calendar">Calendar</string>
+    <string name="settings_calendar_url">Calendar URL (ICS)</string>
+    <string name="settings_section_app">APP</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_system">System</string>
+    <string name="settings_appearance_light">Light</string>
+    <string name="settings_appearance_dark">Dark</string>
+    <string name="settings_personal_number">Personnel number</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_privacy">Privacy policy</string>
+    <string name="settings_imprint">Legal notice</string>
+    <string name="settings_licenses">Open source licenses</string>
+    <string name="settings_logout">Sign out</string>
+
+    <!-- Errors -->
+    <string name="error_network">No internet connection. Data will be saved locally.</string>
+    <string name="error_sync_failed">Sync failed. Please try again later.</string>
+    <string name="error_token_expired">Session expired. Please sign in again.</string>
+    <string name="error_data_load">Could not load data.</string>
+    <string name="error_generic">An error occurred</string>
+    <string name="error_retry">Retry</string>
+
+    <!-- ArbZG -->
+    <string name="arbzg_6h_hint">Reminder: After 6 hours of work, you are entitled to a break of at least 30 minutes (German Working Hours Act).</string>
+    <string name="arbzg_9h_hint">You have exceeded the regular maximum working time of 8 hours.</string>
+    <string name="arbzg_10h_hint">Warning: The legal maximum working time of 10 hours has been reached.</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Fakturus Timer</string>
+    <string name="widget_description">Timer status and today\'s working hours</string>
+    <string name="widget_running">Running</string>
+    <string name="widget_running_since">Since %s</string>
+    <string name="widget_paused">Paused</string>
+    <string name="widget_paused_minutes">%d min break</string>
+    <string name="widget_ready">Ready</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_start">Start</string>
+    <string name="widget_stop">Stop</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_resume">Resume</string>
+    <string name="widget_elapsed_placeholder">--:--</string>
+
+    <!-- Shortcuts -->
+    <string name="shortcut_start_timer">Start timer</string>
+    <string name="shortcut_start_timer_long">Start a new timer</string>
+    <string name="shortcut_view_history">Times</string>
+
+    <!-- Feature Gates -->
+    <string name="feature_pdf_export">PDF Export</string>
+    <string name="feature_csv_export">CSV Export</string>
+    <string name="feature_sick_days">Sick Days</string>
+    <string name="feature_vacation">Vacation</string>
+    <string name="feature_datev_export">DATEV Export</string>
+    <string name="feature_school_holidays">School Holidays</string>
+    <string name="feature_calendar_integration">Calendar Integration</string>
+
+    <!-- Paywall -->
+    <string name="paywall_headline">Get more from Fakturus Track</string>
+    <string name="paywall_subheadline">Choose the plan that fits you</string>
+    <string name="paywall_feature">Feature</string>
+    <string name="paywall_subscribe_starter">Starter</string>
+    <string name="paywall_subscribe_pro">Pro</string>
+    <string name="paywall_month">month</string>
+    <string name="paywall_restore">Restore purchases</string>
+    <string name="paywall_auto_renew_notice">Subscription renews automatically. Cancel anytime.</string>
+    <string name="paywall_terms">Terms</string>
+    <string name="paywall_privacy">Privacy</string>
+    <string name="paywall_success">Welcome to %s!</string>
+    <string name="paywall_upgrade_button">Upgrade now</string>
+    <string name="paywall_required_tier">Requires</string>
+    <string name="paywall_feature_timer">Timer &amp; Breaks</string>
+    <string name="paywall_feature_history_30">History (365 days)</string>
+    <string name="paywall_feature_holidays">Public Holidays</string>
+    <string name="paywall_feature_overtime">Overtime Dashboard</string>
+    <string name="paywall_feature_widgets">Widgets</string>
+    <string name="paywall_feature_history_unlimited">History (unlimited)</string>
+    <string name="paywall_feature_pdf_export">PDF Export</string>
+    <string name="paywall_feature_csv_export">CSV Export</string>
+    <string name="paywall_feature_vacation_sick">Vacation &amp; Sick Days</string>
+    <string name="paywall_feature_datev_export">DATEV Export</string>
+    <string name="paywall_feature_school_holidays">School Holidays</string>
+    <string name="paywall_feature_calendar">Calendar Integration</string>
+
+    <!-- Subscription Settings -->
+    <string name="settings_section_subscription">Subscription</string>
+    <string name="settings_current_tier">Current plan</string>
+    <string name="settings_manage_subscription">Manage subscription</string>
+    <string name="settings_restore_purchases">Restore purchases</string>
+    <string name="restore_success">%s restored</string>
+    <string name="restore_no_subscription">No active subscription found</string>
+    <string name="restore_error">Error restoring purchases</string>
+
+    <!-- Vacation Locked -->
+    <string name="vacation_locked_title">Vacation &amp; Sick Day Management</string>
+    <string name="vacation_locked_description">Manage your vacation and sick days with the Starter plan.</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_timer_hours_minutes">%1$d hours %2$d minutes working time</string>
+    <string name="a11y_timer_minutes">%d minutes working time</string>
+    <string name="a11y_start_timer">Start timer. Starts time tracking</string>
+    <string name="a11y_stop_timer">Stop timer. Stops the current session</string>
+    <string name="a11y_pause_timer">Pause timer</string>
+    <string name="a11y_resume_timer">Resume timer</string>
+    <string name="a11y_finish_session">Finish session and save</string>
+    <string name="a11y_session_summary">%1$s %2$s, %3$s to %4$s, %5$s net working time</string>
+    <string name="a11y_month_group">%1$s, %2$d entries, %3$s</string>
+    <string name="a11y_month_collapse">Double tap to collapse</string>
+    <string name="a11y_month_expand">Double tap to expand</string>
+    <string name="a11y_sync_pending">Sync pending</string>
+    <string name="a11y_sync_done">Synced</string>
+    <string name="a11y_overtime_card">%1$s %2$s</string>
+    <string name="a11y_day_vacation">%s, vacation day</string>
+    <string name="a11y_day_sick">%s, sick day</string>
+    <string name="a11y_day_holiday">%1$s, public holiday, %2$s</string>
+    <string name="a11y_day_workday">%s, work day</string>
+    <string name="a11y_day_weekend">%s, weekend</string>
+    <string name="login_apple">Sign in with Apple</string>
+    <string name="login_microsoft">Sign in with Microsoft</string>
+    <string name="login_amazon">Sign in with Amazon</string>
+    <string name="login_google">Sign in with Google</string>
+    <string name="login_email">Sign in with Email</string>
+
+    <!-- Consent -->
+    <string name="consent_title">Terms &amp; Privacy</string>
+    <string name="consent_subtitle">Please read and accept our terms of service before using fakturus.track.</string>
+    <string name="consent_privacy_label">Privacy Policy</string>
+    <string name="consent_privacy_hint">Please open and read the privacy policy (acknowledgement)</string>
+    <string name="consent_read_privacy">Read Privacy Policy</string>
+    <string name="consent_terms_label">I accept the Terms of Service</string>
+    <string name="consent_terms_hint">Required</string>
+    <string name="consent_read_terms">Read Terms of Service</string>
+    <string name="consent_agree_button">Agree and continue</string>
+    <string name="consent_decline_button">Decline</string>
+    <string name="consent_decline_title">Cannot use without consent</string>
+    <string name="consent_decline_message">Without accepting the terms of service, the app cannot be used. Would you like to sign out?</string>
+    <string name="consent_decline_back">Go back</string>
+    <string name="consent_decline_logout">Sign out</string>
+
+    <!-- Account Deletion -->
+    <string name="settings_delete_account">Delete Account</string>
+    <string name="delete_account_title">Delete account?</string>
+    <string name="delete_account_message">Your account and all data will be permanently deleted. Active subscriptions must be cancelled separately via Store settings.</string>
+    <string name="delete_account_confirm">Delete permanently</string>
+    <string name="delete_account_cancel">Cancel</string>
+    <string name="delete_account_success">Account marked for deletion</string>
+    <string name="delete_account_error">Error deleting account</string>
+</resources>

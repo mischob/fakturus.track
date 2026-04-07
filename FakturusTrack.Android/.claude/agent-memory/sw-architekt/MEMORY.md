@@ -1,0 +1,2 @@
+- [Phase 2 Tech Planning](project_phase2_techplan.md) -- Tech-blueprint + 6 tech-specs + parallel-guide erstellt 2026-03-29
+- [Codebase State](project_codebase_state.md) -- Room DB v2, naechste Migration v2->v3, SyncEngine Settings-Umstellung

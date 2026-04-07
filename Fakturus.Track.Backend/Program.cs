@@ -7,12 +7,28 @@ using FastEndpoints.AspVersioning;
 using FastEndpoints.Swagger;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Npgsql;
+using System.Diagnostics;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Formatting.Compact;
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers for reverse proxy (Traefik)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Configure Azure Key Vault for Production environment
 if (!builder.Environment.IsDevelopment())
@@ -30,13 +46,46 @@ if (!builder.Environment.IsDevelopment())
     }
 }
 
-// Configure Serilog
+// Configure Serilog (Fakturus Logging-Standard: JSON on stdout)
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
     .ReadFrom.Configuration(builder.Configuration)
-    .WriteTo.Console()
+    .Enrich.WithProperty("service",
+        Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-api")
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configure OpenTelemetry Tracing + Metrics
+var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4317";
+var serviceName = Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "fakturus-track-api";
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(serviceName: serviceName, serviceVersion: "1.0.0"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(opts =>
+        {
+            opts.Filter = ctx =>
+                !ctx.Request.Path.StartsWithSegments("/health") &&
+                !ctx.Request.Path.StartsWithSegments("/v1/health") &&
+                !ctx.Request.Path.StartsWithSegments("/swagger");
+        })
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddNpgsql()
+        .AddOtlpExporter(opts => opts.Endpoint = new Uri(otelEndpoint)))
+    .WithMetrics(metrics => metrics
+        .AddMeter("Microsoft.AspNetCore.Hosting")
+        .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+        .AddMeter("System.Net.Http")
+        .AddOtlpExporter(opts =>
+        {
+            opts.Endpoint = new Uri(otelEndpoint);
+            opts.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }));
 
 // Add services to the container
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -213,6 +262,8 @@ builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IOvertimeCalculationService, OvertimeCalculationService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<ISchoolHolidayService, SchoolHolidayService>();
+builder.Services.AddScoped<ISickDayService, SickDayService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddHttpClient(); // For fetching calendar feed
 
 builder.Services.AddEndpointsApiExplorer();
@@ -281,6 +332,35 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Trace-ID middleware: Use OpenTelemetry Activity trace ID for log correlation
+app.Use(async (context, next) =>
+{
+    var activity = Activity.Current;
+    var traceId = activity?.TraceId.ToString() ?? Guid.NewGuid().ToString();
+    var spanId = activity?.SpanId.ToString() ?? "";
+    using (Serilog.Context.LogContext.PushProperty("trace_id", traceId))
+    using (Serilog.Context.LogContext.PushProperty("span_id", spanId))
+    {
+        context.Response.Headers["X-Trace-Id"] = traceId;
+        await next();
+    }
+});
+
+// URL rewriting for legal pages: /privacy -> /legal/privacy.html etc.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.TrimEnd('/');
+    if (path is "/privacy" or "/terms" or "/imprint")
+    {
+        context.Request.Path = $"/legal{path}.html";
+    }
+    await next();
+});
+
+app.UseForwardedHeaders();
+
+app.UseStaticFiles();
+
 // Configure the HTTP request pipeline
 app.UseHttpsRedirection();
 
@@ -303,6 +383,10 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine(e);
+    Log.Fatal(e, "Application terminated unexpectedly");
     throw;
+}
+finally
+{
+    Log.CloseAndFlush();
 }

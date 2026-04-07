@@ -1,115 +1,183 @@
-# Fakturus Track - Time Tracker
+# Fakturus Track - Zeiterfassung
 
-A Blazor WebAssembly application for tracking daily work time, built with .NET 10.
+Zeiterfassungs-App fuer den deutschen Markt mit nativen Mobile-Apps und Web-App.
 
-## Features
+## Projekte
 
-- Start and stop work time tracking
-- Edit start and stop times manually
-- Multiple work sessions per day
-- Offline-first storage using localStorage
-- Background sync with backend API
-- Mobile-optimized UI with Tailwind CSS
+| Projekt | Technologie | Beschreibung |
+|---------|-------------|-------------|
+| `Fakturus.Track.Backend` | ASP.NET Core 10, FastEndpoints, PostgreSQL | REST-API unter `api.track.fakturus.com` |
+| `Fakturus.Track.WebApp` | Blazor Server, Tailwind CSS | Web-App unter `track.fakturus.com` (Desktop/Tablet) |
+| `FakturusTrack.iOS` | SwiftUI, SwiftData | Native iOS App |
+| `FakturusTrack.Android` | Jetpack Compose, Room | Native Android App |
 
-## Project Structure
+## Architektur
 
-- `Fakturus.Track.Backend` - ASP.NET Core API with FastEndpoints
-- `Fakturus.Track.Frontend` - Blazor WebAssembly application
+```
+                    ┌─────────────────────┐
+                    │   Azure AD B2C      │
+                    │   (Authentifizierung)│
+                    └──────────┬──────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+    ┌─────▼─────┐      ┌──────▼──────┐     ┌──────▼──────┐
+    │  iOS App  │      │  Web App    │     │ Android App │
+    │  (SwiftUI)│      │  (Blazor    │     │ (Compose)   │
+    │           │      │   Server)   │     │             │
+    └─────┬─────┘      └──────┬──────┘     └──────┬──────┘
+          │                   │                    │
+          └───────────────────┼────────────────────┘
+                              │ HTTPS
+                    ┌─────────▼─────────┐
+                    │   Backend API     │
+                    │  (FastEndpoints)  │
+                    │   PostgreSQL      │
+                    └───────────────────┘
+```
 
-## Prerequisites
+## Voraussetzungen
 
 - .NET 10 SDK
-- Node.js and npm (for Tailwind CSS)
-- PostgreSQL (via Docker)
+- Xcode 16+ (fuer iOS)
+- Android Studio (fuer Android)
+- Docker + Docker Compose
+- PostgreSQL (via Docker oder Azure)
 
-## Setup
+## Lokale Entwicklung
 
-### 1. Database Setup
-
-Start PostgreSQL using Docker Compose:
+### 1. Datenbank starten
 
 ```bash
 docker-compose up -d
 ```
 
-### 2. Backend Setup
+PostgreSQL laeuft auf `localhost:5434` (User: admin, Passwort: adminpassword).
 
-1. Navigate to `Fakturus.Track.Backend`
-2. Update `appsettings.Development.json` with your database connection string if needed
-3. Run migrations (if using EF Core migrations):
-   ```bash
-   dotnet ef database update
-   ```
-   Or the database will be created automatically on first run
-
-### 3. Frontend Setup
-
-1. Navigate to `Fakturus.Track.Frontend`
-2. Install npm dependencies:
-   ```bash
-   npm install
-   ```
-3. Build Tailwind CSS:
-   ```bash
-   npm run buildcss
-   ```
-   Or use watch mode during development:
-   ```bash
-   npm run dev
-   ```
-
-### 4. Configuration
-
-Update `Fakturus.Track.Frontend/wwwroot/appsettings.json` with your API base URL:
-
-```json
-{
-  "ApiSettings": {
-    "BaseUrl": "https://localhost:7001"
-  }
-}
-```
-
-## Running the Application
-
-### Backend
+### 2. Backend starten
 
 ```bash
 cd Fakturus.Track.Backend
 dotnet run
 ```
 
-The API will be available at `https://localhost:7001`
+API verfuegbar unter `https://localhost:7067`. Datenbank-Migrationen werden automatisch ausgefuehrt.
 
-### Frontend
+### 3. Web-App starten
 
 ```bash
-cd Fakturus.Track.Frontend
+cd Fakturus.Track.WebApp
 dotnet run
 ```
 
-The application will be available at `https://localhost:7003` (or the port specified in launchSettings.json)
+Web-App verfuegbar unter `https://localhost:5001` (oder siehe `Properties/launchSettings.json`).
+
+### 4. iOS App
+
+Oeffne `FakturusTrack.iOS/FakturusTrack.xcodeproj` in Xcode. Scheme: FakturusTrack, Destination: iPhone Simulator.
+
+### 5. Android App
+
+Oeffne `FakturusTrack.Android/` in Android Studio. Build und auf Emulator/Geraet deployen.
+
+## Deployment (Produktion)
+
+### Docker-Images bauen
+
+Die Dockerfiles erzwingen `linux/amd64` via `--platform` in den FROM-Anweisungen.
+Falls du auf Apple Silicon (M1/M2/M3) baust, wird automatisch fuer den Hetzner Server (x86_64) cross-kompiliert.
+
+```bash
+# Backend API
+docker build -f Fakturus.Track.Backend/Dockerfile -t registry.fakturus.com/fakturus-track-api:latest .
+
+# Web-App
+docker build -f Fakturus.Track.WebApp/Dockerfile -t registry.fakturus.com/fakturus-track-webapp:latest .
+```
+
+### Images pushen
+
+```bash
+docker push registry.fakturus.com/fakturus-track-api:latest
+docker push registry.fakturus.com/fakturus-track-webapp:latest
+```
+
+### Auf Server deployen
+
+```bash
+ssh root@91.99.65.63
+cd /opt/fakturus-track
+docker-compose -f docker-compose.prod.yml pull
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Domains
+
+| Domain | Service | Port |
+|--------|---------|------|
+| `api.track.fakturus.com` | Backend API | 8082 |
+| `track.fakturus.com` | Web-App (Blazor Server) | 8092 |
+
+Traefik uebernimmt TLS-Terminierung und Routing.
 
 ## API Endpoints
 
-- `GET /v1/work-sessions` - Get all work sessions for the authenticated user
-- `GET /v1/work-sessions/{id}` - Get a specific work session
-- `POST /v1/work-sessions` - Create a new work session
-- `PUT /v1/work-sessions/{id}` - Update a work session
-- `DELETE /v1/work-sessions/{id}` - Delete a work session
-- `POST /v1/work-sessions/sync` - Bulk sync work sessions from client
+### Authentifiziert (Bearer Token)
 
-## Authentication
+| Methode | Pfad | Beschreibung |
+|---------|------|-------------|
+| GET | `/v1/work-sessions` | Alle Arbeitssitzungen |
+| POST | `/v1/work-sessions` | Neue Sitzung erstellen |
+| PUT | `/v1/work-sessions/{id}` | Sitzung aktualisieren |
+| DELETE | `/v1/work-sessions/{id}` | Sitzung loeschen |
+| POST | `/v1/work-sessions/sync` | Sitzungen synchronisieren |
+| GET | `/v1/vacation-days` | Urlaubstage |
+| POST | `/v1/vacation-days` | Urlaubstag erstellen |
+| DELETE | `/v1/vacation-days/{id}` | Urlaubstag loeschen |
+| POST | `/v1/vacation-days/sync` | Urlaubstage synchronisieren |
+| GET | `/v1/settings` | Benutzereinstellungen |
+| PUT | `/v1/settings` | Einstellungen aktualisieren |
+| GET | `/v1/overtime-summary` | Ueberstunden-Zusammenfassung |
+| GET | `/api/legal/consent` | Consent-Status |
+| POST | `/api/legal/consent` | Consent abgeben |
+| DELETE | `/api/account` | Konto loeschen |
 
-The application uses Azure AD B2C for authentication. Update the configuration in:
-- Backend: `appsettings.json` / `appsettings.Development.json`
-- Frontend: `wwwroot/appsettings.json`
+### Oeffentlich (kein Token)
 
-## Development Notes
+| Methode | Pfad | Beschreibung |
+|---------|------|-------------|
+| GET | `/v1/health` | Health-Check |
+| GET | `/v1/version` | API-Version |
+| GET | `/api/legal/versions` | Rechtsdokument-Versionen |
+| GET | `/privacy` | Datenschutzerklaerung |
+| GET | `/terms` | Nutzungsbedingungen |
+| GET | `/imprint` | Impressum |
 
-- All times are stored in UTC in the database
-- Times are converted to local timezone for display
-- Work sessions are stored locally first, then synced to the backend
-- Background sync runs every 5 minutes when the app is active
-- Manual sync is available via the Sync button
+## Authentifizierung
 
+Azure AD B2C (Tenant: `fakturus.onmicrosoft.com`).
+
+| Client | Client-ID | Redirect-URI |
+|--------|-----------|-------------|
+| Backend API | `74fd0ed2-...` | — |
+| Web-App | `3fb35bc6-...` | `https://track.fakturus.com/signin-oidc` |
+| iOS | `3fb35bc6-...` | `msauth.com.fakturus.track://auth` |
+| Android | `3fb35bc6-...` | `msauth://com.fakturus.track/...` |
+
+## Rechtliches
+
+- Datenschutzerklaerung: `https://track.fakturus.com/privacy`
+- Nutzungsbedingungen: `https://track.fakturus.com/terms`
+- Impressum: `https://track.fakturus.com/imprint`
+- VVT: `.project/legal/vvt.md` (intern)
+
+## Projektplanung
+
+| Phase | Beschreibung | Status |
+|-------|-------------|--------|
+| Phase 1-3 | Native Mobile Apps (iOS + Android) | Abgeschlossen |
+| Phase 4 | Feature-Gating, Paywall, Subscription | Abgeschlossen |
+| Phase 5 | Legal Compliance (AGB, Datenschutz, Consent) | Implementiert |
+| Phase 6 | Web-App (Blazor Server, Desktop-optimiert) | In Entwicklung |
+
+Detaillierte Stories in `.project/stories/`.

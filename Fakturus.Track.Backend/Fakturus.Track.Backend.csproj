@@ -23,12 +23,29 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Identity.Web" Version="4.1.1" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+		<PackageReference Include="QuestPDF" Version="2026.2.4" />
 		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+		<PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+
+		<!-- OpenTelemetry (Phase 2a: Tracing) -->
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-beta.12" />
+		<PackageReference Include="Npgsql.OpenTelemetry" Version="9.0.3" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
 		<PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.4.0" />
 		<PackageReference Include="Azure.Identity" Version="1.17.1" />
 		<PackageReference Include="Nager.Date" Version="1.32.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="legal-versions.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>

@@ -1,0 +1,23 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start_timer"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_start_timer"
+        android:shortcutLongLabel="@string/shortcut_start_timer_long"
+        android:icon="@drawable/ic_shortcut_play">
+        <intent
+            android:action="com.fakturus.track.ACTION_START_TIMER"
+            android:targetPackage="com.fakturus.track"
+            android:targetClass="com.fakturus.track.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="view_history"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_view_history"
+        android:icon="@drawable/ic_shortcut_history">
+        <intent
+            android:action="com.fakturus.track.ACTION_VIEW_HISTORY"
+            android:targetPackage="com.fakturus.track"
+            android:targetClass="com.fakturus.track.MainActivity" />
+    </shortcut>
+</shortcuts>
