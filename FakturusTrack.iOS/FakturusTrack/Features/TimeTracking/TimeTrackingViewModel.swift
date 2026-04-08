@@ -196,6 +196,9 @@ final class TimeTrackingViewModel {
         session.updatedAt = Date()
         session.isPendingSync = true
         try? modelContext.save()
+
+        // Trigger sync to upload the edited session
+        Task { await syncEngine?.syncAll() }
     }
 
     /// Create a manual session (E06-S09)

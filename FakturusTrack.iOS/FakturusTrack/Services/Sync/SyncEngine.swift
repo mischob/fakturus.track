@@ -1,14 +1,18 @@
 import SwiftData
 import Foundation
 
-@ModelActor
 actor SyncEngine {
+    private let modelContainer: ModelContainer
     nonisolated(unsafe) private var apiClient: APIClient!
     nonisolated(unsafe) private var networkMonitor: NetworkMonitor!
 
     private(set) var isSyncing = false
     private(set) var lastSyncDate: Date?
     private(set) var lastError: String?
+
+    init(modelContainer: ModelContainer) {
+        self.modelContainer = modelContainer
+    }
 
     func configure(apiClient: APIClient, networkMonitor: NetworkMonitor) {
         self.apiClient = apiClient
@@ -63,8 +67,11 @@ actor SyncEngine {
     // MARK: - WorkSessions
 
     private func syncWorkSessions() async throws {
+        // Fresh context each sync to avoid stale cached objects
+        let ctx = ModelContext(modelContainer)
+
         // Step 1: Process pending deletes first
-        let pendingDeletes = try modelContext.fetch(
+        let pendingDeletes = try ctx.fetch(
             FetchDescriptor<PendingDelete>(predicate: #Predicate {
                 $0.entityType == "WorkSession"
             })
@@ -73,17 +80,17 @@ actor SyncEngine {
         for pendingDelete in pendingDeletes {
             do {
                 try await apiClient.deleteWorkSession(id: pendingDelete.entityId.uuidString)
-                modelContext.delete(pendingDelete)
+                ctx.delete(pendingDelete)
             } catch APIError.notFound {
                 // Already deleted on server, remove local tracking
-                modelContext.delete(pendingDelete)
+                ctx.delete(pendingDelete)
             }
         }
 
         let pendingDeleteIds = Set(pendingDeletes.map(\.entityId))
 
         // Step 2: Collect pending sessions
-        let pending = try modelContext.fetch(
+        let pending = try ctx.fetch(
             FetchDescriptor<WorkSession>(predicate: #Predicate {
                 $0.isPendingSync && $0.isFinished
             })
@@ -101,7 +108,7 @@ actor SyncEngine {
         }
 
         // Step 4: Load synced sessions
-        let synced = try modelContext.fetch(
+        let synced = try ctx.fetch(
             FetchDescriptor<WorkSession>(predicate: #Predicate { $0.isSynced })
         )
 
@@ -110,10 +117,11 @@ actor SyncEngine {
 
         // Step 6: Set difference -- delete local synced that are no longer on server
         for local in synced where !serverIds.contains(local.id.uuidString) {
-            modelContext.delete(local)
+            ctx.delete(local)
         }
 
         // Step 7: Upsert server sessions (skip those with pending deletes)
+        let pendingIds = Set(pending.map(\.id))
         for dto in serverSessions {
             let uuid = UUID(uuidString: dto.id) ?? UUID()
 
@@ -123,10 +131,13 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<WorkSession>(
                 predicate: #Predicate { session in session.id == uuid }
             )
-            if let existing = try modelContext.fetch(descriptor).first {
-                existing.update(from: dto)
+            if let existing = try ctx.fetch(descriptor).first {
+                // Don't overwrite sessions with pending local changes
+                if !existing.isPendingSync && !pendingIds.contains(existing.id) {
+                    existing.update(from: dto)
+                }
             } else {
-                modelContext.insert(WorkSession(from: dto))
+                ctx.insert(WorkSession(from: dto))
             }
         }
 
@@ -137,13 +148,15 @@ actor SyncEngine {
             session.syncedAt = Date()
         }
 
-        try modelContext.save()
+        try ctx.save()
     }
 
     // MARK: - VacationDays
 
     private func syncVacationDays() async throws {
-        let allLocal = try modelContext.fetch(FetchDescriptor<VacationDay>())
+        let ctx = ModelContext(modelContainer)
+
+        let allLocal = try ctx.fetch(FetchDescriptor<VacationDay>())
         let pending = allLocal.filter { $0.isPendingSync }
 
         // Optimization: only POST when local changes exist, otherwise GET suffices
@@ -169,8 +182,8 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<VacationDay>(
                 predicate: #Predicate { day in day.id == uuid }
             )
-            if let toDelete = try modelContext.fetch(descriptor).first {
-                modelContext.delete(toDelete)
+            if let toDelete = try ctx.fetch(descriptor).first {
+                ctx.delete(toDelete)
             }
         }
 
@@ -180,10 +193,10 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<VacationDay>(
                 predicate: #Predicate { day in day.id == uuid }
             )
-            if let existing = try modelContext.fetch(descriptor).first {
+            if let existing = try ctx.fetch(descriptor).first {
                 existing.update(from: dto)
             } else {
-                modelContext.insert(VacationDay(from: dto))
+                ctx.insert(VacationDay(from: dto))
             }
         }
 
@@ -194,13 +207,15 @@ actor SyncEngine {
             day.syncedAt = Date()
         }
 
-        try modelContext.save()
+        try ctx.save()
     }
 
     // MARK: - SickDays
 
     private func syncSickDays() async throws {
-        let allLocal = try modelContext.fetch(FetchDescriptor<SickDay>())
+        let ctx = ModelContext(modelContainer)
+
+        let allLocal = try ctx.fetch(FetchDescriptor<SickDay>())
         let pending = allLocal.filter { $0.isPendingSync }
 
         let serverSickDays: [SickDayDTO]
@@ -225,8 +240,8 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<SickDay>(
                 predicate: #Predicate { day in day.id == uuid }
             )
-            if let toDelete = try modelContext.fetch(descriptor).first {
-                modelContext.delete(toDelete)
+            if let toDelete = try ctx.fetch(descriptor).first {
+                ctx.delete(toDelete)
             }
         }
 
@@ -234,7 +249,7 @@ actor SyncEngine {
         let serverIds = Set(serverSickDays.map(\.id))
         let localSynced = allLocal.filter { $0.isSynced }
         for local in localSynced where !serverIds.contains(local.id.uuidString) {
-            modelContext.delete(local)
+            ctx.delete(local)
         }
 
         // Upsert server sick days
@@ -243,10 +258,10 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<SickDay>(
                 predicate: #Predicate { day in day.id == uuid }
             )
-            if let existing = try modelContext.fetch(descriptor).first {
+            if let existing = try ctx.fetch(descriptor).first {
                 existing.update(from: dto)
             } else {
-                modelContext.insert(SickDay(from: dto))
+                ctx.insert(SickDay(from: dto))
             }
         }
 
@@ -257,14 +272,16 @@ actor SyncEngine {
             day.syncedAt = Date()
         }
 
-        try modelContext.save()
+        try ctx.save()
     }
 
     // MARK: - UserSettings (Last-Write-Wins)
 
     private func syncUserSettings() async throws {
+        let ctx = ModelContext(modelContainer)
+
         let serverSettings = try await apiClient.getUserSettings()
-        let localSettings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first
+        let localSettings = try ctx.fetch(FetchDescriptor<UserSettings>()).first
 
         if let local = localSettings {
             let localUpdatedAt = local.updatedAt
@@ -307,9 +324,9 @@ actor SyncEngine {
             settings.calendarUrl = serverSettings.calendarUrl
             settings.isSynced = true
             settings.isPendingSync = false
-            modelContext.insert(settings)
+            ctx.insert(settings)
         }
 
-        try modelContext.save()
+        try ctx.save()
     }
 }
