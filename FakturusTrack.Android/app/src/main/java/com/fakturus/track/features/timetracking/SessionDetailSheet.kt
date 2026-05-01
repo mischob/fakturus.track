@@ -44,10 +44,17 @@ import com.fakturus.track.util.DateFormatting
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/**
+ * Edit/create sheet for a work session.
+ *
+ * Each timestamp (start, stop) is represented as a full [ZonedDateTime] so that
+ * multi-day sessions (e.g. forgot to stop the timer overnight) survive editing
+ * without their date components being collapsed onto a single shared "edit
+ * date" — which was the previous bug.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionDetailSheet(
@@ -59,36 +66,29 @@ fun SessionDetailSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val zone = ZoneId.systemDefault()
 
-    val sessionDate = remember(session.id) { LocalDate.parse(session.date) }
-    val sessionStart = remember(session.id) { Instant.parse(session.startTime) }
-    val hasStopTime = remember(session.id) { session.stopTime != null }
+    val sessionStart = remember(session.id) { Instant.parse(session.startTime).atZone(zone) }
     val sessionStop = remember(session.id) {
-        session.stopTime?.let { Instant.parse(it) }
-            ?: sessionStart.plusSeconds(3600)
+        session.stopTime?.let { Instant.parse(it).atZone(zone) }
+            ?: sessionStart.plusHours(1)
     }
 
-    var editDate by remember(session.id) { mutableStateOf(sessionDate) }
-    var editStartTime by remember(session.id) {
-        mutableStateOf(sessionStart.atZone(zone).toLocalTime())
-    }
-    var editStopTime by remember(session.id) {
-        mutableStateOf(sessionStop.atZone(zone).toLocalTime())
-    }
+    var editStart by remember(session.id) { mutableStateOf(sessionStart) }
+    var editStop by remember(session.id) { mutableStateOf(sessionStop) }
     var editPauseMinutes by remember(session.id) { mutableIntStateOf(session.pauseMinutes) }
 
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
+    var showStopDatePicker by remember { mutableStateOf(false) }
     var showStopTimePicker by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
-    // Compute brutto/netto
-    val startZoned = ZonedDateTime.of(editDate, editStartTime, zone)
-    val stopZoned = ZonedDateTime.of(editDate, editStopTime, zone)
-    val bruttoMinutes = maxOf(0, Duration.between(startZoned, stopZoned).toMinutes())
+    val bruttoMinutes = maxOf(0, Duration.between(editStart, editStop).toMinutes())
     val nettoMinutes = maxOf(0, bruttoMinutes - editPauseMinutes)
-    val isValid = if (hasStopTime) {
-        editStopTime.isAfter(editStartTime) && bruttoMinutes <= 1440
-    } else true
+
+    // 72h ceiling covers "forgot to stop" recovery while still rejecting
+    // accidental garbage input.
+    val maxDurationMinutes = 72L * 60L
+    val isValid = editStop.isAfter(editStart) && bruttoMinutes <= maxDurationMinutes
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -108,41 +108,55 @@ fun SessionDetailSheet(
 
             HorizontalDivider()
 
-            // Date
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
+            // --- Start ----------------------------------------------------
+            Text(
+                text = "Start",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Datum: ${DateFormatting.formatDate(editDate)}")
+                OutlinedButton(
+                    onClick = { showStartDatePicker = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(DateFormatting.formatDate(editStart.toLocalDate()))
+                }
+                OutlinedButton(
+                    onClick = { showStartTimePicker = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("%02d:%02d".format(editStart.hour, editStart.minute))
+                }
             }
 
-            // Start time
-            OutlinedButton(
-                onClick = { showStartTimePicker = true },
-                modifier = Modifier.fillMaxWidth()
+            // --- Ende -----------------------------------------------------
+            Text(
+                text = "Ende",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Start: %02d:%02d".format(editStartTime.hour, editStartTime.minute))
-            }
-
-            // Stop time
-            if (hasStopTime) {
+                OutlinedButton(
+                    onClick = { showStopDatePicker = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(DateFormatting.formatDate(editStop.toLocalDate()))
+                }
                 OutlinedButton(
                     onClick = { showStopTimePicker = true },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text("Ende: %02d:%02d".format(editStopTime.hour, editStopTime.minute))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = { },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = false
-                ) {
-                    Text("Ende: Laeuft noch")
+                    Text("%02d:%02d".format(editStop.hour, editStop.minute))
                 }
             }
 
-            // Pause
+            // --- Pause ----------------------------------------------------
             OutlinedTextField(
                 value = if (editPauseMinutes > 0) editPauseMinutes.toString() else "",
                 onValueChange = { value ->
@@ -155,7 +169,7 @@ fun SessionDetailSheet(
 
             HorizontalDivider()
 
-            // Brutto / Netto
+            // --- Brutto / Netto -------------------------------------------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -179,23 +193,29 @@ fun SessionDetailSheet(
                 }
             }
 
-            if (hasStopTime && !isValid && editStopTime <= editStartTime) {
-                Text(
-                    text = "Endzeit muss nach Startzeit liegen",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+            if (!isValid) {
+                val msg = when {
+                    !editStop.isAfter(editStart) -> "Endzeit muss nach Startzeit liegen"
+                    bruttoMinutes > maxDurationMinutes -> "Dauer ueber 72 Stunden — bitte pruefen"
+                    else -> ""
+                }
+                if (msg.isNotEmpty()) {
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            // Action buttons
+            // --- Action buttons -------------------------------------------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Delete
                 OutlinedButton(
                     onClick = { showDeleteConfirmation = true },
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -209,24 +229,18 @@ fun SessionDetailSheet(
 
                 Spacer(Modifier.weight(1f))
 
-                // Cancel
                 TextButton(onClick = onDismiss) {
                     Text("Abbrechen")
                 }
 
-                // Save
                 Button(
                     onClick = {
-                        val startInstant = ZonedDateTime.of(editDate, editStartTime, zone).toInstant()
-                        val stopInstant = if (hasStopTime) {
-                            ZonedDateTime.of(editDate, editStopTime, zone).toInstant().toString()
-                        } else null
-                        onSave(
-                            editDate.toString(),
-                            startInstant.toString(),
-                            stopInstant,
-                            editPauseMinutes
-                        )
+                        // Date is derived from the start timestamp so the
+                        // grouping/sort key always matches reality.
+                        val derivedDate = editStart.toLocalDate().toString()
+                        val startInstant = editStart.toInstant().toString()
+                        val stopInstant = editStop.toInstant().toString()
+                        onSave(derivedDate, startInstant, stopInstant, editPauseMinutes)
                     },
                     enabled = isValid
                 ) {
@@ -236,40 +250,48 @@ fun SessionDetailSheet(
         }
     }
 
-    // Date Picker Dialog
-    if (showDatePicker) {
+    // --- Pickers ------------------------------------------------------------
+
+    if (showStartDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = editDate.atStartOfDay(zone).toInstant().toEpochMilli()
+            initialSelectedDateMillis = editStart.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
         )
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { showStartDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        editDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+                        val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+                        editStart = editStart
+                            .withYear(newDate.year)
+                            .withMonth(newDate.monthValue)
+                            .withDayOfMonth(newDate.dayOfMonth)
                     }
-                    showDatePicker = false
+                    showStartDatePicker = false
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showStartDatePicker = false }) { Text("Abbrechen") }
             }
         ) {
             DatePicker(state = datePickerState)
         }
     }
 
-    // Start Time Picker Dialog
     if (showStartTimePicker) {
         val timePickerState = rememberTimePickerState(
-            initialHour = editStartTime.hour,
-            initialMinute = editStartTime.minute,
+            initialHour = editStart.hour,
+            initialMinute = editStart.minute,
             is24Hour = true
         )
         DetailTimePickerDialog(
             onDismiss = { showStartTimePicker = false },
             onConfirm = {
-                editStartTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                editStart = editStart
+                    .withHour(timePickerState.hour)
+                    .withMinute(timePickerState.minute)
+                    .withSecond(0)
+                    .withNano(0)
                 showStartTimePicker = false
             }
         ) {
@@ -277,17 +299,46 @@ fun SessionDetailSheet(
         }
     }
 
-    // Stop Time Picker Dialog
+    if (showStopDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = editStop.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showStopDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+                        editStop = editStop
+                            .withYear(newDate.year)
+                            .withMonth(newDate.monthValue)
+                            .withDayOfMonth(newDate.dayOfMonth)
+                    }
+                    showStopDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStopDatePicker = false }) { Text("Abbrechen") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     if (showStopTimePicker) {
         val timePickerState = rememberTimePickerState(
-            initialHour = editStopTime.hour,
-            initialMinute = editStopTime.minute,
+            initialHour = editStop.hour,
+            initialMinute = editStop.minute,
             is24Hour = true
         )
         DetailTimePickerDialog(
             onDismiss = { showStopTimePicker = false },
             onConfirm = {
-                editStopTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                editStop = editStop
+                    .withHour(timePickerState.hour)
+                    .withMinute(timePickerState.minute)
+                    .withSecond(0)
+                    .withNano(0)
                 showStopTimePicker = false
             }
         ) {
@@ -295,7 +346,6 @@ fun SessionDetailSheet(
         }
     }
 
-    // Delete confirmation
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
@@ -336,3 +386,4 @@ private fun DetailTimePickerDialog(
         text = { content() }
     )
 }
+

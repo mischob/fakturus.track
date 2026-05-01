@@ -110,6 +110,9 @@ struct TimeTrackingView: View {
                     },
                     onDelete: { viewModel?.deleteSession(session) }
                 )
+                // Force fresh @State on every open so we cannot reuse stale
+                // editStartTime / editStopTime values from a previous edit.
+                .id(session.id)
             }
             .sheet(item: $manualSession) { session in
                 SessionDetailSheet(
@@ -129,6 +132,7 @@ struct TimeTrackingView: View {
                         viewModel?.deleteSession(session)
                     }
                 )
+                .id(session.id)
             }
         }
         .onAppear {

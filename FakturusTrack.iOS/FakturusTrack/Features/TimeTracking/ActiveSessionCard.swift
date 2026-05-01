@@ -233,10 +233,14 @@ private struct StoppedSessionEditor: View {
     let onFinish: () -> Void
     let onDelete: () -> Void
 
-    @State private var editDate: Date
+    // Two full timestamps — see SessionDetailSheet for rationale. A single
+    // `editDate` combined with time-only pickers caused multi-day sessions to
+    // be silently truncated when the user tapped finish.
     @State private var editStartTime: Date
     @State private var editStopTime: Date
     @State private var editPauseMinutes: String
+
+    private static let maxDurationSeconds: TimeInterval = 72 * 3600
 
     init(
         session: WorkSession,
@@ -248,7 +252,6 @@ private struct StoppedSessionEditor: View {
         self.onSave = onSave
         self.onFinish = onFinish
         self.onDelete = onDelete
-        _editDate = State(initialValue: session.date)
         _editStartTime = State(initialValue: session.startTime)
         _editStopTime = State(initialValue: session.stopTime ?? Date())
         _editPauseMinutes = State(initialValue: String(session.pauseMinutes))
@@ -265,7 +268,7 @@ private struct StoppedSessionEditor: View {
     }
 
     private var isValid: Bool {
-        editStopTime > editStartTime && bruttoDuration <= 86400
+        editStopTime > editStartTime && bruttoDuration <= Self.maxDurationSeconds
     }
 
     var body: some View {
@@ -281,10 +284,18 @@ private struct StoppedSessionEditor: View {
             }
 
             VStack(spacing: 12) {
-                DatePicker(String(localized: "times_date"), selection: $editDate, displayedComponents: .date)
-                    .environment(\.locale, Locale(identifier: "de_DE"))
-                DatePicker(String(localized: "times_start"), selection: $editStartTime, displayedComponents: .hourAndMinute)
-                DatePicker(String(localized: "times_end"), selection: $editStopTime, displayedComponents: .hourAndMinute)
+                DatePicker(
+                    String(localized: "times_start"),
+                    selection: $editStartTime,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+                .environment(\.locale, Locale(identifier: "de_DE"))
+                DatePicker(
+                    String(localized: "times_end"),
+                    selection: $editStopTime,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+                .environment(\.locale, Locale(identifier: "de_DE"))
                 HStack {
                     Text(String(localized: "times_pause_min"))
                     Spacer()
@@ -333,7 +344,12 @@ private struct StoppedSessionEditor: View {
 
                 Button {
                     HapticManager.sessionFinished()
-                    onSave(editDate, editStartTime, editStopTime, pauseMinutes)
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
+                    let derivedDate = Calendar.current.startOfDay(for: editStartTime)
+                    onSave(derivedDate, editStartTime, editStopTime, pauseMinutes)
                     onFinish()
                 } label: {
                     Text(String(localized: "times_timer_finish"))

@@ -8,13 +8,18 @@ struct SessionDetailSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var editDate: Date
+    // Two full timestamps. We deliberately drop the previous `editDate` field —
+    // mixing a single date with two time-only pickers caused multi-day sessions
+    // to collapse onto one day on save. With combined date+time pickers, what
+    // the user sees is exactly what gets stored.
     @State private var editStartTime: Date
     @State private var editStopTime: Date
     @State private var editPauseMinutes: String
-    @State private var hasStopTime: Bool
     @State private var showDeleteConfirmation = false
-    @State private var validationError: String?
+
+    /// Allow up to 72h to cover "forgot to stop the timer" cases without
+    /// silently accepting nonsense (100h+).
+    private static let maxDurationSeconds: TimeInterval = 72 * 3600
 
     init(
         session: WorkSession,
@@ -26,54 +31,51 @@ struct SessionDetailSheet: View {
         self.isCreateMode = isCreateMode
         self.onSave = onSave
         self.onDelete = onDelete
-        _editDate = State(initialValue: session.date)
         _editStartTime = State(initialValue: session.startTime)
         _editStopTime = State(initialValue: session.stopTime ?? session.startTime.addingTimeInterval(3600))
         _editPauseMinutes = State(initialValue: String(session.pauseMinutes))
-        // Always present the end-time picker so the user can adjust it directly.
-        // The previous "Endzeit hinzufuegen" toggle made it possible to save
-        // with stopTime=nil if the toggle wasn't tapped.
-        _hasStopTime = State(initialValue: true)
     }
 
     private var pauseMinutes: Int { Int(editPauseMinutes) ?? 0 }
 
     private var bruttoDuration: TimeInterval {
-        effectiveStopTime.timeIntervalSince(effectiveStartTime)
+        editStopTime.timeIntervalSince(editStartTime)
     }
 
     private var nettoDuration: TimeInterval {
         max(0, bruttoDuration - Double(pauseMinutes * 60))
     }
 
-    /// Combine editDate with time-only pickers to get comparable dates
-    private var effectiveStartTime: Date {
-        let cal = Calendar.current
-        let startComps = cal.dateComponents([.hour, .minute], from: editStartTime)
-        return cal.date(bySettingHour: startComps.hour ?? 0, minute: startComps.minute ?? 0, second: 0, of: editDate) ?? editStartTime
-    }
-
-    private var effectiveStopTime: Date {
-        let cal = Calendar.current
-        let stopComps = cal.dateComponents([.hour, .minute], from: editStopTime)
-        return cal.date(bySettingHour: stopComps.hour ?? 0, minute: stopComps.minute ?? 0, second: 0, of: editDate) ?? editStopTime
-    }
-
-    private var isValid: Bool {
-        if hasStopTime {
-            return effectiveStopTime > effectiveStartTime && effectiveStopTime.timeIntervalSince(effectiveStartTime) <= 86400
+    private var validationError: String? {
+        if editStopTime <= editStartTime {
+            return "Endzeit muss nach Startzeit liegen"
         }
-        return true
+        if bruttoDuration > Self.maxDurationSeconds {
+            return "Dauer ueber 72 Stunden — bitte pruefen"
+        }
+        return nil
     }
+
+    private var isValid: Bool { validationError == nil }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Zeitraum") {
-                    DatePicker("Datum", selection: $editDate, displayedComponents: .date)
-                        .environment(\.locale, Locale(identifier: "de_DE"))
-                    DatePicker("Start", selection: $editStartTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
+                    DatePicker(
+                        "Start",
+                        selection: $editStartTime,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .environment(\.locale, Locale(identifier: "de_DE"))
+
+                    DatePicker(
+                        "Ende",
+                        selection: $editStopTime,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .environment(\.locale, Locale(identifier: "de_DE"))
+
                     HStack {
                         Text("Pause (min)")
                         Spacer()
@@ -129,8 +131,8 @@ struct SessionDetailSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Speichern") {
-                        onSave(editDate, effectiveStartTime, hasStopTime ? effectiveStopTime : nil, pauseMinutes)
-                        dismiss()
+                        commitPendingPickerEdits()
+                        save()
                     }
                     .disabled(!isValid)
                 }
@@ -139,7 +141,7 @@ struct SessionDetailSheet: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Fertig") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        commitPendingPickerEdits()
                     }
                 }
             }
@@ -149,22 +151,27 @@ struct SessionDetailSheet: View {
                     dismiss()
                 }
             }
-            .onChange(of: editStopTime) { _, _ in validate() }
-            .onChange(of: editStartTime) { _, _ in validate() }
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
-    private func validate() {
-        guard hasStopTime else { validationError = nil; return }
-        if effectiveStopTime <= effectiveStartTime {
-            validationError = "Endzeit muss nach Startzeit liegen"
-        } else if bruttoDuration > 86400 {
-            validationError = "Dauer ueber 24 Stunden"
-        } else {
-            validationError = nil
-        }
+    /// Drops focus from any open keyboard / picker overlay so that pending
+    /// edits flush into their bindings before we read them.
+    private func commitPendingPickerEdits() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
+    }
+
+    private func save() {
+        guard isValid else { return }
+        // session.date is derived from startTime so the row's group / sort key
+        // always matches the actual start day, even after multi-day edits.
+        let derivedDate = Calendar.current.startOfDay(for: editStartTime)
+        onSave(derivedDate, editStartTime, editStopTime, pauseMinutes)
+        dismiss()
     }
 }
 
