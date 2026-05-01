@@ -134,7 +134,11 @@ actor SyncEngine {
             if let existing = try ctx.fetch(descriptor).first {
                 // Don't overwrite sessions with pending local changes
                 if !existing.isPendingSync && !pendingIds.contains(existing.id) {
+                    let beforeStop = existing.stopTime
                     existing.update(from: dto)
+                    if beforeStop != nil && existing.stopTime == nil {
+                        print("[SyncEngine] WARNING: stopTime cleared by server for session \(dto.id), dto.stopTime=\(String(describing: dto.stopTime))")
+                    }
                 }
             } else {
                 ctx.insert(WorkSession(from: dto))
@@ -146,6 +150,10 @@ actor SyncEngine {
             session.isPendingSync = false
             session.isSynced = true
             session.syncedAt = Date()
+        }
+
+        if !pending.isEmpty {
+            print("[SyncEngine] Uploaded \(pending.count) work session(s); first stopTime sent=\(String(describing: pending.first?.stopTime))")
         }
 
         try ctx.save()

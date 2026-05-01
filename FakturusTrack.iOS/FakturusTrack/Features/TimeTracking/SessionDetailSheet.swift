@@ -30,7 +30,10 @@ struct SessionDetailSheet: View {
         _editStartTime = State(initialValue: session.startTime)
         _editStopTime = State(initialValue: session.stopTime ?? session.startTime.addingTimeInterval(3600))
         _editPauseMinutes = State(initialValue: String(session.pauseMinutes))
-        _hasStopTime = State(initialValue: session.stopTime != nil)
+        // Always present the end-time picker so the user can adjust it directly.
+        // The previous "Endzeit hinzufuegen" toggle made it possible to save
+        // with stopTime=nil if the toggle wasn't tapped.
+        _hasStopTime = State(initialValue: true)
     }
 
     private var pauseMinutes: Int { Int(editPauseMinutes) ?? 0 }
@@ -70,22 +73,7 @@ struct SessionDetailSheet: View {
                     DatePicker("Datum", selection: $editDate, displayedComponents: .date)
                         .environment(\.locale, Locale(identifier: "de_DE"))
                     DatePicker("Start", selection: $editStartTime, displayedComponents: .hourAndMinute)
-                    if hasStopTime {
-                        DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
-                    } else {
-                        Button {
-                            hasStopTime = true
-                            editStopTime = Date()
-                        } label: {
-                            HStack {
-                                Text("Ende")
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Text("Endzeit hinzufuegen")
-                                    .foregroundStyle(.blue)
-                            }
-                        }
-                    }
+                    DatePicker("Ende", selection: $editStopTime, displayedComponents: .hourAndMinute)
                     HStack {
                         Text("Pause (min)")
                         Spacer()

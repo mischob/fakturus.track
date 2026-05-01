@@ -195,6 +195,9 @@ final class TimeTrackingViewModel {
         session.pauseMinutes = pauseMinutes
         session.updatedAt = Date()
         session.isPendingSync = true
+        // Editing from history list always means a committed entry; otherwise
+        // the sync filter `isPendingSync && isFinished` would skip the upload.
+        session.isFinished = true
         try? modelContext.save()
 
         // Trigger sync to upload the edited session
