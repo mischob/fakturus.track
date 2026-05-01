@@ -62,6 +62,25 @@ struct SettingsView: View {
                     WorkdaySelector(workDays: $vm.workDays)
                 }
                 .onChange(of: vm.workDays) { _, _ in vm.onSettingsChanged() }
+
+                // Stage 2: only show the effective-date picker when the user
+                // actually changed the historized fields. Keeps the screen
+                // calm for the common case (just adjusting vacation days etc.)
+                // while exposing a backdate option when it matters.
+                if vm.workDaysOrHoursChanged {
+                    DatePicker(
+                        "Gültig ab",
+                        selection: $vm.effectiveDate,
+                        in: ...Calendar.current.startOfDay(for: Date()),
+                        displayedComponents: .date
+                    )
+                    .environment(\.locale, Locale(identifier: "de_DE"))
+                    .onChange(of: vm.effectiveDate) { _, _ in vm.onSettingsChanged() }
+
+                    Text("Standard: heute. Bei Korrekturen vergangener Wochen kann ein früheres Datum gewählt werden — Soll-Stunden werden ab dann mit den neuen Werten berechnet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             // MARK: - Urlaub

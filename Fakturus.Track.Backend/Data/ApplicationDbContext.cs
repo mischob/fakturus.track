@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SchoolHolidayPeriod> SchoolHolidayPeriods { get; set; }
     public DbSet<UserConsent> UserConsents { get; set; }
     public DbSet<SickDay> SickDays { get; set; }
+    public DbSet<UserSettingsHistory> UserSettingsHistory { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +85,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => new { e.UserId, e.Year });
             entity.HasIndex(e => e.UserId);
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        // Configure UserSettingsHistory entity (Stage 2)
+        modelBuilder.Entity<UserSettingsHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ValidFrom });
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.WorkHoursPerWeek).HasPrecision(5, 2);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });

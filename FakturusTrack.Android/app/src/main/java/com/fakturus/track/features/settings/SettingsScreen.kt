@@ -20,6 +20,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -55,6 +58,12 @@ import com.fakturus.track.services.subscription.Tier
 import com.fakturus.track.ui.shared.BundeslandPicker
 import com.fakturus.track.ui.shared.FeatureLockedCard
 import com.fakturus.track.ui.shared.WorkdaySelector
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,6 +140,20 @@ fun SettingsScreen(
                     workDays = settings?.workDays ?: 31,
                     onWorkDaysChange = { viewModel.updateWorkDays(it) }
                 )
+            }
+
+            // Stage 2: "Gültig ab" picker. Shown whenever the local entity has
+            // a pending effective date (i.e. workDays/workHours just changed).
+            // Default = today; backdating supported for correcting past weeks.
+            if (settings?.pendingEffectiveDate != null) {
+                item {
+                    EffectiveDateRow(
+                        currentValue = settings?.pendingEffectiveDate?.let {
+                            runCatching { LocalDate.parse(it) }.getOrNull()
+                        } ?: LocalDate.now(),
+                        onValueChange = { viewModel.updateEffectiveDate(it) }
+                    )
+                }
             }
 
             item {
@@ -517,5 +540,69 @@ fun SettingsScreen(
             activity = activity,
             onDismiss = { paywallFeature = null }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EffectiveDateRow(
+    currentValue: LocalDate,
+    onValueChange: (LocalDate) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    val formatter = remember {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.GERMANY)
+    }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDialog = true }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Gültig ab",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = currentValue.format(formatter),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Text(
+            text = "Standard: heute. Bei Korrekturen vergangener Wochen kann ein früheres Datum gewählt werden — Soll-Stunden werden ab dann mit den neuen Werten berechnet.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (showDialog) {
+        val initialMillis = currentValue.atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        onValueChange(date)
+                    }
+                    showDialog = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Abbrechen") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }

@@ -14,6 +14,11 @@ final class UserSettings {
     var isPendingSync: Bool
     var personalNumber: String?
 
+    /// Date on which the next pending change to `workDays` / `workHoursPerWeek`
+    /// should take effect on the server. Cleared once the change has synced.
+    /// nil means "today" on the server side.
+    var pendingEffectiveDate: Date?
+
     init(
         userId: String = "",
         calendarUrl: String? = nil,
@@ -23,7 +28,8 @@ final class UserSettings {
         bundesland: String = "NW",
         isSynced: Bool = false,
         isPendingSync: Bool = true,
-        personalNumber: String? = nil
+        personalNumber: String? = nil,
+        pendingEffectiveDate: Date? = nil
     ) {
         self.userId = userId
         self.calendarUrl = calendarUrl
@@ -34,6 +40,7 @@ final class UserSettings {
         self.isSynced = isSynced
         self.isPendingSync = isPendingSync
         self.personalNumber = personalNumber
+        self.pendingEffectiveDate = pendingEffectiveDate
     }
 
     // MARK: - DTO Conversion
@@ -45,7 +52,8 @@ final class UserSettings {
             workHoursPerWeek: workHoursPerWeek,
             workDays: workDays,
             bundesland: bundesland,
-            updatedAt: updatedAt?.ISO8601Format()
+            updatedAt: updatedAt?.ISO8601Format(),
+            effectiveDate: pendingEffectiveDate.map { ISO8601DateFormatter.dateOnly.string(from: $0) }
         )
     }
 

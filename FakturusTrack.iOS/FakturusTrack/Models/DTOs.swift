@@ -89,6 +89,18 @@ struct UserSettingsDTO: Codable {
     let workDays: Int
     let bundesland: String
     let updatedAt: String?
+    /// ISO date (yyyy-MM-dd). When sent on PUT, controls when changes to
+    /// `workDays` / `workHoursPerWeek` become effective in the server-side
+    /// settings history. Server response omits this field.
+    let effectiveDate: String?
+}
+
+struct UserSettingsHistoryEntryDTO: Decodable {
+    let id: String
+    let validFrom: String
+    let validTo: String?
+    let workDays: Int
+    let workHoursPerWeek: Double
 }
 
 struct OvertimeSummaryDTO: Codable {

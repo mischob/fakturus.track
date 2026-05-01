@@ -40,7 +40,7 @@ class ServiceContainer(private val context: Context) {
             AppDatabase::class.java,
             "fakturus_track.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 
@@ -135,6 +135,14 @@ class ServiceContainer(private val context: Context) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE `user_settings` ADD COLUMN `personalNumber` TEXT DEFAULT NULL"
+                )
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `user_settings` ADD COLUMN `pendingEffectiveDate` TEXT DEFAULT NULL"
                 )
             }
         }

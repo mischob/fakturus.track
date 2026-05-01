@@ -101,7 +101,13 @@ data class UserSettingsEntity(
     val personalNumber: String? = null,
     val updatedAt: String = Instant.now().toString(),
     val isSynced: Boolean = false,
-    val isPendingSync: Boolean = true
+    val isPendingSync: Boolean = true,
+    /**
+     * ISO date (yyyy-MM-dd). When non-null, the next settings sync sends this
+     * as the effective date for changes to [workDays] / [workHoursPerWeek] so
+     * the server can write a properly dated history row. Cleared after sync.
+     */
+    val pendingEffectiveDate: String? = null
 ) {
     fun toDTO() = UserSettingsDTO(
         calendarUrl = calendarUrl,
@@ -109,6 +115,7 @@ data class UserSettingsEntity(
         workHoursPerWeek = workHoursPerWeek,
         workDays = workDays,
         bundesland = bundesland,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        effectiveDate = pendingEffectiveDate
     )
 }

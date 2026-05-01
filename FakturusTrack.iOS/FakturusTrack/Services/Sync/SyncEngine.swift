@@ -301,6 +301,9 @@ actor SyncEngine {
                 try await apiClient.updateUserSettings(local.toDTO())
                 local.isSynced = true
                 local.isPendingSync = false
+                // The effective date has now been applied on the server; drop
+                // it so we don't re-send it on the next no-op sync.
+                local.pendingEffectiveDate = nil
             } else if let serverDate = serverUpdatedAt,
                       localUpdatedAt == nil || serverDate > localUpdatedAt! {
                 // Server is newer -> overwrite local

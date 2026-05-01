@@ -7,7 +7,8 @@ public record OvertimeSummaryDto(
     int VacationDaysRemaining,
     int VacationDaysPerYear,
     int HolidaysTaken,
-    decimal SchoolHolidayHoursNotWorked
+    decimal SchoolHolidayHoursNotWorked,
+    int SickDaysTaken
 );
 
 public record MonthlyOvertimeDto(
@@ -16,5 +17,6 @@ public record MonthlyOvertimeDto(
     string MonthName,
     decimal OvertimeHours,
     decimal WorkedHours,
-    decimal ExpectedHours
+    decimal ExpectedHours,
+    int SickDays
 );

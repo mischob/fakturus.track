@@ -131,7 +131,17 @@ data class UserSettingsDTO(
     val workHoursPerWeek: Double = 40.0,
     val workDays: Int = 31,
     val bundesland: String = "NW",
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val effectiveDate: String? = null
+)
+
+@Serializable
+data class UserSettingsHistoryEntryDTO(
+    val id: String,
+    val validFrom: String,
+    val validTo: String? = null,
+    val workDays: Int,
+    val workHoursPerWeek: Double
 )
 
 @Serializable

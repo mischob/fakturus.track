@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 
 class SettingsViewModel(
     private val database: AppDatabase,
@@ -90,8 +91,20 @@ class SettingsViewModel(
 
     private var debounceJob: Job? = null
 
+    /**
+     * Effective date for pending changes to historized fields (workDays /
+     * workHoursPerWeek). Default = today. The settings UI exposes a date
+     * picker so the user can backdate corrections.
+     */
+    private val _effectiveDate = MutableStateFlow(LocalDate.now())
+    val effectiveDate: StateFlow<LocalDate> = _effectiveDate.asStateFlow()
+
+    fun updateEffectiveDate(date: LocalDate) {
+        _effectiveDate.value = date
+    }
+
     fun updateWorkHoursPerWeek(hours: Double) {
-        updateSettings { it.copy(workHoursPerWeek = hours) }
+        updateSettings(historizedFieldChanged = true) { it.copy(workHoursPerWeek = hours) }
     }
 
     fun updateVacationDaysPerYear(days: Int) {
@@ -99,7 +112,7 @@ class SettingsViewModel(
     }
 
     fun updateWorkDays(workDays: Int) {
-        updateSettings { it.copy(workDays = workDays) }
+        updateSettings(historizedFieldChanged = true) { it.copy(workDays = workDays) }
     }
 
     fun updateBundesland(bundesland: String) {
@@ -132,12 +145,21 @@ class SettingsViewModel(
         }
     }
 
-    private fun updateSettings(transform: (UserSettingsEntity) -> UserSettingsEntity) {
+    private fun updateSettings(
+        historizedFieldChanged: Boolean = false,
+        transform: (UserSettingsEntity) -> UserSettingsEntity
+    ) {
         val current = settings.value ?: UserSettingsEntity(userId = "")
+        val pendingEffectiveDate = if (historizedFieldChanged) {
+            _effectiveDate.value.toString()
+        } else {
+            current.pendingEffectiveDate
+        }
         val updated = transform(current).copy(
             updatedAt = Instant.now().toString(),
             isPendingSync = true,
-            isSynced = false
+            isSynced = false,
+            pendingEffectiveDate = pendingEffectiveDate
         )
 
         debounceJob?.cancel()

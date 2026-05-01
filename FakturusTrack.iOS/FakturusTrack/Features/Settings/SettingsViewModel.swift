@@ -17,6 +17,19 @@ final class SettingsViewModel {
     var error: String?
     var isSaving = false
 
+    /// Effective date for changes to `workDays` / `workHoursPerWeek`. Default
+    /// is today. Picker lets the user backdate when correcting earlier entries.
+    var effectiveDate: Date = Calendar.current.startOfDay(for: Date())
+
+    /// Snapshot of the values at load time so we know whether the historized
+    /// fields actually changed (and only then send `effectiveDate`).
+    private var initialWorkDays: Int = 31
+    private var initialWorkHoursPerWeek: Double = 40.0
+
+    var workDaysOrHoursChanged: Bool {
+        workDays != initialWorkDays || workHoursPerWeek != initialWorkHoursPerWeek
+    }
+
     // E10-S01: App settings
     @ObservationIgnored @AppStorage("notificationsEnabled") var notificationsEnabled: Bool = true
 
@@ -57,6 +70,9 @@ final class SettingsViewModel {
         workDays = settings.workDays
         bundesland = settings.bundesland
         personalNumber = settings.personalNumber ?? ""
+        initialWorkDays = settings.workDays
+        initialWorkHoursPerWeek = settings.workHoursPerWeek
+        effectiveDate = Calendar.current.startOfDay(for: Date())
     }
 
     func loadSchoolHolidays() {
@@ -81,6 +97,11 @@ final class SettingsViewModel {
         let descriptor = FetchDescriptor<UserSettings>()
         guard let settings = try? modelContext.fetch(descriptor).first else { return }
 
+        // Stage 2: only attach an effectiveDate when historized fields changed.
+        // Otherwise leave nil so the server doesn't write a noise history row.
+        let historizedFieldsChanged = workDaysOrHoursChanged
+        let effectiveDateForUpload: Date? = historizedFieldsChanged ? effectiveDate : settings.pendingEffectiveDate
+
         settings.workHoursPerWeek = workHoursPerWeek
         settings.vacationDaysPerYear = vacationDaysPerYear
         settings.workDays = workDays
@@ -89,8 +110,14 @@ final class SettingsViewModel {
         settings.updatedAt = Date()
         settings.isPendingSync = true
         settings.isSynced = false
+        settings.pendingEffectiveDate = effectiveDateForUpload
 
         try? modelContext.save()
+
+        // Refresh the "initial" snapshot so subsequent edits compare against
+        // the just-saved values.
+        initialWorkDays = workDays
+        initialWorkHoursPerWeek = workHoursPerWeek
 
         // Trigger sync
         await syncEngine?.syncAll()
