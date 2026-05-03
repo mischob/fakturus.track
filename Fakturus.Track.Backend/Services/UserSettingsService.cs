@@ -32,7 +32,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
             user.VacationDaysPerYear,
             user.WorkHoursPerWeek,
             user.WorkDays,
-            user.Bundesland
+            user.Bundesland,
+            user.UpdatedAt
         );
     }
 
@@ -75,7 +76,8 @@ public class UserSettingsService(ApplicationDbContext context) : IUserSettingsSe
             user.VacationDaysPerYear,
             user.WorkHoursPerWeek,
             user.WorkDays,
-            user.Bundesland
+            user.Bundesland,
+            user.UpdatedAt
         );
     }
 

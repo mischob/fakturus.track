@@ -4,7 +4,13 @@ public record UserSettingsDto(
     int VacationDaysPerYear,
     decimal WorkHoursPerWeek,
     int WorkDays,
-    string Bundesland
+    string Bundesland,
+    /// <summary>
+    /// Last server-side modification of the User row. Used by clients as the
+    /// reference timestamp for last-write-wins sync. Without this iOS treats
+    /// the local copy as always-newer and re-uploads on every sync.
+    /// </summary>
+    DateTime? UpdatedAt = null
 );
 
 public record UpdateUserSettingsRequest(

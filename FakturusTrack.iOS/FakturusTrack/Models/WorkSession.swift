@@ -153,9 +153,16 @@ enum ISO8601Helper {
 }
 
 extension ISO8601DateFormatter {
+    /// Formats / parses calendar-day strings ("yyyy-MM-dd") in the **local**
+    /// timezone. The default `ISO8601DateFormatter.timeZone` is GMT, which
+    /// silently shifts a session worked late at night (local 26.02. 00:30 =
+    /// UTC 25.02. 23:30) onto the previous day when round-tripped through
+    /// the server's `DateOnly` field. Using the current TZ keeps the
+    /// "calendar day this entry belongs to" stable from the user's POV.
     nonisolated(unsafe) static let dateOnly: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withFullDate]
+        f.timeZone = TimeZone.current
         return f
     }()
 }

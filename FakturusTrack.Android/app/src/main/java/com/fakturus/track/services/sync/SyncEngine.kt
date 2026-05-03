@@ -172,17 +172,17 @@ class SyncEngine(
             try { Instant.parse(it) } catch (_: Exception) { null }
         }
 
-        if (serverUpdatedAt == null || localUpdatedAt.isAfter(serverUpdatedAt)) {
-            // Lokal ist neuer -> hochladen, dann pending-Marker zuruecksetzen.
-            // Insbesondere `pendingEffectiveDate` muss geleert werden, damit
-            // wir es nicht bei jedem No-Op-Sync erneut hochladen.
+        // Upload nur, wenn lokal wirklich eine ausstehende Aenderung vorliegt.
+        // Fehlt sonst `serverUpdatedAt`, wuerde der Vergleich lokal immer als
+        // neuer einstufen und bei jedem Sync ein PUT feuern.
+        if (local.isPendingSync && (serverUpdatedAt == null || localUpdatedAt.isAfter(serverUpdatedAt))) {
             apiClient.updateUserSettings(local.toDTO())
             settingsDao.upsert(local.copy(
                 isSynced = true,
                 isPendingSync = false,
                 pendingEffectiveDate = null
             ))
-        } else if (serverUpdatedAt.isAfter(localUpdatedAt)) {
+        } else if (serverUpdatedAt != null && serverUpdatedAt.isAfter(localUpdatedAt)) {
             // Server ist neuer -> lokal ueberschreiben
             settingsDao.upsert(local.copy(
                 calendarUrl = serverSettings.calendarUrl,

@@ -62,35 +62,47 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
 
     public async Task<SyncVacationDaysResponse> SyncVacationDaysAsync(SyncVacationDaysRequest request, string userId)
     {
-        // Get all existing vacation days for the user
         var existingVacationDays = await context.VacationDays
             .Where(v => v.UserId == userId)
             .ToListAsync();
 
-        var clientVacationDayIds = request.VacationDays.Select(v => v.Id).ToHashSet();
-        var serverVacationDayIds = existingVacationDays.Select(v => v.Id).ToHashSet();
+        // Dedupe client request by date — same defensive pattern as SickDays:
+        // the DB has a unique (UserId, Date) constraint and a duplicate from
+        // the client would abort the entire batch.
+        var deduped = request.VacationDays
+            .GroupBy(v => v.Date)
+            .Select(g => g.OrderByDescending(v => v.UpdatedAt).First())
+            .ToList();
 
-        // Find vacation days to delete (exist on server but not in client request)
+        var clientVacationDayIds = deduped.Select(v => v.Id).ToHashSet();
+        var serverVacationDayIds = existingVacationDays.Select(v => v.Id).ToHashSet();
+        var serverByDate = existingVacationDays.ToDictionary(v => v.Date);
+
         var vacationDaysToDelete = existingVacationDays
             .Where(v => !clientVacationDayIds.Contains(v.Id))
             .ToList();
-
-        // Find vacation days to add (exist in client but not on server)
-        var vacationDaysToAdd = request.VacationDays
-            .Where(v => !serverVacationDayIds.Contains(v.Id))
-            .ToList();
-
-        // Find vacation days to update (exist in both, check if client is newer)
-        var vacationDaysToUpdate = request.VacationDays
-            .Where(v => serverVacationDayIds.Contains(v.Id))
-            .ToList();
-
-        // Delete vacation days
+        var deletedDates = vacationDaysToDelete.Select(v => v.Date).ToHashSet();
         foreach (var vacationDay in vacationDaysToDelete) context.VacationDays.Remove(vacationDay);
 
-        // Add new vacation days
-        foreach (var vacationDayDto in vacationDaysToAdd)
+        // Update: matched by Id, only if client carries a newer timestamp.
+        foreach (var vacationDayDto in deduped.Where(v => serverVacationDayIds.Contains(v.Id)))
         {
+            var existingVacationDay = existingVacationDays.First(v => v.Id == vacationDayDto.Id);
+            if (vacationDayDto.UpdatedAt > existingVacationDay.UpdatedAt)
+            {
+                existingVacationDay.Date = vacationDayDto.Date;
+                existingVacationDay.UpdatedAt = vacationDayDto.UpdatedAt;
+                existingVacationDay.SyncedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Add: skip if a surviving server row already occupies the same date.
+        foreach (var vacationDayDto in deduped.Where(v => !serverVacationDayIds.Contains(v.Id)))
+        {
+            var dateClash = serverByDate.TryGetValue(vacationDayDto.Date, out var clash)
+                && !deletedDates.Contains(clash.Date);
+            if (dateClash) continue;
+
             var vacationDay = new VacationDay
             {
                 Id = vacationDayDto.Id,
@@ -101,18 +113,6 @@ public class VacationDayService(ApplicationDbContext context) : IVacationDayServ
                 SyncedAt = DateTime.UtcNow
             };
             context.VacationDays.Add(vacationDay);
-        }
-
-        // Update existing vacation days if client version is newer
-        foreach (var vacationDayDto in vacationDaysToUpdate)
-        {
-            var existingVacationDay = existingVacationDays.First(v => v.Id == vacationDayDto.Id);
-            if (vacationDayDto.UpdatedAt > existingVacationDay.UpdatedAt)
-            {
-                existingVacationDay.Date = vacationDayDto.Date;
-                existingVacationDay.UpdatedAt = vacationDayDto.UpdatedAt;
-                existingVacationDay.SyncedAt = DateTime.UtcNow;
-            }
         }
 
         await context.SaveChangesAsync();

@@ -295,7 +295,12 @@ actor SyncEngine {
             let localUpdatedAt = local.updatedAt
             let serverUpdatedAt: Date? = serverSettings.updatedAt.flatMap { ISO8601DateFormatter().date(from: $0) }
 
-            if let localDate = localUpdatedAt,
+            // Defensive guard: an upload requires the local copy to actually
+            // have a pending change. Without this we'd PUT on every sync if
+            // the server ever omitted UpdatedAt (the LWW comparison treats
+            // nil as "older" and would always favor the local row).
+            if local.isPendingSync,
+               let localDate = localUpdatedAt,
                (serverUpdatedAt == nil || localDate > serverUpdatedAt!) {
                 // Local is newer -> upload
                 try await apiClient.updateUserSettings(local.toDTO())

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.fakturus.track.BuildConfig
 import com.fakturus.track.models.AppDatabase
 import com.fakturus.track.models.UserSettingsEntity
+import com.fakturus.track.models.UserSettingsHistoryEntryDTO
 import com.fakturus.track.R
 import com.fakturus.track.services.subscription.BillingManager
 import com.fakturus.track.services.subscription.SubscriptionManager
@@ -101,6 +102,51 @@ class SettingsViewModel(
 
     fun updateEffectiveDate(date: LocalDate) {
         _effectiveDate.value = date
+        // Re-stage so the saved entity carries the new effective date.
+        viewModelScope.launch {
+            val current = settings.value ?: return@launch
+            settingsDao.upsert(
+                current.copy(
+                    pendingEffectiveDate = date.toString(),
+                    updatedAt = Instant.now().toString(),
+                    isPendingSync = true,
+                    isSynced = false
+                )
+            )
+            syncEngine?.syncAll()
+        }
+    }
+
+    /**
+     * Latched: stays true while a historized change is staged but not yet
+     * acknowledged by the server, so the "Gültig ab"-picker doesn't flicker
+     * during the debounce/save round-trip.
+     */
+    private val _hasUnsyncedHistorizedChange = MutableStateFlow(false)
+    val hasUnsyncedHistorizedChange: StateFlow<Boolean> = _hasUnsyncedHistorizedChange.asStateFlow()
+
+    // History
+    private val _settingsHistory = MutableStateFlow<List<UserSettingsHistoryEntryDTO>>(emptyList())
+    val settingsHistory: StateFlow<List<UserSettingsHistoryEntryDTO>> = _settingsHistory.asStateFlow()
+    private val _isLoadingHistory = MutableStateFlow(false)
+    val isLoadingHistory: StateFlow<Boolean> = _isLoadingHistory.asStateFlow()
+    private val _historyError = MutableStateFlow<String?>(null)
+    val historyError: StateFlow<String?> = _historyError.asStateFlow()
+
+    fun loadSettingsHistory() {
+        val client = apiClient ?: return
+        viewModelScope.launch {
+            _isLoadingHistory.value = true
+            _historyError.value = null
+            try {
+                _settingsHistory.value = client.getUserSettingsHistory()
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "Failed to load history", e)
+                _historyError.value = "Verlauf konnte nicht geladen werden"
+            } finally {
+                _isLoadingHistory.value = false
+            }
+        }
     }
 
     fun updateWorkHoursPerWeek(hours: Double) {
@@ -162,6 +208,12 @@ class SettingsViewModel(
             pendingEffectiveDate = pendingEffectiveDate
         )
 
+        // Latch picker visibility synchronously so it doesn't disappear during
+        // the 500ms debounce window.
+        if (historizedFieldChanged) {
+            _hasUnsyncedHistorizedChange.value = true
+        }
+
         debounceJob?.cancel()
         debounceJob = viewModelScope.launch {
             _isSaving.value = true
@@ -169,6 +221,10 @@ class SettingsViewModel(
             try {
                 settingsDao.upsert(updated)
                 syncEngine?.syncAll()
+                // After sync, re-read entity. If pendingEffectiveDate is still
+                // set (offline / failure), keep the picker visible.
+                val saved = settingsDao.getSettingsOnce()
+                _hasUnsyncedHistorizedChange.value = saved?.pendingEffectiveDate != null
             } catch (e: Exception) {
                 Log.e("SettingsViewModel", "Failed to save settings", e)
             } finally {

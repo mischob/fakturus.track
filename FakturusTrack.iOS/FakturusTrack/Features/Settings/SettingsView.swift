@@ -11,7 +11,11 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var showDeleteAccountConfirmation = false
     @State private var deleteAccountError: String?
+    @State private var showSettingsHistory = false
     @AppStorage("appearance") private var appearance = "system"
+
+    private enum NumericField: Hashable { case workHours, vacationDays, personalNumber }
+    @FocusState private var focusedField: NumericField?
 
     var body: some View {
         NavigationStack {
@@ -34,9 +38,15 @@ struct SettingsView: View {
                 let vm = SettingsViewModel(
                     modelContext: modelContext,
                     syncEngine: services.syncEngine,
-                    authManager: authManager
+                    authManager: authManager,
+                    apiClient: services.apiClient
                 )
                 viewModel = vm
+            }
+        }
+        .sheet(isPresented: $showSettingsHistory) {
+            if let vm = viewModel {
+                WorkSettingsHistorySheet(viewModel: vm)
             }
         }
     }
@@ -54,6 +64,7 @@ struct SettingsView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 60)
+                        .focused($focusedField, equals: .workHours)
                 }
                 .onChange(of: vm.workHoursPerWeek) { _, _ in vm.onSettingsChanged() }
 
@@ -63,11 +74,10 @@ struct SettingsView: View {
                 }
                 .onChange(of: vm.workDays) { _, _ in vm.onSettingsChanged() }
 
-                // Stage 2: only show the effective-date picker when the user
-                // actually changed the historized fields. Keeps the screen
-                // calm for the common case (just adjusting vacation days etc.)
-                // while exposing a backdate option when it matters.
-                if vm.workDaysOrHoursChanged {
+                // Stage 2: stays visible while a historized change is staged
+                // but not yet acknowledged by the server (latched in the VM
+                // so it survives the debounced save).
+                if vm.hasUnsyncedHistorizedChange {
                     DatePicker(
                         "Gültig ab",
                         selection: $vm.effectiveDate,
@@ -77,9 +87,16 @@ struct SettingsView: View {
                     .environment(\.locale, Locale(identifier: "de_DE"))
                     .onChange(of: vm.effectiveDate) { _, _ in vm.onSettingsChanged() }
 
-                    Text("Standard: heute. Bei Korrekturen vergangener Wochen kann ein früheres Datum gewählt werden — Soll-Stunden werden ab dann mit den neuen Werten berechnet.")
+                    Text("Standard: heute. Für Korrekturen vergangener Wochen kann ein früheres Datum gewählt werden — Soll-Stunden werden ab dann mit den neuen Werten berechnet.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    showSettingsHistory = true
+                    Task { await vm.loadSettingsHistory() }
+                } label: {
+                    Label("Verlauf der Arbeitstage anzeigen", systemImage: "clock.arrow.circlepath")
                 }
             }
 
@@ -92,6 +109,7 @@ struct SettingsView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 60)
+                        .focused($focusedField, equals: .vacationDays)
                 }
                 .onChange(of: vm.vacationDaysPerYear) { _, _ in vm.onSettingsChanged() }
             }
@@ -143,6 +161,7 @@ struct SettingsView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(maxWidth: 120)
+                        .focused($focusedField, equals: .personalNumber)
                 }
             }
 
@@ -242,17 +261,140 @@ struct SettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .scrollDismissesKeyboard(.interactively)
+        // .immediately so any drag dismisses, even small ones — useful when the
+        // numeric keyboard hides scroll content.
+        .scrollDismissesKeyboard(.immediately)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button(String(localized: "settings_keyboard_done")) {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    // Drop both the SwiftUI focus state and any UIKit
+                    // first responder so we cover decimal/number-pad keyboards
+                    // that don't get a return key by default.
+                    focusedField = nil
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
                 }
+                .bold()
             }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
+        }
+    }
+}
+
+// MARK: - WorkSettingsHistorySheet
+
+struct WorkSettingsHistorySheet: View {
+    @Bindable var viewModel: SettingsViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    private static let isoDate: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withFullDate]
+        return f
+    }()
+
+    private static let displayDate: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "de_DE")
+        f.dateStyle = .medium
+        return f
+    }()
+
+    private static let dayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+    private func formattedDate(_ iso: String) -> String {
+        guard let d = Self.isoDate.date(from: iso) else { return iso }
+        return Self.displayDate.string(from: d)
+    }
+
+    private func workDayList(_ bitmask: Int) -> String {
+        var days: [String] = []
+        for i in 0..<7 where (bitmask & (1 << i)) != 0 {
+            days.append(Self.dayLabels[i])
+        }
+        return days.isEmpty ? "—" : days.joined(separator: ", ")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if viewModel.isLoadingHistory {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let err = viewModel.historyError {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.orange)
+                        Text(err).foregroundStyle(.secondary)
+                        Button("Erneut versuchen") {
+                            Task { await viewModel.loadSettingsHistory() }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.settingsHistory.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("Noch keine Änderungen erfasst.")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        Section {
+                            Text("Hier siehst du, welche Wochentage und Wochenstunden in welchem Zeitraum für die Soll-Berechnung galten. Neueste Änderung zuerst.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        ForEach(viewModel.settingsHistory, id: \.id) { entry in
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text(formattedDate(entry.validFrom))
+                                        .font(.subheadline.bold())
+                                    Text("–")
+                                        .foregroundStyle(.secondary)
+                                    if let to = entry.validTo {
+                                        Text(formattedDate(to))
+                                            .font(.subheadline.bold())
+                                    } else {
+                                        Text("aktuell")
+                                            .font(.subheadline.bold())
+                                            .foregroundStyle(.green)
+                                    }
+                                }
+                                HStack {
+                                    Image(systemName: "calendar")
+                                        .foregroundStyle(.secondary)
+                                    Text(workDayList(entry.workDays))
+                                        .font(.callout)
+                                }
+                                HStack {
+                                    Image(systemName: "clock")
+                                        .foregroundStyle(.secondary)
+                                    Text("\(String(format: "%.1f", entry.workHoursPerWeek)) h / Woche")
+                                        .font(.callout)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Verlauf der Arbeitstage")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+            .task { await viewModel.loadSettingsHistory() }
         }
     }
 }

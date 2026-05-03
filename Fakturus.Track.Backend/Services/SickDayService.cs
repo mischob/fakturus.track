@@ -62,22 +62,48 @@ public class SickDayService(ApplicationDbContext context) : ISickDayService
             .Where(s => s.UserId == userId)
             .ToListAsync();
 
-        var clientIds = request.SickDays.Select(s => s.Id).ToHashSet();
+        // Dedupe the incoming request by date — clients can occasionally end
+        // up with two local sick days on the same day (race in the picker,
+        // re-import, etc.). The DB has a unique (UserId, Date) constraint,
+        // so we must not forward duplicates. Keep the most-recently-updated
+        // entry for each date.
+        var deduped = request.SickDays
+            .GroupBy(s => s.Date)
+            .Select(g => g.OrderByDescending(s => s.UpdatedAt).First())
+            .ToList();
+
+        var clientIds = deduped.Select(s => s.Id).ToHashSet();
         var serverIds = existing.Select(s => s.Id).ToHashSet();
+        var serverByDate = existing.ToDictionary(s => s.Date);
 
-        // Delete: on server but not in client
+        // Delete: server entries whose Id the client no longer has.
         var toDelete = existing.Where(s => !clientIds.Contains(s.Id)).ToList();
-
-        // Add: in client but not on server
-        var toAdd = request.SickDays.Where(s => !serverIds.Contains(s.Id)).ToList();
-
-        // Update: in both, client newer
-        var toUpdate = request.SickDays.Where(s => serverIds.Contains(s.Id)).ToList();
-
+        var deletedDates = toDelete.Select(s => s.Date).ToHashSet();
         foreach (var s in toDelete) context.SickDays.Remove(s);
 
-        foreach (var dto in toAdd)
+        // Update: matched by Id, only when client carries a newer timestamp.
+        foreach (var dto in deduped.Where(s => serverIds.Contains(s.Id)))
         {
+            var ex = existing.First(s => s.Id == dto.Id);
+            if (dto.UpdatedAt > ex.UpdatedAt)
+            {
+                ex.Date = dto.Date;
+                ex.UpdatedAt = dto.UpdatedAt;
+                ex.SyncedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Add: client carries an Id the server doesn't know. Before inserting,
+        // make sure no surviving server row already occupies the same date —
+        // otherwise we'd hit IX_SickDays_UserId_Date and abort the whole
+        // batch. Date-collision wins the existing server row and the client
+        // will reconcile its local Id on the next pull.
+        foreach (var dto in deduped.Where(s => !serverIds.Contains(s.Id)))
+        {
+            var dateClash = serverByDate.TryGetValue(dto.Date, out var clash)
+                && !deletedDates.Contains(clash.Date);
+            if (dateClash) continue;
+
             context.SickDays.Add(new SickDay
             {
                 Id = dto.Id,
@@ -87,17 +113,6 @@ public class SickDayService(ApplicationDbContext context) : ISickDayService
                 UpdatedAt = dto.UpdatedAt,
                 SyncedAt = DateTime.UtcNow
             });
-        }
-
-        foreach (var dto in toUpdate)
-        {
-            var ex = existing.First(s => s.Id == dto.Id);
-            if (dto.UpdatedAt > ex.UpdatedAt)
-            {
-                ex.Date = dto.Date;
-                ex.UpdatedAt = dto.UpdatedAt;
-                ex.SyncedAt = DateTime.UtcNow;
-            }
         }
 
         await context.SaveChangesAsync();

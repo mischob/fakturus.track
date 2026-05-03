@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -29,8 +30,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -47,7 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fakturus.track.R
@@ -55,6 +61,7 @@ import com.fakturus.track.ServiceContainer
 import com.fakturus.track.features.subscription.PaywallBottomSheet
 import com.fakturus.track.services.subscription.FeatureGate
 import com.fakturus.track.services.subscription.Tier
+import com.fakturus.track.models.UserSettingsHistoryEntryDTO
 import com.fakturus.track.ui.shared.BundeslandPicker
 import com.fakturus.track.ui.shared.FeatureLockedCard
 import com.fakturus.track.ui.shared.WorkdaySelector
@@ -80,10 +87,23 @@ fun SettingsScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val appearance by viewModel.appearance.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val effectiveDate by viewModel.effectiveDate.collectAsState()
+    val hasUnsyncedHistorizedChange by viewModel.hasUnsyncedHistorizedChange.collectAsState()
+    val settingsHistory by viewModel.settingsHistory.collectAsState()
+    val isLoadingHistory by viewModel.isLoadingHistory.collectAsState()
+    val historyError by viewModel.historyError.collectAsState()
     val uriHandler = LocalUriHandler.current
     val tier by services.subscriptionManager.tier.collectAsState()
     var paywallFeature by remember { mutableStateOf<FeatureGate?>(null) }
+    var showHistorySheet by remember { mutableStateOf(false) }
     val activity = context as? android.app.Activity
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun dismissKeyboard() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.initializeSettingsIfNeeded()
@@ -124,7 +144,11 @@ fun SettingsScreen(
                         newValue.toDoubleOrNull()?.let { viewModel.updateWorkHoursPerWeek(it) }
                     },
                     label = { Text(stringResource(R.string.settings_work_hours)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { dismissKeyboard() }),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -142,17 +166,29 @@ fun SettingsScreen(
                 )
             }
 
-            // Stage 2: "Gültig ab" picker. Shown whenever the local entity has
-            // a pending effective date (i.e. workDays/workHours just changed).
-            // Default = today; backdating supported for correcting past weeks.
-            if (settings?.pendingEffectiveDate != null) {
+            // Stage 2: "Gültig ab" picker, latched in the VM so it doesn't
+            // disappear during the debounced save / sync round-trip.
+            val hasUnsyncedHistorized = hasUnsyncedHistorizedChange
+            if (hasUnsyncedHistorized) {
                 item {
                     EffectiveDateRow(
-                        currentValue = settings?.pendingEffectiveDate?.let {
-                            runCatching { LocalDate.parse(it) }.getOrNull()
-                        } ?: LocalDate.now(),
+                        currentValue = effectiveDate,
                         onValueChange = { viewModel.updateEffectiveDate(it) }
                     )
+                }
+            }
+
+            // History entry point
+            item {
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = {
+                        showHistorySheet = true
+                        viewModel.loadSettingsHistory()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Verlauf der Arbeitstage anzeigen")
                 }
             }
 
@@ -180,7 +216,11 @@ fun SettingsScreen(
                         newValue.toIntOrNull()?.let { viewModel.updateVacationDaysPerYear(it) }
                     },
                     label = { Text(stringResource(R.string.settings_vacation_days)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { dismissKeyboard() }),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -345,7 +385,11 @@ fun SettingsScreen(
                             },
                             placeholder = { Text("12345") },
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { dismissKeyboard() }),
                             modifier = Modifier.width(120.dp)
                         )
                     }
@@ -540,6 +584,98 @@ fun SettingsScreen(
             activity = activity,
             onDismiss = { paywallFeature = null }
         )
+    }
+
+    if (showHistorySheet) {
+        WorkSettingsHistorySheet(
+            entries = settingsHistory,
+            isLoading = isLoadingHistory,
+            error = historyError,
+            onRetry = { viewModel.loadSettingsHistory() },
+            onDismiss = { showHistorySheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorkSettingsHistorySheet(
+    entries: List<UserSettingsHistoryEntryDTO>,
+    isLoading: Boolean,
+    error: String?,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val dateFormatter = remember {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.GERMANY)
+    }
+    val dayLabels = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Verlauf der Arbeitstage",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = "Wochentage und Wochenstunden, die für die Soll-Berechnung galten. Neueste Änderung zuerst.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider()
+
+            when {
+                isLoading -> {
+                    Text("Lädt …", style = MaterialTheme.typography.bodyMedium)
+                }
+                error != null -> {
+                    Text(error, color = MaterialTheme.colorScheme.error)
+                    OutlinedButton(onClick = onRetry) { Text("Erneut versuchen") }
+                }
+                entries.isEmpty() -> {
+                    Text("Noch keine Änderungen erfasst.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                else -> {
+                    entries.forEach { entry ->
+                        val from = runCatching { LocalDate.parse(entry.validFrom).format(dateFormatter) }.getOrDefault(entry.validFrom)
+                        val to = entry.validTo?.let {
+                            runCatching { LocalDate.parse(it).format(dateFormatter) }.getOrDefault(it)
+                        } ?: "aktuell"
+                        val days = (0 until 7)
+                            .filter { (entry.workDays shr it) and 1 == 1 }
+                            .map { dayLabels[it] }
+                            .joinToString(", ")
+                            .ifEmpty { "—" }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                "$from – $to",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                "Tage: $days",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "${"%.1f".format(entry.workHoursPerWeek)} h / Woche",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
     }
 }
 

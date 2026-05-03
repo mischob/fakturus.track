@@ -21,6 +21,13 @@ final class SettingsViewModel {
     /// is today. Picker lets the user backdate when correcting earlier entries.
     var effectiveDate: Date = Calendar.current.startOfDay(for: Date())
 
+    /// True while a historized change is staged but not yet acknowledged by
+    /// the server. Drives whether the "Gültig ab"-picker is visible. Stays on
+    /// across the debounced save so the picker doesn't flicker; only flips
+    /// back to false once the local model has its `pendingEffectiveDate`
+    /// cleared (i.e. the server confirmed the change).
+    var hasUnsyncedHistorizedChange: Bool = false
+
     /// Snapshot of the values at load time so we know whether the historized
     /// fields actually changed (and only then send `effectiveDate`).
     private var initialWorkDays: Int = 31
@@ -29,6 +36,13 @@ final class SettingsViewModel {
     var workDaysOrHoursChanged: Bool {
         workDays != initialWorkDays || workHoursPerWeek != initialWorkHoursPerWeek
     }
+
+    // MARK: - History (Stage 2)
+
+    var settingsHistory: [UserSettingsHistoryEntryDTO] = []
+    var isLoadingHistory: Bool = false
+    var historyError: String?
+    var apiClient: APIClient?
 
     // E10-S01: App settings
     @ObservationIgnored @AppStorage("notificationsEnabled") var notificationsEnabled: Bool = true
@@ -52,10 +66,11 @@ final class SettingsViewModel {
     private var debounceTask: Task<Void, Never>?
     private var personalNumberDebounceTask: Task<Void, Never>?
 
-    init(modelContext: ModelContext, syncEngine: SyncEngine? = nil, authManager: AuthManager? = nil) {
+    init(modelContext: ModelContext, syncEngine: SyncEngine? = nil, authManager: AuthManager? = nil, apiClient: APIClient? = nil) {
         self.modelContext = modelContext
         self.syncEngine = syncEngine
         self.authManager = authManager
+        self.apiClient = apiClient
         loadSettings()
         loadSchoolHolidays()
     }
@@ -72,7 +87,10 @@ final class SettingsViewModel {
         personalNumber = settings.personalNumber ?? ""
         initialWorkDays = settings.workDays
         initialWorkHoursPerWeek = settings.workHoursPerWeek
-        effectiveDate = Calendar.current.startOfDay(for: Date())
+        // If we're entering the screen with a still-pending historized change
+        // (e.g. last sync failed offline), keep the picker visible.
+        hasUnsyncedHistorizedChange = settings.pendingEffectiveDate != nil
+        effectiveDate = settings.pendingEffectiveDate ?? Calendar.current.startOfDay(for: Date())
     }
 
     func loadSchoolHolidays() {
@@ -85,6 +103,11 @@ final class SettingsViewModel {
     // MARK: - Save with Debounce
 
     func onSettingsChanged() {
+        // Latch the picker visibility now (synchronously) so it doesn't
+        // disappear during the debounce/save round-trip.
+        if workDaysOrHoursChanged {
+            hasUnsyncedHistorizedChange = true
+        }
         debounceTask?.cancel()
         debounceTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
@@ -121,6 +144,30 @@ final class SettingsViewModel {
 
         // Trigger sync
         await syncEngine?.syncAll()
+
+        // After sync completes, re-read the local model. If sync succeeded the
+        // pendingEffectiveDate is cleared and we can hide the picker. If sync
+        // failed (offline) the marker is still there and the picker remains
+        // visible so the user knows the change hasn't shipped yet.
+        if let saved = try? modelContext.fetch(FetchDescriptor<UserSettings>()).first {
+            hasUnsyncedHistorizedChange = saved.pendingEffectiveDate != nil
+        }
+    }
+
+    // MARK: - History (Stage 2)
+
+    /// Refreshes the WorkDays / WorkHoursPerWeek timeline from the server.
+    func loadSettingsHistory() async {
+        guard let client = apiClient else { return }
+        isLoadingHistory = true
+        historyError = nil
+        defer { isLoadingHistory = false }
+        do {
+            let entries: [UserSettingsHistoryEntryDTO] = try await client.get("/v1/settings/history")
+            settingsHistory = entries
+        } catch {
+            historyError = "Verlauf konnte nicht geladen werden"
+        }
     }
 
     // MARK: - Personal Number (debounced save)

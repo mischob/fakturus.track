@@ -10,6 +10,7 @@ import com.fakturus.track.models.SyncVacationDaysRequest
 import com.fakturus.track.models.SyncVacationDaysResponse
 import com.fakturus.track.models.SyncWorkSessionsRequest
 import com.fakturus.track.models.UserSettingsDTO
+import com.fakturus.track.models.UserSettingsHistoryEntryDTO
 import com.fakturus.track.models.VacationDayDTO
 import com.fakturus.track.models.WorkSessionDTO
 import com.fakturus.track.services.auth.AuthManager
@@ -175,6 +176,9 @@ class APIClient(
     suspend fun getUserSettings(): UserSettingsDTO = get("/v1/settings")
 
     suspend fun updateUserSettings(settings: UserSettingsDTO) = put("/v1/settings", settings)
+
+    suspend fun getUserSettingsHistory(): List<UserSettingsHistoryEntryDTO> =
+        get("/v1/settings/history")
 
     suspend fun getOvertimeSummary(year: Int): OvertimeSummaryDTO =
         get("/v1/overtime-summary", queryParams = mapOf("year" to year.toString()))
